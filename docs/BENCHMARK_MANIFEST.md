@@ -28,3 +28,7 @@ Primary manifest file: `data/manifests/public_benchmark_of_record.yaml`
 - The first slice is technique-oriented rather than a full enterprise campaign benchmark
 - Splunk-specific detections require normalization into the Hades alert contract
 - SOC-Bench remains a stronger strategic benchmark but is not assumed public
+
+## Repo Fixture
+
+- Runnable public benchmark slice fixture: `data/benchmarks/public/splunk_attack_data_windows.jsonl`

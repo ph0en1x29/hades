@@ -5,6 +5,7 @@ from __future__ import annotations
 from src.evaluation.dataset_gate import (
     benchmark_contract_issues,
     validate_benchmark_config,
+    validate_loaded_alerts,
 )
 from src.ingestion.parsers.cicids2018 import parse_cicids2018_row
 from src.ingestion.schema import (
@@ -106,3 +107,38 @@ class TestBenchmarkConfigValidation:
         }
 
         validate_benchmark_config(config, base_dir="/Users/jay/Hades")
+
+
+class TestLoadedAlertValidation:
+    def test_runtime_rejects_invalid_benchmark_candidate(self) -> None:
+        alert = UnifiedAlert(
+            provenance=AlertProvenance(
+                dataset_name="splunk_attack_data",
+                dataset_role=DatasetRole.BENCHMARK_CANDIDATE,
+            ),
+        )
+
+        try:
+            validate_loaded_alerts([alert])
+        except ValueError as exc:
+            assert "failed dataset gate" in str(exc)
+        else:
+            raise AssertionError("invalid benchmark candidate should be rejected")
+
+    def test_runtime_allows_engineering_scaffold_with_warning(self) -> None:
+        alert = parse_cicids2018_row(
+            {
+                "Src IP": "10.0.0.15",
+                "Dst IP": "172.16.0.10",
+                "Dst Port": "443",
+                "Protocol": "6",
+                "Label": "Brute Force",
+            },
+            source_path="data/datasets/sample.csv",
+            source_record_index=3,
+        )
+
+        warnings = validate_loaded_alerts([alert])
+
+        assert len(warnings) == 1
+        assert "engineering_scaffold" in warnings[0]

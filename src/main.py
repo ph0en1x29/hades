@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import sys
 from datetime import UTC, datetime
@@ -48,7 +49,10 @@ def setup_logging(level: str = "INFO") -> None:
 
 def load_alerts(input_path: str | Path) -> list[UnifiedAlert]:
     """Load unified alerts from a CSV or JSONL file."""
-    from src.ingestion.parsers import load_cicids2018_csv
+    from src.ingestion.parsers import (
+        load_cicids2018_csv,
+        load_splunk_attack_data_jsonl,
+    )
     from src.ingestion.schema import UnifiedAlert
 
     path = Path(input_path)
@@ -64,6 +68,9 @@ def load_alerts(input_path: str | Path) -> list[UnifiedAlert]:
         )
         return load_cicids2018_csv(path)
     if suffix == ".jsonl":
+        first_record = _read_first_json_record(path)
+        if _looks_like_splunk_attack_data_record(first_record):
+            return load_splunk_attack_data_jsonl(path)
         with path.open("r", encoding="utf-8") as handle:
             return [
                 UnifiedAlert.from_json(line)
@@ -73,6 +80,19 @@ def load_alerts(input_path: str | Path) -> list[UnifiedAlert]:
 
     logger.error("Unsupported input type: %s", path.suffix or "<none>")
     sys.exit(1)
+
+
+def _read_first_json_record(path: Path) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                payload = json.loads(line)
+                return payload if isinstance(payload, dict) else {}
+    return {}
+
+
+def _looks_like_splunk_attack_data_record(record: dict[str, Any]) -> bool:
+    return "detection" in record and "event" in record
 
 
 def build_decisions_output_path() -> Path:
@@ -98,7 +118,12 @@ def print_pipeline_summary(
     print(f"avg latency (ms): {avg_latency_ms:.2f}")
 
 
-def run_pipeline(config: dict[str, Any], input_path: str | None = None) -> None:
+def run_pipeline(
+    config: dict[str, Any],
+    input_path: str | None = None,
+    *,
+    alerts: list[UnifiedAlert] | None = None,
+) -> None:
     """Start the alert triage pipeline."""
     from src.agents import ClassifierAgent
     from src.pipeline import TriagePipeline
@@ -109,18 +134,18 @@ def run_pipeline(config: dict[str, Any], input_path: str | None = None) -> None:
 
     orch_config = config.get("orchestration", {})
     classifier = ClassifierAgent(orch_config.get("classifier", {}))
-    alerts = load_alerts(input_path)
+    loaded_alerts = alerts if alerts is not None else load_alerts(input_path)
     output_path = build_decisions_output_path()
 
     logger.info(
         "Running pipeline — alerts=%d, agent=%s, input=%s",
-        len(alerts),
+        len(loaded_alerts),
         classifier.name,
         input_path,
     )
 
     pipeline = TriagePipeline(classifier)
-    result = asyncio.run(pipeline.run(alerts, output_path))
+    result = asyncio.run(pipeline.run(loaded_alerts, output_path))
 
     logger.info(
         "Pipeline finished — decisions=%d, output=%s, wall_clock_ms=%d",
@@ -184,7 +209,10 @@ def main() -> None:
     log_level = args.log_level or config.get("system", {}).get("log_level", "INFO")
     setup_logging(log_level)
 
-    from src.evaluation.dataset_gate import validate_benchmark_config
+    from src.evaluation.dataset_gate import (
+        validate_benchmark_config,
+        validate_loaded_alerts,
+    )
 
     try:
         validate_benchmark_config(config)
@@ -195,7 +223,15 @@ def main() -> None:
     logger.info("Hades v%s starting in %s mode", __version__, args.mode)
 
     if args.mode == "pipeline":
-        run_pipeline(config, args.input)
+        alerts = load_alerts(args.input) if args.input else []
+        try:
+            warnings = validate_loaded_alerts(alerts)
+        except ValueError as exc:
+            logger.error("Loaded alerts failed dataset gate: %s", exc)
+            sys.exit(1)
+        for warning in warnings:
+            logger.warning("%s", warning)
+        run_pipeline(config, args.input, alerts=alerts)
         return
 
     dispatch = {

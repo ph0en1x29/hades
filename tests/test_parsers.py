@@ -8,6 +8,10 @@ from src.ingestion.parsers.cicids2018 import (
     load_cicids2018_csv,
     parse_cicids2018_row,
 )
+from src.ingestion.parsers.splunk_attack_data import (
+    load_splunk_attack_data_jsonl,
+    parse_splunk_attack_data_record,
+)
 from src.ingestion.schema import AlertSeverity, DatasetRole
 
 
@@ -71,3 +75,107 @@ class TestCicids2018Parser:
         assert alerts[1].severity == AlertSeverity.CRITICAL
         assert alerts[1].protocol == "UDP"
         assert alerts[1].provenance.source_record_index == 1
+
+
+class TestSplunkAttackDataParser:
+    def test_parse_record_maps_benchmark_metadata(self) -> None:
+        record = {
+            "record_id": "sad-001",
+            "scenario_id": "windows_credential_access",
+            "event": {
+                "timestamp": "2026-03-12T10:00:00Z",
+                "event_type": "credential_access",
+                "message": "Multiple failed logons followed by successful logon",
+                "src_ip": "198.51.100.50",
+                "dst_ip": "10.0.0.15",
+                "dst_port": 445,
+                "protocol": "TCP",
+                "log_source": "sysmon",
+            },
+            "detection": {
+                "rule_id": "DET-1001",
+                "rule_source": "splunk_security_content",
+                "rule_name": "Windows Brute Force Detection",
+                "severity": "high",
+                "category": "credential_access",
+                "mitre_techniques": ["T1110"],
+            },
+            "label": {"provenance": "splunk_detection_label_v1"},
+        }
+
+        alert = parse_splunk_attack_data_record(record, source_path="data/benchmarks/public/slice.jsonl")
+
+        assert alert.signature == "Windows Brute Force Detection"
+        assert alert.severity == AlertSeverity.HIGH
+        assert alert.benchmark.rule_id == "DET-1001"
+        assert alert.benchmark.rule_source == "splunk_security_content"
+        assert alert.benchmark.scenario_id == "windows_credential_access"
+        assert alert.benchmark.mitre_techniques == ["T1110"]
+        assert alert.provenance.dataset_role == DatasetRole.BENCHMARK_OF_RECORD
+        assert alert.provenance.label_provenance == "splunk_detection_label_v1"
+
+    def test_load_jsonl_builds_benchmark_alerts(self, tmp_path) -> None:
+        jsonl_path = tmp_path / "splunk_attack_data_slice.jsonl"
+        jsonl_path.write_text(
+            "\n".join(
+                [
+                    json.dumps(
+                        {
+                            "record_id": "sad-001",
+                            "scenario_id": "windows_credential_access",
+                            "event": {
+                                "timestamp": "2026-03-12T10:00:00Z",
+                                "event_type": "credential_access",
+                                "message": "Multiple failed logons followed by successful logon",
+                                "src_ip": "198.51.100.50",
+                                "dst_ip": "10.0.0.15",
+                                "dst_port": 445,
+                                "protocol": "TCP",
+                                "log_source": "sysmon",
+                            },
+                            "detection": {
+                                "rule_id": "DET-1001",
+                                "rule_source": "splunk_security_content",
+                                "rule_name": "Windows Brute Force Detection",
+                                "severity": "high",
+                                "category": "credential_access",
+                                "mitre_techniques": ["T1110"],
+                            },
+                            "label": {"provenance": "splunk_detection_label_v1"},
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "record_id": "sad-002",
+                            "scenario_id": "windows_discovery",
+                            "event": {
+                                "timestamp": "2026-03-12T10:05:00Z",
+                                "event_type": "discovery",
+                                "message": "Suspicious system discovery commands",
+                                "src_ip": "10.0.0.21",
+                                "dst_ip": "10.0.0.21",
+                                "protocol": "TCP",
+                                "log_source": "windows_security",
+                            },
+                            "detection": {
+                                "rule_id": "DET-1002",
+                                "rule_source": "splunk_security_content",
+                                "rule_name": "Windows Discovery Commands",
+                                "severity": "medium",
+                                "category": "discovery",
+                                "mitre_techniques": ["T1087"],
+                            },
+                            "label": {"provenance": "splunk_detection_label_v1"},
+                        }
+                    ),
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        alerts = load_splunk_attack_data_jsonl(jsonl_path)
+
+        assert len(alerts) == 2
+        assert alerts[0].benchmark.rule_id == "DET-1001"
+        assert alerts[1].benchmark.rule_id == "DET-1002"
+        assert alerts[0].provenance.dataset_role == DatasetRole.BENCHMARK_OF_RECORD

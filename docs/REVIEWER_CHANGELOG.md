@@ -102,6 +102,55 @@ git diff --check
 - `pytest -q` passed with `15 passed`
 - `git diff --check` passed
 
+## March 12, 2026 — Benchmark Ingestion and Runtime Gate Follow-Up
+
+### Summary
+
+This update closed the two remaining dataset-gate gaps:
+
+1. the benchmark-of-record is now ingestible by the repo
+2. loaded runtime alerts are now checked against the dataset gate
+
+### Changes Made
+
+#### 1. Added a Splunk benchmark ingestion path
+
+Files:
+
+- `src/ingestion/parsers/splunk_attack_data.py`
+- `src/ingestion/parsers/__init__.py`
+- `data/benchmarks/public/splunk_attack_data_windows.jsonl`
+- `tests/test_parsers.py`
+
+What changed:
+
+- Added a JSONL parser for a public Splunk Attack Data benchmark slice
+- Added a runnable benchmark fixture with rule linkage, MITRE mappings, and label provenance
+
+Why:
+
+- The benchmark-of-record must exist in code, not only in docs and config
+
+#### 2. Enforced dataset-gate checks on loaded alerts
+
+Files:
+
+- `src/evaluation/dataset_gate.py`
+- `src/main.py`
+- `tests/test_dataset_gate.py`
+- `data/fixtures/sample_alerts.jsonl`
+
+What changed:
+
+- Runtime now validates loaded alerts against the dataset gate
+- Benchmark-of-record and benchmark-candidate alerts fail fast if required fields are missing
+- Engineering scaffolds are allowed only with explicit warnings
+- The existing sample fixture is now explicitly marked `engineering_scaffold`
+
+Why:
+
+- Config validation alone was not enough; benchmark-invalid JSONL inputs could still pass through the pipeline
+
 ## March 12, 2026 — Editorial Cleanup Follow-Up
 
 ### Summary

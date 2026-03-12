@@ -87,4 +87,40 @@ def validate_benchmark_config(
             raise ValueError(f"benchmark manifest not found: {manifest_path}")
 
 
-__all__ = ["benchmark_contract_issues", "validate_benchmark_config"]
+def validate_loaded_alerts(alerts: list[UnifiedAlert]) -> list[str]:
+    """Validate runtime alert inputs against the dataset gate."""
+    warnings: list[str] = []
+
+    for alert in alerts:
+        issues = benchmark_contract_issues(alert)
+        role = alert.provenance.dataset_role
+
+        if role in {DatasetRole.BENCHMARK_OF_RECORD, DatasetRole.BENCHMARK_CANDIDATE}:
+            if issues:
+                issue_text = "; ".join(issues)
+                raise ValueError(
+                    f"alert {alert.alert_id} failed dataset gate: {issue_text}",
+                )
+            continue
+
+        if role == DatasetRole.ENGINEERING_SCAFFOLD:
+            warnings.append(
+                f"alert {alert.alert_id} is marked engineering_scaffold and is allowed "
+                "for smoke-testing only",
+            )
+            continue
+
+        if role == DatasetRole.SUPPLEMENTARY and issues:
+            warnings.append(
+                f"alert {alert.alert_id} is supplementary and not benchmark-complete: "
+                f"{'; '.join(issues)}",
+            )
+
+    return warnings
+
+
+__all__ = [
+    "benchmark_contract_issues",
+    "validate_benchmark_config",
+    "validate_loaded_alerts",
+]
