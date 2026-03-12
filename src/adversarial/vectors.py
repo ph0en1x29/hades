@@ -22,8 +22,8 @@ INJECTION_VECTORS = [
         network_source="HTTP request header",
         siem_sources=["Suricata", "Zeek", "WAF", "Web proxy"],
         realism="high",
-        max_payload_length=512,
-        notes="Most SIEM platforms log full User-Agent strings without truncation",
+        max_payload_length=8192,
+        notes="RFC 2616: no max length. Validated by [Neaves2025] — full payload logged by SIEM.",
     ),
     InjectionVector(
         name="HTTP Referer",
@@ -96,6 +96,25 @@ INJECTION_VECTORS = [
         realism="high",
         max_payload_length=255,
         notes="Server banner is fully attacker-controlled; logged by most tools",
+    ),
+    InjectionVector(
+        name="Windows Event Username",
+        log_field="winlog.event_data.TargetUserName",
+        network_source="SMB/NTLM authentication attempt",
+        siem_sources=["Windows Event Log", "SIEM (Event 4625)"],
+        realism="high",
+        max_payload_length=240,
+        notes="Validated by [Neaves2025]: 120+ chars in username + 120+ in domain. "
+              "MSRC declined to service. Combined username+domain = ~240 char payload.",
+    ),
+    InjectionVector(
+        name="SSH Username",
+        log_field="source.user",
+        network_source="SSH authentication attempt",
+        siem_sources=["sshd/PAM logs", "auth.log", "SIEM"],
+        realism="high",
+        max_payload_length=256,
+        notes="Validated by [Neaves2025]. Username field logged verbatim by PAM/sshd.",
     ),
     InjectionVector(
         name="LDAP Bind DN",
