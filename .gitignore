@@ -13,7 +13,13 @@ data/embeddings/
 data/qdrant/
 data/datasets/*.csv
 data/datasets/*.json
+data/datasets/splunk_attack_data/
+data/datasets/cic-ids2018/
+data/datasets/beth/
 !data/datasets/.gitkeep
+
+# Benchmark outputs (regeneratable via scripts/build_benchmark_pack.py)
+data/benchmark/*.jsonl
 
 # Results (regeneratable)
 results/
