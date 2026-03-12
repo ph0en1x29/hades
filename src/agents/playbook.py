@@ -10,11 +10,13 @@ Based on NIST SP 800-61 incident response lifecycle:
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from src.agents.base import AgentResult, BaseAgent
-from src.ingestion.schema import UnifiedAlert
+
+if TYPE_CHECKING:
+    from src.ingestion.schema import UnifiedAlert
 
 PLAYBOOK_SYSTEM_PROMPT = """\
 You are a SOC incident response specialist. Given a classified alert \
@@ -68,7 +70,7 @@ class PlaybookAgent(BaseAgent):
 
             playbook_id = str(uuid4())
 
-            # TODO: Replace with actual LLM generation via OpenClaw
+            # TODO: Replace with actual LLM generation via the chosen runtime adapter
             # Build context string from classification + events + RAG
             # and generate the playbook
 

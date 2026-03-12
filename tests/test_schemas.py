@@ -1,15 +1,25 @@
 """Tests for ingestion and evaluation schemas."""
 
-import json
-
-from src.ingestion.schema import AlertSeverity, AlertSource, UnifiedAlert
-from src.evaluation.schemas import EvalResult, TriageCategory, TriageDecision, ReasoningStep
+from src.evaluation.schemas import (
+    EvalResult,
+    EvidenceItem,
+    OverrideRecord,
+    ToolInvocation,
+    TriageCategory,
+    TriageDecision,
+)
+from src.ingestion.schema import (
+    AlertProvenance,
+    AlertSeverity,
+    AlertSource,
+    UnifiedAlert,
+)
 
 
 class TestUnifiedAlert:
     def test_create_default(self):
         alert = UnifiedAlert()
-        assert alert.source == AlertSource.FILE
+        assert alert.source == AlertSource.FILE_REPLAY
         assert alert.severity == AlertSeverity.MEDIUM
         assert alert.alert_id  # UUID generated
 
@@ -20,17 +30,23 @@ class TestUnifiedAlert:
             dst_ip="10.0.0.1",
             dst_port=22,
             severity=AlertSeverity.HIGH,
+            provenance=AlertProvenance(
+                dataset_name="cicids2018",
+                source_path="data/benchmarks/raw.jsonl",
+                source_record_index=12,
+            ),
         )
         json_str = alert.to_json()
         restored = UnifiedAlert.from_json(json_str)
         assert restored.signature == alert.signature
         assert restored.src_ip == alert.src_ip
         assert restored.severity == AlertSeverity.HIGH
+        assert restored.provenance.dataset_name == "cicids2018"
 
     def test_to_dict_serializes_enums(self):
-        alert = UnifiedAlert(source=AlertSource.SPLUNK)
+        alert = UnifiedAlert(source=AlertSource.NORMALIZED_JSON)
         d = alert.to_dict()
-        assert d["source"] == "splunk"
+        assert d["source"] == "normalized_json"
         assert isinstance(d["source"], str)
 
 
@@ -49,25 +65,48 @@ class TestEvalResult:
         assert result_wrong.correct is False
 
     def test_roundtrip_dict(self):
-        result = EvalResult(config_id="A", confidence=0.95)
+        result = EvalResult(config_id="A", dataset_name="bench", confidence=0.95)
         d = result.to_dict()
         restored = EvalResult.from_dict(d)
         assert restored.config_id == "A"
+        assert restored.dataset_name == "bench"
         assert restored.confidence == 0.95
 
 
 class TestTriageDecision:
-    def test_reasoning_chain(self):
+    def test_evidence_trace(self):
         decision = TriageDecision(
             classification=TriageCategory.TRUE_POSITIVE,
             confidence=0.92,
-            reasoning_chain=[
-                ReasoningStep(step=1, agent="classifier", action="classify", result="TP (0.85)"),
-                ReasoningStep(step=2, agent="correlator", action="correlate", result="3 events"),
+            evidence_trace=[
+                EvidenceItem(
+                    source_type="alert",
+                    source_ref="alert:123",
+                    summary="Classifier flagged lateral movement indicators",
+                    score=0.85,
+                ),
             ],
+            tool_invocations=[
+                ToolInvocation(
+                    tool_name="rag_search",
+                    arguments={"query": "T1021.001"},
+                    status="success",
+                    duration_ms=37,
+                ),
+            ],
+            rationale_summary="Evidence supports a true positive with analyst follow-up.",
             mitre_techniques=["T1021.001"],
+            override_record=OverrideRecord(
+                actor="analyst@example",
+                reason="Confirmed from case notes",
+                previous_classification="needs_investigation",
+                new_classification="true_positive",
+            ),
         )
         d = decision.to_dict()
+        restored = TriageDecision.from_dict(d)
         assert d["classification"] == "true_positive"
-        assert len(d["reasoning_chain"]) == 2
+        assert len(d["evidence_trace"]) == 1
         assert d["mitre_techniques"] == ["T1021.001"]
+        assert restored.override_record is not None
+        assert restored.override_record.new_classification == "true_positive"

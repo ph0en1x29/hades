@@ -10,10 +10,12 @@ Correlates by:
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from src.agents.base import AgentResult, BaseAgent
-from src.ingestion.schema import UnifiedAlert
+
+if TYPE_CHECKING:
+    from src.ingestion.schema import UnifiedAlert
 
 
 class CorrelatorAgent(BaseAgent):
@@ -39,7 +41,7 @@ class CorrelatorAgent(BaseAgent):
         window_minutes = self.config.get("time_window_minutes", 15)
 
         try:
-            # TODO: Replace with actual SIEM/log query via OpenClaw tool
+            # TODO: Replace with actual local log query or tool adapter
             # Correlation strategies (all applied, results merged):
             #   1. Same src_ip within ±window
             #   2. Same dst_ip within ±window

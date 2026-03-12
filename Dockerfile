@@ -17,7 +17,7 @@ COPY src/ src/
 COPY configs/ configs/
 
 # Create data directories
-RUN mkdir -p data/datasets data/embeddings data/models results logs
+RUN mkdir -p data/datasets data/qdrant data/models results logs
 
 EXPOSE 8000
 

@@ -44,7 +44,7 @@ This revision deliberately removes or defers features that would weaken either r
 
 ## 3. Repo Reality Check
 
-The repository currently contains schemas, configs, and documentation, plus a stub entrypoint. It does not yet contain the end-to-end pipeline, data-preparation scripts, benchmark runner, or tests described in the original proposal. The spec must therefore track planned artifacts, not present the system as already validated.
+The repository currently contains schemas, configs, documentation, runtime scaffolding, local retrieval abstractions, packaging metadata, and basic tests. It still does not contain the end-to-end ingestion loop, benchmark runner, transformed benchmark fixtures, or analyst workflow described in the proposal. The spec must therefore track planned artifacts, not present the system as already validated.
 
 ## 4. Architecture Decisions
 
@@ -112,7 +112,7 @@ The original proposal named ChromaDB with hybrid retrieval, but the current docu
 v1 RAG choices:
 
 - store: Qdrant
-- dense embedding: pinned open embedding model such as `BAAI/bge-m3`
+- dense embedding: pinned FastEmbed-compatible open embedding model such as `BAAI/bge-small-en-v1.5`
 - sparse retrieval: BM25-compatible sparse model
 - knowledge sources: MITRE ATT&CK plus a curated CVE subset
 - retrieval goal: evidence augmentation, not autonomous action selection

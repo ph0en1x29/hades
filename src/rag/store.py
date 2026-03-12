@@ -1,82 +1,102 @@
 """Vector store interface for the Hades RAG pipeline.
 
-Wraps ChromaDB for local, air-gapped threat intelligence retrieval.
+Uses Qdrant for local, air-gapped threat-intelligence retrieval.
 """
 
 from __future__ import annotations
 
 import logging
-from pathlib import Path
+import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class VectorStore:
-    """ChromaDB-backed vector store for threat intelligence.
+    """Qdrant-backed vector store for threat intelligence.
 
-    Manages collections for MITRE ATT&CK, NVD/CVE, and custom
-    threat intel documents. Supports hybrid search (semantic + BM25).
+    Manages collections for MITRE ATT&CK, curated CVE, and other
+    local threat-intelligence corpora. Uses Qdrant local mode by
+    default and can connect to a remote self-hosted instance.
     """
 
     def __init__(self, config: dict[str, Any]) -> None:
         self.collection_name = config.get("collection_name", "hades_threat_intel")
-        self.persist_dir = config.get("persist_dir", "data/embeddings")
-        self._client = None
-        self._collection = None
+        self.persist_dir = config.get("persist_dir", "data/qdrant")
+        self.url = config.get("url") or os.getenv("QDRANT_URL")
+        self.embedding_model = config.get("dense_embedding_model", "BAAI/bge-small-en")
+        self.sparse_embedding_model = config.get("sparse_embedding_model")
+        self.retrieval_mode = config.get("retrieval_mode", "hybrid")
+        self._client: Any = None
+        self._document_count = 0
 
     def initialize(self) -> None:
-        """Connect to ChromaDB and load or create the collection."""
+        """Connect to Qdrant and load or create the collection."""
         try:
-            import chromadb
-            from chromadb.config import Settings
+            from qdrant_client import QdrantClient, models
 
-            self._client = chromadb.PersistentClient(
-                path=self.persist_dir,
-                settings=Settings(anonymized_telemetry=False),
-            )
-            self._collection = self._client.get_or_create_collection(
-                name=self.collection_name,
-                metadata={"hnsw:space": "cosine"},
-            )
-            count = self._collection.count()
+            if self.url:
+                self._client = QdrantClient(url=self.url)
+            else:
+                self._client = QdrantClient(path=self.persist_dir)
+
+            self._client.set_model(self.embedding_model)
+
+            sparse_vectors_config = None
+            if self.retrieval_mode == "hybrid" and self.sparse_embedding_model:
+                self._client.set_sparse_model(self.sparse_embedding_model)
+                sparse_vectors_config = self._client.get_fastembed_sparse_vector_params(
+                    modifier=models.Modifier.IDF
+                )
+
+            if not self._client.collection_exists(self.collection_name):
+                self._client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=self._client.get_fastembed_vector_params(),
+                    sparse_vectors_config=sparse_vectors_config,
+                )
+
+            collection_info = self._client.get_collection(self.collection_name)
+            self._document_count = int(getattr(collection_info, "points_count", 0) or 0)
             logger.info(
                 "VectorStore ready: collection=%s, documents=%d",
                 self.collection_name,
-                count,
+                self._document_count,
             )
         except ImportError:
-            logger.error("chromadb not installed — run: pip install chromadb")
+            logger.error("qdrant-client[fastembed] not installed — run: pip install 'qdrant-client[fastembed]'")
             raise
 
     def add_documents(
         self,
         documents: list[str],
-        metadatas: list[dict[str, str]] | None = None,
-        ids: list[str] | None = None,
+        metadatas: list[dict[str, Any]] | None = None,
+        ids: list[str | int] | None = None,
     ) -> int:
         """Add documents to the collection.
 
         Returns:
             Number of documents added.
         """
-        if self._collection is None:
+        if self._client is None:
             raise RuntimeError("VectorStore not initialized — call initialize() first")
 
-        self._collection.add(
+        self._client.add(
+            collection_name=self.collection_name,
             documents=documents,
-            metadatas=metadatas,
-            ids=ids or [f"doc_{i}" for i in range(len(documents))],
+            metadata=metadatas,
+            ids=ids,
         )
+        self._document_count += len(documents)
         return len(documents)
 
     def search(
         self,
         query: str,
         top_k: int = 5,
-        where: dict[str, str] | None = None,
+        where: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
-        """Semantic search over the collection.
+        """Search over the collection using the configured retrieval mode.
 
         Args:
             query: Natural language query or technique ID.
@@ -86,27 +106,43 @@ class VectorStore:
         Returns:
             List of {content, source, relevance_score, metadata} dicts.
         """
-        if self._collection is None:
+        if self._client is None:
             raise RuntimeError("VectorStore not initialized — call initialize() first")
 
-        results = self._collection.query(
-            query_texts=[query],
-            n_results=top_k,
-            where=where,
+        query_filter = None
+        if where:
+            from qdrant_client import models
+
+            conditions: list[Any] = [
+                models.FieldCondition(
+                    key=key,
+                    match=models.MatchValue(value=value),
+                )
+                for key, value in where.items()
+            ]
+            query_filter = models.Filter(must=conditions)
+
+        results = self._client.query(
+            collection_name=self.collection_name,
+            query_text=query,
+            query_filter=query_filter,
+            limit=top_k,
         )
 
         output: list[dict[str, Any]] = []
-        for i in range(len(results["documents"][0])):
-            output.append({
-                "content": results["documents"][0][i],
-                "relevance_score": 1.0 - (results["distances"][0][i] if results["distances"] else 0.0),
-                "metadata": results["metadatas"][0][i] if results["metadatas"] else {},
-            })
+        for item in results:
+            metadata = dict(item.metadata)
+            output.append(
+                {
+                    "content": item.document,
+                    "source": metadata.get("source", ""),
+                    "relevance_score": item.score,
+                    "metadata": metadata,
+                }
+            )
         return output
 
     @property
     def document_count(self) -> int:
         """Current number of documents in the collection."""
-        if self._collection is None:
-            return 0
-        return self._collection.count()
+        return self._document_count

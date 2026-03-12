@@ -1,2 +1,2 @@
-# Hades — Offline Agentic SOC Assistant
-__version__ = "0.1.0"
+# Hades — Offline SOC Triage Research Prototype
+__version__ = "0.2.0"

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from src.ingestion.schema import UnifiedAlert
+if TYPE_CHECKING:
+    from src.ingestion.schema import UnifiedAlert
 
 
 @dataclass
@@ -25,8 +26,8 @@ class BaseAgent(ABC):
     """Abstract base for all Hades pipeline agents.
 
     Every agent receives a unified alert (plus optional context)
-    and returns an AgentResult. Agents are stateless — all state
-    lives in the OpenClaw session or the audit database.
+    and returns an AgentResult. Agents are stateless. Runtime state
+    lives in the surrounding pipeline and audit store.
     """
 
     def __init__(self, config: dict[str, Any]) -> None:

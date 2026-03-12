@@ -9,6 +9,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import yaml
 
@@ -17,14 +18,14 @@ from src import __version__
 logger = logging.getLogger("hades")
 
 
-def load_config(config_path: str) -> dict:
+def load_config(config_path: str) -> dict[str, Any]:
     """Load and validate YAML configuration."""
     path = Path(config_path)
     if not path.exists():
         logger.error("Config not found: %s", path)
         sys.exit(1)
     with path.open() as f:
-        config = yaml.safe_load(f)
+        config = cast("dict[str, Any]", yaml.safe_load(f))
     if not config:
         logger.error("Empty config: %s", path)
         sys.exit(1)
@@ -40,20 +41,22 @@ def setup_logging(level: str = "INFO") -> None:
     )
 
 
-def run_pipeline(config: dict) -> None:
+def run_pipeline(config: dict[str, Any]) -> None:
     """Start the alert triage pipeline."""
     from src.agents import ClassifierAgent, CorrelatorAgent, PlaybookAgent
     from src.rag import Retriever, VectorStore
 
     logger.info("Initializing pipeline...")
 
-    # Initialize RAG (graceful if chromadb not installed)
+    # Initialize retrieval (graceful if qdrant client is not installed yet)
     rag_config = config.get("rag", {})
     store = VectorStore(rag_config)
     try:
         store.initialize()
     except ImportError:
-        logger.warning("ChromaDB not installed — RAG disabled. Install: pip install chromadb")
+        logger.warning(
+            "Qdrant client not installed — retrieval disabled. Install: pip install 'qdrant-client[fastembed]'"
+        )
     retriever = Retriever(store, rag_config)
 
     # Initialize agents
@@ -63,10 +66,11 @@ def run_pipeline(config: dict) -> None:
     playbook = PlaybookAgent(orch_config)
 
     logger.info(
-        "Pipeline ready — agents=[%s, %s, %s], RAG docs=%d",
+        "Pipeline ready — agents=[%s, %s, %s], retrieval=%s, docs=%d",
         classifier.name,
         correlator.name,
         playbook.name,
+        retriever.search_mode,
         store.document_count,
     )
 
@@ -79,15 +83,15 @@ def run_pipeline(config: dict) -> None:
     logger.info("Pipeline mode — ingestion loop not yet implemented")
 
 
-def run_dashboard(config: dict) -> None:
+def run_dashboard(config: dict[str, Any]) -> None:
     """Start the FastAPI dashboard."""
-    output_config = config.get("output", {}).get("dashboard", {})
-    host = output_config.get("host", "0.0.0.0")
-    port = output_config.get("port", 8000)
+    dashboard_config = config.get("interfaces", {}).get("dashboard", {})
+    host = dashboard_config.get("host", "0.0.0.0")
+    port = dashboard_config.get("port", 8000)
     logger.info("Dashboard mode — starting on %s:%d (not yet implemented)", host, port)
 
 
-def run_eval(config: dict) -> None:
+def run_eval(config: dict[str, Any]) -> None:
     """Run the evaluation harness."""
     logger.info("Evaluation mode — benchmark harness not yet implemented")
 

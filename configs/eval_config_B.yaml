@@ -1,30 +1,10 @@
-# Config B: K2.5 Single-Agent + RAG
+# Config B: Deferred research configuration
 experiment:
   id: config_b
-  name: "K2.5 Single-Agent with RAG"
-  description: "Measures RAG impact on classification accuracy (compare vs Config A)"
+  name: "Deferred: local ablation after v1"
+  description: "Not part of the scoped v1 benchmark contract on main"
+  status: deferred_research_only
 
-model:
-  provider: vllm
-  name: moonshotai/Kimi-K2.5
-  quantization: int4
-  deterministic:
-    temperature: 0.0
-    seed: 42
-
-orchestration:
-  mode: single
-
-rag:
-  enabled: true
-  top_k: 5
-  search_mode: hybrid
-
-evaluation:
-  datasets:
-    - data/datasets/cicids2017_alerts.json
-    - data/datasets/cicids2018_alerts.json
-    - data/datasets/beth_alerts.json
-    - data/datasets/synthetic_mitre_alerts.json
-    - data/datasets/false_positive_set.json
-  output_dir: results/config_b/
+notes:
+  - Retained as a placeholder for later ablation work.
+  - Requires a separate implementation plan and benchmark transformation pipeline.

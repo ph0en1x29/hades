@@ -1,4 +1,4 @@
-"""Unified Alert Schema v1 — Normalizes SIEM alerts from multiple vendors."""
+"""Unified alert schema for the scoped Hades v1 prototype."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional, Self
+from typing import Any, Self
 from uuid import uuid4
 
 
@@ -19,10 +19,9 @@ class AlertSeverity(Enum):
 
 
 class AlertSource(Enum):
-    SPLUNK = "splunk"
-    ELASTIC = "elastic"
-    QRADAR = "qradar"
-    FILE = "file"
+    FILE_REPLAY = "file_replay"
+    NORMALIZED_JSON = "normalized_json"
+    NORMALIZED_JSONL = "normalized_jsonl"
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,34 +31,47 @@ class AlertMetadata:
     vendor: str = ""
     device: str = ""
     category: str = ""
+    message: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class AlertProvenance:
+    """Information needed to trace a normalized alert back to its origin."""
+
+    dataset_name: str = ""
+    source_path: str = ""
+    source_record_id: str | None = None
+    source_record_index: int | None = None
+    original_format: str = ""
+    parser_version: str = "alert_normalization_v1"
+    transform_version: str = "alert_projection_v1"
+    collected_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 @dataclass(slots=True)
 class UnifiedAlert:
-    """Normalized alert for downstream processing.
-
-    All SIEM connectors produce this format, regardless of vendor.
-    Immutable after ingestion — downstream agents reference by alert_id.
-    """
+    """Normalized alert for the deterministic triage pipeline."""
 
     alert_id: str = field(default_factory=lambda: str(uuid4()))
-    timestamp: str = ""
-    source: AlertSource = AlertSource.FILE
+    timestamp: str | None = None
+    source: AlertSource = AlertSource.FILE_REPLAY
     severity: AlertSeverity = AlertSeverity.MEDIUM
-    signature: str = ""
-    signature_id: str = ""
-    src_ip: str = ""
-    src_port: Optional[int] = None
-    dst_ip: str = ""
-    dst_port: Optional[int] = None
-    protocol: str = "TCP"
+    signature: str | None = None
+    signature_id: str | None = None
+    event_type: str | None = None
+    src_ip: str | None = None
+    src_port: int | None = None
+    dst_ip: str | None = None
+    dst_port: int | None = None
+    protocol: str | None = None
     raw_log: str = ""
     metadata: AlertMetadata = field(default_factory=AlertMetadata)
+    provenance: AlertProvenance = field(default_factory=AlertProvenance)
     ingested_at: str = field(
         default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize to plain dict (JSON-safe)."""
         d = asdict(self)
         d["source"] = self.source.value
@@ -71,22 +83,24 @@ class UnifiedAlert:
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_dict(cls, data: dict) -> Self:
+    def from_dict(cls, data: dict[str, Any]) -> Self:
         """Deserialize from a plain dict."""
         return cls(
             alert_id=data.get("alert_id", str(uuid4())),
-            timestamp=data.get("timestamp", ""),
-            source=AlertSource(data["source"]) if "source" in data else AlertSource.FILE,
+            timestamp=data.get("timestamp"),
+            source=AlertSource(data["source"]) if "source" in data else AlertSource.FILE_REPLAY,
             severity=AlertSeverity(data["severity"]) if "severity" in data else AlertSeverity.MEDIUM,
-            signature=data.get("signature", ""),
-            signature_id=data.get("signature_id", ""),
-            src_ip=data.get("src_ip", ""),
+            signature=data.get("signature"),
+            signature_id=data.get("signature_id"),
+            event_type=data.get("event_type"),
+            src_ip=data.get("src_ip"),
             src_port=data.get("src_port"),
-            dst_ip=data.get("dst_ip", ""),
+            dst_ip=data.get("dst_ip"),
             dst_port=data.get("dst_port"),
-            protocol=data.get("protocol", "TCP"),
+            protocol=data.get("protocol"),
             raw_log=data.get("raw_log", ""),
             metadata=AlertMetadata(**data.get("metadata", {})),
+            provenance=AlertProvenance(**data.get("provenance", {})),
             ingested_at=data.get("ingested_at", datetime.now(UTC).isoformat()),
         )
 

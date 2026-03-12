@@ -1,30 +1,9 @@
-# Config G: GPT-4o (Cloud Baseline) + RAG
+# Config G: Deferred research configuration
 experiment:
   id: config_g
-  name: "GPT-4o Cloud Baseline"
-  description: "Cloud upper-bound comparison — API-based"
+  name: "Deferred: cloud upper-bound comparison"
+  description: "Not part of the scoped v1 benchmark contract on main"
+  status: deferred_research_only
 
-model:
-  provider: openai
-  name: gpt-4o
-  deterministic:
-    temperature: 0.0
-    seed: 42
-
-orchestration:
-  mode: single
-
-rag:
-  enabled: true
-  top_k: 5
-  search_mode: hybrid
-
-evaluation:
-  datasets:
-    - data/datasets/cicids2017_alerts.json
-    - data/datasets/cicids2018_alerts.json
-    - data/datasets/beth_alerts.json
-    - data/datasets/synthetic_mitre_alerts.json
-    - data/datasets/false_positive_set.json
-  track_cost: true
-  output_dir: results/config_g/
+notes:
+  - Retained only as a note for later research once offline v1 is complete.

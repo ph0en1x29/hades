@@ -1,33 +1,10 @@
-# Config C: K2.5 Multi-Agent + OpenClaw Orchestration + RAG
+# Config C: Deferred research configuration
 experiment:
   id: config_c
-  name: "K2.5 Multi-Agent, OpenClaw Orchestrated"
-  description: "Full pipeline with deterministic OpenClaw orchestration"
+  name: "Deferred: OpenClaw orchestration comparison"
+  description: "Not part of the scoped v1 benchmark contract on main"
+  status: deferred_research_only
 
-model:
-  provider: vllm
-  name: moonshotai/Kimi-K2.5
-  quantization: int4
-  deterministic:
-    temperature: 0.0
-    seed: 42
-
-orchestration:
-  mode: openclaw
-  agents: [classifier, correlator, playbook]
-  classifier:
-    confidence_threshold: 0.7
-
-rag:
-  enabled: true
-  top_k: 5
-  search_mode: hybrid
-
-evaluation:
-  datasets:
-    - data/datasets/cicids2017_alerts.json
-    - data/datasets/cicids2018_alerts.json
-    - data/datasets/beth_alerts.json
-    - data/datasets/synthetic_mitre_alerts.json
-    - data/datasets/false_positive_set.json
-  output_dir: results/config_c/
+notes:
+  - Retained only to document a possible later comparison.
+  - Not supported by the current runtime or v1 evaluation scope.

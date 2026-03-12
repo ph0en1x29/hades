@@ -10,11 +10,13 @@ Classifies incoming alerts into:
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from src.agents.base import AgentResult, BaseAgent
 from src.evaluation.schemas import TriageCategory
-from src.ingestion.schema import UnifiedAlert
+
+if TYPE_CHECKING:
+    from src.ingestion.schema import UnifiedAlert
 
 # Few-shot classification prompt template
 CLASSIFIER_SYSTEM_PROMPT = """\
@@ -54,9 +56,8 @@ class ClassifierAgent(BaseAgent):
         to the Log Correlator for enrichment before re-classifying.
         """
         start = time.monotonic()
-        threshold = self.config.get("confidence_threshold", 0.7)
 
-        # TODO: Replace with actual LLM inference via OpenClaw/vLLM
+        # TODO: Replace with actual LLM inference via the chosen runtime adapter
         # For now, return a placeholder that exercises the full schema
         try:
             # Build prompt from alert data

@@ -1,6 +1,6 @@
 # Hades — Offline SOC Triage Research Prototype
 
-Hades is a scoped research prototype for offline SOC alert triage. The repository currently contains the proposal, public schemas, and baseline configuration needed to build the system, but it does not yet contain an end-to-end production implementation.
+Hades is a scoped research prototype for offline SOC alert triage. The repository now contains the proposal, public schemas, runtime scaffolding, local retrieval abstraction, packaging metadata, and basic tests needed to build the system, but it still does not contain an end-to-end production implementation.
 
 ## Status
 
@@ -50,7 +50,7 @@ Two stack decisions are intentionally conservative:
 hades/
 ├── configs/    # Prototype configs and optional tool contracts
 ├── docs/       # Revised technical spec and review
-├── src/        # Public schemas and entrypoint scaffold
+├── src/        # Public schemas, runtime scaffolding, and retrieval layer
 └── docker-compose.yml
 ```
 
@@ -63,4 +63,4 @@ pip install -r requirements.txt
 python src/main.py --config configs/default.yaml
 ```
 
-`src/main.py` is still a scaffold entrypoint. The revised docs define what the implementation should build next.
+`src/main.py` now initializes the scoped v1 scaffold, but ingestion, benchmark execution, and analyst-facing workflow are still incomplete.

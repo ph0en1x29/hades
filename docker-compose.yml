@@ -1,4 +1,4 @@
-# Hades — Full Deployment Stack
+# Hades — Scoped v1 prototype stack
 # Usage: docker compose up -d
 
 services:
@@ -29,14 +29,13 @@ services:
       retries: 5
 
   # RAG vector store
-  chromadb:
-    image: chromadb/chroma:latest
+  qdrant:
+    image: qdrant/qdrant:latest
     volumes:
-      - chroma_data:/chroma/chroma
+      - qdrant_data:/qdrant/storage
     ports:
-      - "8002:8000"
-    environment:
-      - ANONYMIZED_TELEMETRY=false
+      - "6333:6333"
+      - "6334:6334"
 
   # Hades pipeline
   hades:
@@ -44,17 +43,17 @@ services:
     depends_on:
       model-server:
         condition: service_healthy
-      chromadb:
+      qdrant:
         condition: service_started
     volumes:
       - ./configs:/app/configs:ro
       - ./data/datasets:/app/data/datasets:ro
-      - ./data/embeddings:/app/data/embeddings
+      - ./data/qdrant:/app/data/qdrant
       - ./results:/app/results
       - ./logs:/app/logs
     environment:
       - MODEL_SERVER_URL=http://model-server:8001
-      - CHROMADB_URL=http://chromadb:8000
+      - QDRANT_URL=http://qdrant:6333
       - LOG_LEVEL=INFO
     ports:
       - "8000:8000"  # Dashboard
@@ -65,19 +64,19 @@ services:
     depends_on:
       model-server:
         condition: service_healthy
-      chromadb:
+      qdrant:
         condition: service_started
     volumes:
       - ./configs:/app/configs:ro
       - ./data/datasets:/app/data/datasets:ro
-      - ./data/embeddings:/app/data/embeddings
+      - ./data/qdrant:/app/data/qdrant
       - ./results:/app/results
     environment:
       - MODEL_SERVER_URL=http://model-server:8001
-      - CHROMADB_URL=http://chromadb:8000
+      - QDRANT_URL=http://qdrant:6333
     command: python -m src.main --config /app/configs/eval_config_A.yaml --mode eval
     profiles:
       - eval
 
 volumes:
-  chroma_data:
+  qdrant_data:
