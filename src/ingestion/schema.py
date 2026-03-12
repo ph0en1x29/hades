@@ -24,6 +24,13 @@ class AlertSource(Enum):
     NORMALIZED_JSONL = "normalized_jsonl"
 
 
+class DatasetRole(Enum):
+    BENCHMARK_OF_RECORD = "benchmark_of_record"
+    BENCHMARK_CANDIDATE = "benchmark_candidate"
+    ENGINEERING_SCAFFOLD = "engineering_scaffold"
+    SUPPLEMENTARY = "supplementary"
+
+
 @dataclass(frozen=True, slots=True)
 class AlertMetadata:
     """Vendor-specific metadata attached to an alert."""
@@ -39,13 +46,27 @@ class AlertProvenance:
     """Information needed to trace a normalized alert back to its origin."""
 
     dataset_name: str = ""
+    dataset_role: DatasetRole = DatasetRole.BENCHMARK_CANDIDATE
     source_path: str = ""
     source_record_id: str | None = None
     source_record_index: int | None = None
     original_format: str = ""
     parser_version: str = "alert_normalization_v1"
     transform_version: str = "alert_projection_v1"
+    label_provenance: str = ""
     collected_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+@dataclass(frozen=True, slots=True)
+class AlertBenchmarkContext:
+    """Fields required to judge whether an alert is benchmark-ready."""
+
+    scenario_id: str = ""
+    rule_id: str = ""
+    rule_source: str = ""
+    rule_name: str = ""
+    mitre_techniques: list[str] = field(default_factory=list)
+    correlation_id: str | None = None
 
 
 @dataclass(slots=True)
@@ -66,6 +87,7 @@ class UnifiedAlert:
     protocol: str | None = None
     raw_log: str = ""
     metadata: AlertMetadata = field(default_factory=AlertMetadata)
+    benchmark: AlertBenchmarkContext = field(default_factory=AlertBenchmarkContext)
     provenance: AlertProvenance = field(default_factory=AlertProvenance)
     ingested_at: str = field(
         default_factory=lambda: datetime.now(UTC).isoformat()
@@ -76,6 +98,7 @@ class UnifiedAlert:
         d = asdict(self)
         d["source"] = self.source.value
         d["severity"] = self.severity.value
+        d["provenance"]["dataset_role"] = self.provenance.dataset_role.value
         return d
 
     def to_json(self) -> str:
@@ -85,6 +108,11 @@ class UnifiedAlert:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
         """Deserialize from a plain dict."""
+        provenance_data = dict(data.get("provenance", {}))
+        dataset_role = provenance_data.get("dataset_role")
+        if dataset_role is not None:
+            provenance_data["dataset_role"] = DatasetRole(dataset_role)
+
         return cls(
             alert_id=data.get("alert_id", str(uuid4())),
             timestamp=data.get("timestamp"),
@@ -100,7 +128,8 @@ class UnifiedAlert:
             protocol=data.get("protocol"),
             raw_log=data.get("raw_log", ""),
             metadata=AlertMetadata(**data.get("metadata", {})),
-            provenance=AlertProvenance(**data.get("provenance", {})),
+            benchmark=AlertBenchmarkContext(**data.get("benchmark", {})),
+            provenance=AlertProvenance(**provenance_data),
             ingested_at=data.get("ingested_at", datetime.now(UTC).isoformat()),
         )
 

@@ -7,6 +7,101 @@ This document records targeted fixes made in response to review findings so the 
 - which files were affected
 - which commands were run to validate the update
 
+## March 12, 2026 — Dataset Gate Revision
+
+### Summary
+
+This update makes dataset adequacy the controlling project gate instead of a side note.
+
+### Changes Made
+
+#### 1. Added benchmark metadata to the normalized alert contract
+
+Files:
+
+- `src/ingestion/schema.py`
+- `src/evaluation/dataset_gate.py`
+
+What changed:
+
+- Added explicit benchmark-context fields for scenario ids, rule associations, MITRE mappings, and correlation ids
+- Added dataset-role labeling and label provenance to alert provenance
+- Added a benchmark-contract validator for scientific readiness
+
+Why:
+
+- The advisor feedback requires rule-linked, provenance-preserving alerts before Hades can claim benchmark adequacy
+
+#### 2. Reclassified CIC-IDS2018 as engineering scaffold only
+
+Files:
+
+- `src/ingestion/parsers/cicids2018.py`
+- `src/main.py`
+- `tests/test_parsers.py`
+
+What changed:
+
+- CIC-IDS2018 alerts now carry `engineering_scaffold` provenance
+- CSV ingestion logs a warning that the path is not valid as benchmark-of-record evidence
+
+Why:
+
+- The parser remains useful infrastructure, but it cannot be mistaken for the scientific benchmark path
+
+#### 3. Added config-level dataset-gate enforcement
+
+Files:
+
+- `configs/eval_config_A.yaml`
+- `src/evaluation/dataset_gate.py`
+- `tests/test_dataset_gate.py`
+
+What changed:
+
+- Config A now names Splunk Attack Data + Splunk Security Content as the public benchmark-of-record
+- Added validation that rejects engineering scaffolds as benchmark-of-record inputs unless explicitly experimental
+
+Why:
+
+- The benchmark choice now needs to be enforceable, not just written down in docs
+
+#### 4. Rewrote the dataset docs as a decision package
+
+Files:
+
+- `docs/DATASET_RESEARCH.md`
+- `docs/BENCHMARK_MANIFEST.md`
+- `data/manifests/public_benchmark_of_record.yaml`
+- `docs/TECHNICAL_SPEC.md`
+- `README.md`
+
+What changed:
+
+- Replaced the open-ended survey with a decision-oriented dataset document
+- Added a benchmark manifest for the first public validation slice
+- Reordered the main spec so dataset adequacy gates prototype validation and adversarial work
+
+Why:
+
+- The repo must show that dataset adequacy controls the roadmap from this point forward
+
+### Validation Commands Run
+
+```bash
+.venv/bin/ruff check src tests
+.venv/bin/python -m mypy src
+.venv/bin/pytest -q
+git diff --check
+```
+
+### Validation Result
+
+- `ruff check src tests` passed
+- `python -m mypy src` passed
+- `pytest -q` passed with `15 passed`
+- `git diff --check` passed
+
 ## March 12, 2026 — Editorial Cleanup Follow-Up
 
 ### Summary

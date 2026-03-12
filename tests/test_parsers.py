@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from src.ingestion.parsers.cicids2018 import (
     load_cicids2018_csv,
     parse_cicids2018_row,
 )
-from src.ingestion.schema import AlertSeverity
+from src.ingestion.schema import AlertSeverity, DatasetRole
 
 
 class TestCicids2018Parser:
@@ -40,14 +39,17 @@ class TestCicids2018Parser:
         assert alert.src_ip == "10.0.0.15"
         assert alert.severity == AlertSeverity.HIGH
         assert alert.provenance.dataset_name == "cicids2018"
+        assert alert.provenance.dataset_role == DatasetRole.ENGINEERING_SCAFFOLD
+        assert alert.provenance.label_provenance == "cicids2018_flow_label"
         assert alert.provenance.source_record_index == 7
+        assert alert.benchmark.rule_id == ""
 
         raw_log = json.loads(alert.raw_log)
         assert raw_log["source_record_index"] == 7
         assert raw_log["flow_features"]["Flow Duration"] == 112233
         assert raw_log["flow_features"]["Tot Fwd Pkts"] == 11
 
-    def test_load_csv_builds_unified_alerts(self, tmp_path: Path) -> None:
+    def test_load_csv_builds_unified_alerts(self, tmp_path) -> None:
         csv_path = tmp_path / "cicids2018_sample.csv"
         csv_path.write_text(
             "\n".join(

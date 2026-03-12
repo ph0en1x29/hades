@@ -3,7 +3,7 @@
 experiment:
   id: config_a_locked_local
   name: "Locked Local Benchmark"
-  description: "Deterministic triage path with local retrieval and a locked test split"
+  description: "Dataset-gated public benchmark with deterministic triage and a locked test split"
 
 model:
   provider: vllm
@@ -26,18 +26,48 @@ rag:
 
 dataset_preparation:
   raw_sources:
+    - name: splunk_attack_data
+      type: rule_linked_security_dataset
+      dataset_role: benchmark_of_record
+      benchmark_eligible: true
+      access: public
+    - name: splunk_security_content
+      type: detection_rule_pack
+      dataset_role: supplementary
+      benchmark_eligible: false
+      access: public
+    - name: otrf_security_datasets
+      type: telemetry_supplement
+      dataset_role: supplementary
+      benchmark_eligible: false
+      access: public
+    - name: evtx_to_mitre_attack
+      type: telemetry_supplement
+      dataset_role: supplementary
+      benchmark_eligible: false
+      access: public
     - name: cicids2018
       type: flow_dataset
-    - name: beth
-      type: host_event_dataset
-    - name: curated_benign
-      type: benign_alert_fixture
+      dataset_role: engineering_scaffold
+      benchmark_eligible: false
+      experimental: true
+      access: public
+  benchmark_of_record:
+    source: splunk_attack_data
+    rule_pack_source: splunk_security_content
+    manifest: data/manifests/public_benchmark_of_record.yaml
+    require_rule_associations: true
+    require_label_provenance: true
+    require_mitre_mappings: true
+    label_provenance_policy: splunk_detection_label_v1
+    allow_engineering_scaffolds: false
   transform:
     enabled: true
-    version: alert_projection_v1
+    version: alert_projection_v2
     output_dir: data/benchmarks/normalized
     preserve_raw_reference: true
     require_provenance_fields: true
+    exclude_engineering_scaffolds_from_benchmark: true
 
 split_policy:
   strategy: scenario_holdout

@@ -1,0 +1,37 @@
+manifest:
+  id: public_rule_linked_baseline_v1
+  status: benchmark_of_record
+  owner: hades
+  access_tier: public
+  transform_version: alert_projection_v2
+  benchmark_goal: "First reproducible public benchmark slice for Hades dataset adequacy."
+
+sources:
+  dataset_url: https://github.com/splunk/attack_data
+  rule_pack_url: https://github.com/splunk/security_content
+  supplementary_urls:
+    - https://github.com/OTRF/Security-Datasets
+    - https://github.com/mdecrevoisier/EVTX-to-MITRE-Attack
+
+selected_scenarios:
+  - windows_credential_access
+  - windows_discovery
+  - windows_lateral_movement
+
+expected_raw_artifacts:
+  - windows_security_logs
+  - sysmon_events
+  - splunk_detection_rule_yaml
+  - mitre_attack_metadata
+
+adequacy_criteria:
+  require_rule_associations: true
+  require_dataset_provenance: true
+  require_label_provenance: true
+  require_mitre_mappings: true
+  require_triage_context: true
+
+known_limitations:
+  - Splunk telemetry and detections are vendor-specific and require normalization into UnifiedAlert.
+  - The first slice is technique-oriented rather than a full enterprise campaign benchmark.
+  - SOC-Bench remains a strategic second-phase benchmark pending advisor-controlled access.

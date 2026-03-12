@@ -58,6 +58,10 @@ def load_alerts(input_path: str | Path) -> list[UnifiedAlert]:
 
     suffix = path.suffix.lower()
     if suffix == ".csv":
+        logger.warning(
+            "CSV ingestion uses the CIC-IDS2018 engineering scaffold path only; "
+            "it is not valid as a benchmark-of-record dataset."
+        )
         return load_cicids2018_csv(path)
     if suffix == ".jsonl":
         with path.open("r", encoding="utf-8") as handle:
@@ -179,6 +183,14 @@ def main() -> None:
     config = load_config(args.config)
     log_level = args.log_level or config.get("system", {}).get("log_level", "INFO")
     setup_logging(log_level)
+
+    from src.evaluation.dataset_gate import validate_benchmark_config
+
+    try:
+        validate_benchmark_config(config)
+    except ValueError as exc:
+        logger.error("Dataset gate validation failed: %s", exc)
+        sys.exit(1)
 
     logger.info("Hades v%s starting in %s mode", __version__, args.mode)
 

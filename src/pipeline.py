@@ -6,10 +6,8 @@ import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from src.agents import ClassifierAgent
-from src.agents.base import AgentResult
 from src.evaluation.schemas import (
     EvidenceItem,
     InferenceMode,
@@ -17,7 +15,11 @@ from src.evaluation.schemas import (
     TriageCategory,
     TriageDecision,
 )
-from src.ingestion.schema import UnifiedAlert
+
+if TYPE_CHECKING:
+    from src.agents import ClassifierAgent
+    from src.agents.base import AgentResult
+    from src.ingestion.schema import UnifiedAlert
 
 
 @dataclass(slots=True)

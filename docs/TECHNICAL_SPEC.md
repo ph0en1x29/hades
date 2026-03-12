@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Version | 0.4 |
+| Version | 0.5 |
 | Date | March 12, 2026 |
 | Status | Research pivot — adversarial manipulation focus |
 | Repository state | Planning scaffold, not validated implementation |
@@ -269,8 +269,9 @@ Required behavior:
 - stable alert id
 - normalized severity
 - optional network and signature fields
+- benchmark block for scenario id, rule linkage, and MITRE mapping
 - metadata block for vendor-specific detail
-- provenance block for dataset path, parser version, and raw-record linkage
+- provenance block for dataset path, dataset role, parser version, raw-record linkage, and label provenance
 
 ### 8.2 `TriageDecision`
 
@@ -296,9 +297,56 @@ Required sections:
 - annotator protocol
 - statistical analysis plan
 
-## 9. Evaluation Design
+## 9. Dataset Gate
 
-### 9.1 Benchmark Inputs
+Dataset adequacy is the controlling gate for Hades. No benchmark, adversarial evaluation, or scientific validation claim is considered complete until the benchmark-of-record satisfies the dataset gate.
+
+### 9.1 Benchmark of Record
+
+The first public benchmark-of-record is:
+
+- Splunk Attack Data
+- Splunk Security Content
+
+Strategic second-phase benchmark path:
+
+- SOC-Bench, only after advisor-controlled access is confirmed
+
+Supplementary only:
+
+- OTRF Security-Datasets
+- EVTX-to-MITRE-Attack
+
+Engineering scaffolding only:
+
+- CICIDS and CIC-IDS2018-derived flow parsers
+
+### 9.2 Exit Criteria
+
+Every benchmark alert used for scientific validation must include:
+
+- a detection-rule association
+- dataset provenance
+- label provenance
+- enough analyst-facing context to support triage
+- MITRE ATT&CK mapping
+- scenario grouping or correlation metadata when available
+
+Every benchmark slice must document whether it is:
+
+- public
+- simulated
+- advisor-provided
+
+### 9.3 Implications for Current Work
+
+- CIC-IDS2018 parsing remains useful engineering infrastructure
+- CIC-IDS2018 does not qualify as benchmark-of-record evidence on its own
+- adversarial evaluation is downstream of benchmark adequacy, not parallel to it
+
+## 10. Evaluation Design
+
+### 10.1 Benchmark Inputs
 
 Raw datasets such as CICIDS, CIC-IDS2018, and BETH are not directly usable as SOC alert fixtures. Hades therefore adds a transformation stage that produces normalized alert records and records the transformation version.
 
@@ -308,18 +356,19 @@ Each benchmark item must preserve:
 - scenario or attack family
 - source record ids or row range
 - label provenance
+- rule association metadata
 
-### 9.2 Split Policy
+### 10.2 Split Policy
 
 The benchmark uses a locked test set. Prompt or threshold tuning is allowed only on a development split. Scenario-aware grouping is required so that near-duplicate samples do not leak across splits.
 
-### 9.3 Contamination Controls
+### 10.3 Contamination Controls
 
 - RAG corpora may contain public ATT&CK or CVE knowledge.
 - RAG corpora must not contain benchmark labels, benchmark rationales, or transformed benchmark records.
 - Development notes used during prompt tuning must be kept separate from the locked test set.
 
-### 9.4 Metrics
+### 10.4 Metrics
 
 Primary metric:
 
@@ -333,11 +382,11 @@ Secondary metrics:
 - abstain or escalate rate
 - latency p50 and p95
 
-### 9.5 Human Review
+### 10.5 Human Review
 
 If human review is included, use three reviewers and measure agreement with a multi-rater metric such as Fleiss' kappa. Do not describe the procedure as Cohen's kappa when there are three raters.
 
-### 9.6 Statistical Analysis
+### 10.6 Statistical Analysis
 
 Use:
 
@@ -345,13 +394,13 @@ Use:
 - Bowker or Stuart-Maxwell style tests when comparing paired multiclass predictions
 - McNemar only for clearly defined binary sub-analyses, such as false-positive vs not-false-positive
 
-## 10. Adversarial Evaluation Design
+## 11. Adversarial Evaluation Design
 
-### 10.1 Experiment Matrix
+### 11.1 Experiment Matrix
 
 | Experiment | Independent Variable | Dependent Variable | Purpose |
 |---|---|---|---|
-| E1: Baseline triage | Local model (K2.5 candidate, Llama 70B baseline) | F1, precision, recall | Establish triage accuracy without adversarial input |
+| E1: Baseline triage | Local model (K2.5 candidate, Llama 70B baseline) | F1, precision, recall | Establish triage accuracy after dataset gate exit criteria are met |
 | E2: Injection success rate | Injection vector × attack class × model | Misclassification rate, confidence delta | Measure vulnerability per vector |
 | E3: Payload survival | Encoding method × SIEM normalizer | Payload preservation rate | Which payloads survive real SIEM processing |
 | E4: Defense — sanitization | Sanitization aggressiveness (none/moderate/strict) | Triage accuracy vs injection resistance | Input-level defense |
@@ -360,9 +409,9 @@ Use:
 | E7: Defense — dual verification | Single vs dual-LLM pipeline | Detection rate of injected alerts | Pipeline defense |
 | E8: Adaptive attacker | Defense-aware payloads vs each defense | Residual attack success rate | Defense robustness under adaptation |
 
-### 10.2 Adversarial Dataset Construction
+### 11.2 Adversarial Dataset Construction
 
-For each alert in the baseline benchmark (1,100+ alerts), generate adversarial variants:
+For each alert in the benchmark-of-record after dataset gate approval, generate adversarial variants:
 
 - **Clean version:** Original alert, no injection
 - **Per-vector injection:** Same alert with payload in each injectable field (8+ variants per alert)
@@ -371,7 +420,7 @@ For each alert in the baseline benchmark (1,100+ alerts), generate adversarial v
 
 Total adversarial test set: ~10,000+ alert variants derived from 1,100 base alerts.
 
-### 10.3 Metrics (Adversarial)
+### 11.3 Metrics (Adversarial)
 
 Primary:
 - **Attack Success Rate (ASR):** Percentage of injected alerts that change from correct to incorrect classification
@@ -383,7 +432,7 @@ Secondary:
 - **Defense Overhead:** Latency increase and accuracy loss from each defense mechanism
 - **Adaptive Resistance:** ASR when attacker has knowledge of deployed defenses
 
-### 10.4 Defense Mechanisms Under Evaluation
+### 11.4 Defense Mechanisms Under Evaluation
 
 **D1 — Input Sanitization:**
 Strip or escape suspicious patterns in log fields before prompt construction. Three levels: regex-based (fast, brittle), ML-based anomaly detection on field values (moderate), aggressive field truncation (safe, lossy).
@@ -400,40 +449,41 @@ A second model reviews the first model's decision specifically looking for signs
 **D5 — Canary Token Detection:**
 Insert known-benign canary strings into the alert data boundary, not the instruction scaffold. If the model's output references or acts on that canary, the system records cross-boundary influence.
 
-## 11. Delivery Plan for August 2026
+## 12. Delivery Plan for August 2026
 
 ### Phase 1: March–April 2026
 
-- Finalize schemas and configs
-- Build file replay normalization path
-- Stand up local retrieval service (Qdrant)
-- Create initial transformed benchmark fixtures
-- **Build adversarial payload generator framework**
-- **Define injection vector templates for all 10 vectors**
+- Lock dataset adequacy criteria and benchmark manifest
+- Acquire the first public benchmark slice from Splunk Attack Data + Splunk Security Content
+- Implement normalization with rule linkage, label provenance, and scenario metadata
+- Add config-level and test-level dataset-gate enforcement
+- Ask Dr. Liu for SOC-Bench access without blocking the public benchmark path
 
 ### Phase 2: May–June 2026
 
-- Implement deterministic triage pipeline
+- Stand up local retrieval service (Qdrant)
+- Implement deterministic triage pipeline on the benchmark-of-record
 - Add CLI and local dashboard output
 - Lock development and test splits
-- Run baseline triage benchmark (E1)
-- **Generate adversarial dataset (10,000+ variants)**
-- **Run injection experiments E2–E3**
-- **Implement and evaluate defenses D1–D2 (E4–E5)**
+- Run baseline triage benchmark (E1) only after dataset gate exit criteria are satisfied
 
 ### Phase 3: July–August 2026
 
+- Generate adversarial dataset from benchmark-of-record alerts
+- Run injection experiments E2–E3
+- Implement and evaluate defenses D1–D2 (E4–E5)
 - Validate high-capacity local model deployment if hardware permits
-- **Implement and evaluate defenses D3–D5 (E6–E7)**
-- **Run adaptive attacker experiments (E8)**
-- **Cross-model comparison of vulnerability and defense effectiveness**
+- Implement and evaluate defenses D3–D5 (E6–E7)
+- Run adaptive attacker experiments (E8)
+- Cross-model comparison of vulnerability and defense effectiveness only within the approved benchmark scope
 - Write paper — focus on adversarial findings, not just triage accuracy
 - Target: USENIX Security 2027 submission (deadline ~Feb 2027)
 
-## 12. Risks and Mitigations
+## 13. Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
+| Public benchmark path proves scientifically inadequate | High | keep Splunk Attack Data + Security Content as the first public gate and seek SOC-Bench access in parallel |
 | Kimi local deployment is unstable or too expensive | High | keep runtime interface model-agnostic and maintain one smaller local baseline |
 | Benchmark transformation introduces label ambiguity | High | version transformation rules and preserve raw provenance |
 | Retrieval contaminates evaluation | High | isolate RAG corpora from benchmark labels and benchmark-derived text |
@@ -442,9 +492,10 @@ Insert known-benign canary strings into the alert data boundary, not the instruc
 | Adversarial payloads don't survive SIEM normalization | High | test with real SIEM normalizers (Zeek, Suricata); document which vectors are realistic |
 | Defenses degrade baseline triage accuracy | Medium | measure accuracy delta for each defense; reject defenses with >5% F1 drop |
 | Responsible disclosure concerns | Medium | payloads are conceptual, not weaponized; follow standard academic disclosure practices |
-| Insufficient model diversity for cross-model claims | Medium | ensure at least 3 model families (MoE, dense, proprietary) |
+| SOC-Bench access is delayed or unavailable | Medium | treat SOC-Bench as a second-phase benchmark path, not a prerequisite |
+| Insufficient model diversity for cross-model claims | Medium | narrow claims to approved local-model comparisons until wider benchmark scope is justified |
 
-## 13. Authentication and Encryption Analysis
+## 14. Authentication and Encryption Analysis
 
 ### 13.1 Authentication Attack Detection
 
@@ -511,7 +562,7 @@ Example attack chain detected across surfaces:
 
 No single detection surface catches this with confidence. The correlator agent with 256K context can hold all three event streams simultaneously and produce a unified assessment.
 
-## 14. Autonomous Response Architecture (v2 Roadmap)
+## 15. Autonomous Response Architecture (v2 Roadmap)
 
 v1 produces triage decisions for human review. v2 extends the pipeline with autonomous response capabilities, gated by confidence thresholds and configurable human-in-the-loop policies.
 

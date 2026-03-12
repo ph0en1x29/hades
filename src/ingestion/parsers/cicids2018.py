@@ -5,15 +5,16 @@ from __future__ import annotations
 import csv
 import json
 import math
-from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from src.ingestion.schema import (
+    AlertBenchmarkContext,
     AlertMetadata,
     AlertProvenance,
     AlertSeverity,
+    DatasetRole,
     UnifiedAlert,
 )
 
@@ -56,7 +57,7 @@ def load_cicids2018_csv(
 
 
 def parse_cicids2018_row(
-    row: Mapping[str, str | None],
+    row: dict[str, str | None],
     *,
     source_path: str = "",
     source_record_index: int = 0,
@@ -93,18 +94,21 @@ def parse_cicids2018_row(
             category=event_type.lower().replace(" ", "_"),
             message=f"CIC-IDS2018 labeled flow: {event_type}",
         ),
+        benchmark=AlertBenchmarkContext(),
         provenance=AlertProvenance(
             dataset_name=dataset_name,
+            dataset_role=DatasetRole.ENGINEERING_SCAFFOLD,
             source_path=source_path,
             source_record_index=source_record_index,
             original_format="csv",
             parser_version="cicids2018_csv_v1",
+            label_provenance="cicids2018_flow_label",
         ),
     )
 
 
 def _get_first(
-    row: Mapping[str, str | None],
+    row: dict[str, str | None],
     keys: tuple[str, ...],
 ) -> str | None:
     for key in keys:

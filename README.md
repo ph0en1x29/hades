@@ -41,6 +41,8 @@ The attacker doesn't hack the LLM. They hack the **data pipeline** that feeds it
 ## Status
 
 - Research prototype — scaffold with schemas, agents, retrieval, and configs
+- Dataset gate active — public benchmark-of-record is Splunk Attack Data + Splunk Security Content
+- CIC-IDS2018 support is engineering scaffolding only, not scientific validation evidence
 - Primary spec: `docs/TECHNICAL_SPEC.md`
 - Design review: `docs/PROPOSAL_REVIEW.md`
 - Reviewer changelog: `docs/REVIEWER_CHANGELOG.md`

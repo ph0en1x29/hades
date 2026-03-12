@@ -9,9 +9,11 @@ from src.evaluation.schemas import (
     TriageDecision,
 )
 from src.ingestion.schema import (
+    AlertBenchmarkContext,
     AlertProvenance,
     AlertSeverity,
     AlertSource,
+    DatasetRole,
     UnifiedAlert,
 )
 
@@ -30,10 +32,20 @@ class TestUnifiedAlert:
             dst_ip="10.0.0.1",
             dst_port=22,
             severity=AlertSeverity.HIGH,
+            benchmark=AlertBenchmarkContext(
+                scenario_id="windows_bruteforce_slice",
+                rule_id="DET-0001",
+                rule_source="splunk",
+                rule_name="Windows Brute Force Detection",
+                mitre_techniques=["T1110"],
+                correlation_id="campaign-42",
+            ),
             provenance=AlertProvenance(
                 dataset_name="cicids2018",
+                dataset_role=DatasetRole.BENCHMARK_CANDIDATE,
                 source_path="data/benchmarks/raw.jsonl",
                 source_record_index=12,
+                label_provenance="analyst_review_v1",
             ),
         )
         json_str = alert.to_json()
@@ -42,6 +54,10 @@ class TestUnifiedAlert:
         assert restored.src_ip == alert.src_ip
         assert restored.severity == AlertSeverity.HIGH
         assert restored.provenance.dataset_name == "cicids2018"
+        assert restored.provenance.dataset_role == DatasetRole.BENCHMARK_CANDIDATE
+        assert restored.provenance.label_provenance == "analyst_review_v1"
+        assert restored.benchmark.rule_id == "DET-0001"
+        assert restored.benchmark.mitre_techniques == ["T1110"]
 
     def test_to_dict_serializes_enums(self):
         alert = UnifiedAlert(source=AlertSource.NORMALIZED_JSON)
