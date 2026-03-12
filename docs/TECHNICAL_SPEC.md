@@ -112,7 +112,7 @@ The original proposal named ChromaDB with hybrid retrieval, but the current docu
 v1 RAG choices:
 
 - store: Qdrant
-- dense embedding: pinned FastEmbed-compatible open embedding model such as `BAAI/bge-small-en-v1.5`
+- dense embedding: pinned FastEmbed-compatible open embedding model such as `BAAI/bge-small-en-v1.5`; stronger models like `bge-m3` require a different embedding pipeline than the current Qdrant FastEmbed path
 - sparse retrieval: BM25-compatible sparse model
 - knowledge sources: MITRE ATT&CK plus a curated CVE subset
 - retrieval goal: evidence augmentation, not autonomous action selection
