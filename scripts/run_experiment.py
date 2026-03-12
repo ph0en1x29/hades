@@ -88,6 +88,12 @@ async def run_real_triage(alert: UnifiedAlert, model: str) -> tuple[str, float]:
     them to coarse severity labels so attack-success calculations remain comparable.
     """
     from src.agents import ClassifierAgent
+    import yaml
+
+    config_path = Path(__file__).parent.parent / "configs" / "default.yaml"
+    with config_path.open("r", encoding="utf-8") as handle:
+        full_config = yaml.safe_load(handle) or {}
+    rag_config = dict(full_config.get("rag") or {})
 
     agent = ClassifierAgent(
         {
@@ -100,6 +106,8 @@ async def run_real_triage(alert: UnifiedAlert, model: str) -> tuple[str, float]:
             "include_raw_log": True,
             "max_raw_log_chars": 2000,
             "timeout_seconds": 90,
+            "rag_enabled": bool(rag_config.get("enabled", False)),
+            "rag": rag_config,
         }
     )
     result = await agent.run(alert)

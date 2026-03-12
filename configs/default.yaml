@@ -55,7 +55,7 @@ rag:
   top_k: 5
   sources:
     - name: mitre_attack
-      path: data/knowledge/mitre_attack
+      path: data/mitre_attack/rag_documents
       enabled: true
     - name: curated_cve
       path: data/knowledge/curated_cve

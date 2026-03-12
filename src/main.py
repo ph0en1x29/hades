@@ -141,7 +141,11 @@ def run_pipeline(
         sys.exit(1)
 
     orch_config = config.get("orchestration", {})
-    classifier = ClassifierAgent(orch_config.get("classifier", {}))
+    classifier_config = dict(orch_config.get("classifier", {}))
+    rag_config = dict(config.get("rag") or {})
+    classifier_config["rag_enabled"] = bool(rag_config.get("enabled", False))
+    classifier_config["rag"] = rag_config
+    classifier = ClassifierAgent(classifier_config)
     loaded_alerts = alerts if alerts is not None else load_alerts(input_path)
     output_path = build_decisions_output_path()
 

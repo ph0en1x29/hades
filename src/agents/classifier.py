@@ -67,10 +67,29 @@ class ClassifierAgent(BaseAgent):
             api_key=str(config.get("api_key") or ""),
             timeout_seconds=int(config.get("timeout_seconds", 90)),
         )
+        self._retriever: Any = None
+        self._rag_enabled = bool(config.get("rag_enabled", False))
+        self._rag_config = dict(config.get("rag") or {})
 
     @property
     def name(self) -> str:
         return "classifier"
+
+    def _get_retriever(self) -> Any | None:
+        if not self._rag_enabled:
+            return None
+        if self._retriever is not None:
+            return self._retriever
+
+        try:
+            from src.rag import Retriever, VectorStore
+
+            store = VectorStore(self._rag_config)
+            store.initialize()
+            self._retriever = Retriever(store, self._rag_config)
+            return self._retriever
+        except Exception:
+            return None
 
     async def run(
         self,
@@ -99,8 +118,26 @@ class ClassifierAgent(BaseAgent):
                     + "\n".join(str(event) for event in correlated)
                 )
 
+            rag_items = []
             if context and "rag_results" in context:
-                rag_items = context["rag_results"][:3]
+                rag_items = list(context["rag_results"][:3])
+            elif alert.benchmark.mitre_techniques:
+                retriever = self._get_retriever()
+                if retriever is not None:
+                    seen_ids: set[str] = set()
+                    for technique_id in alert.benchmark.mitre_techniques[:3]:
+                        for item in retriever.query_mitre(str(technique_id), top_k=2):
+                            candidate_id = str(item.get("metadata", {}).get("technique_id", ""))
+                            key = candidate_id or str(item.get("content", ""))[:80]
+                            if key and key not in seen_ids:
+                                seen_ids.add(key)
+                                rag_items.append(item)
+                            if len(rag_items) >= 3:
+                                break
+                        if len(rag_items) >= 3:
+                            break
+
+            if rag_items:
                 user_prompt += (
                     "\n\nRetrieved threat intelligence:\n"
                     + "\n".join(str(item.get("content", ""))[:300] for item in rag_items)
