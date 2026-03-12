@@ -187,7 +187,7 @@ The repository currently contains schemas, configs, documentation, runtime scaff
 
 ## 7. Component Specification
 
-### 9.1 Alert Ingestion and Normalization
+### 7.1 Alert Ingestion and Normalization
 
 The v1 ingestion path consumes replay fixtures from disk. Each raw record is transformed into `UnifiedAlert` and retains provenance fields that identify:
 
@@ -199,7 +199,7 @@ The v1 ingestion path consumes replay fixtures from disk. Each raw record is tra
 
 Normalization is allowed to leave some network fields empty when the source dataset does not contain them. Missing values must remain explicit rather than fabricated.
 
-### 9.2 Triage Runtime
+### 7.2 Triage Runtime
 
 The v1 runtime is a deterministic pipeline:
 
@@ -212,7 +212,7 @@ The v1 runtime is a deterministic pipeline:
 
 `src/openclaw/` remains a possible adapter layer for later tool-based orchestration, but the v1 design does not require OpenClaw. If it is used at all in v1, it must be treated as an implementation detail behind the deterministic pipeline rather than the central research contribution.
 
-### 9.3 Model Strategy
+### 7.3 Model Strategy
 
 Hades keeps `Kimi K2.5` as a candidate high-capacity local model, but it is no longer assumed to be frictionless for development or evaluation.
 
@@ -260,7 +260,7 @@ This is the artifact used for review, debugging, and evaluation.
 
 ## 8. Public Interfaces
 
-### 9.1 `UnifiedAlert`
+### 8.1 `UnifiedAlert`
 
 Defined in `src/ingestion/schema.py`.
 
@@ -272,7 +272,7 @@ Required behavior:
 - metadata block for vendor-specific detail
 - provenance block for dataset path, parser version, and raw-record linkage
 
-### 9.2 `TriageDecision`
+### 8.2 `TriageDecision`
 
 Defined in `src/evaluation/schemas.py`.
 
@@ -284,7 +284,7 @@ Required behavior:
 - rationale summary safe for analyst review
 - explicit override record
 
-### 9.3 Evaluation Config
+### 8.3 Evaluation Config
 
 Defined by `configs/eval_config_A.yaml`.
 

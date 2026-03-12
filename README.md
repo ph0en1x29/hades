@@ -35,7 +35,7 @@ The attacker doesn't hack the LLM. They hack the **data pipeline** that feeds it
 | Injection via SIEM pipeline | ❌ | ❌ | ✅ Novel threat model |
 | Real network traffic vectors | ❌ | ❌ | ✅ 10+ injectable log fields |
 | Defense evaluation | Some | ❌ | ✅ 5 mechanisms with metrics |
-| Cross-model comparison | Some | Some | ✅ MoE + dense + proprietary |
+| Cross-model comparison | Some | Some | ✅ Local MoE + dense, cloud deferred |
 | Practical SOC impact | Low | Moderate | ✅ Direct industry relevance |
 
 ## Status

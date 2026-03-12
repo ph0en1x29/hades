@@ -7,6 +7,58 @@ This document records targeted fixes made in response to review findings so the 
 - which files were affected
 - which commands were run to validate the update
 
+## March 12, 2026 — Editorial Cleanup Follow-Up
+
+### Summary
+
+This update addressed two remaining presentation-level review findings:
+
+1. The README still implied an in-scope proprietary/cloud comparison matrix
+2. The technical spec section numbering was internally inconsistent
+
+### Changes Made
+
+#### 1. Aligned README messaging with active v1 scope
+
+Files:
+
+- `README.md`
+
+What changed:
+
+- Updated the differentiation table to say `Local MoE + dense, cloud deferred`
+
+Why:
+
+- The active v1 scope now defers proprietary/cloud baselines
+- The top-level pitch should match the actual repo plan and active configs
+
+#### 2. Fixed technical spec section numbering
+
+Files:
+
+- `docs/TECHNICAL_SPEC.md`
+
+What changed:
+
+- Renumbered `Component Specification` subsections from `9.x` to `7.x`
+- Renumbered `Public Interfaces` subsections from `9.x` to `8.x`
+
+Why:
+
+- The previous numbering made the spec look merged rather than intentionally edited
+- Clean numbering improves reviewer confidence and makes internal references more trustworthy
+
+### Validation Commands Run
+
+```bash
+git diff --check
+```
+
+### Validation Result
+
+- `git diff --check` passed
+
 ## March 12, 2026 — Adversarial Review Follow-Up
 
 ### Summary
