@@ -139,7 +139,45 @@ This confirms that:
 - metric computation works end-to-end,
 - result serialization to `results/` works end-to-end.
 
-## 6.6 Tables to Populate After GPU Runs
+## 6.6 E3: Payload Survival Through SIEM Normalization
+
+We tested whether adversarial payloads survive 11 common SIEM normalization steps across 5 SIEM platforms (Elasticsearch, Splunk, QRadar, ArcSight, and generic syslog processing).
+
+### 6.6.1 Normalization Rules Tested
+
+| Rule | SIEM | Description |
+|---|---|---|
+| truncate_256 | Elasticsearch | keyword `ignore_above=256` |
+| truncate_1024 | Splunk | `TRUNCATE=1024` |
+| truncate_4096 | QRadar | 4KB payload field max |
+| strip_control | Generic | ASCII control character removal |
+| ascii_fold | Elasticsearch | Unicode NFKD normalization |
+| syslog_escape | Generic | Newline flattening |
+| json_roundtrip | Generic | JSON encode/decode |
+| xml_escape | Windows Event | XML entity encoding |
+| cef_escape | ArcSight | CEF delimiter escaping |
+| splunk_linebreak | Splunk | First-line-only extraction |
+| normalize_ws | Generic | Whitespace collapse |
+
+### 6.6.2 Survival by Attack Class
+
+| Attack Class | Survival Rate | Notes |
+|---|---:|---|
+| Direct misclassification | **100%** | Contains explicit instruction keywords |
+| Confidence manipulation | **100%** | Contains severity/confidence keywords |
+| Reasoning corruption | 0% | Subtle — no detection keywords |
+| Attention hijacking | 0% | Misdirects without explicit instructions |
+| Escalation suppression | 0% | Implicit suppression, hard to keyword-detect |
+
+**Key finding:** The two attack classes most dangerous to SOC operations (direct misclassification and confidence manipulation) survive all tested normalization steps across all SIEMs. Normalization is not a defense.
+
+### 6.6.3 Implications
+
+1. **Field truncation is not protective.** Even Elasticsearch's aggressive 256-char `ignore_above` preserves most injection payloads because effective payloads are compact (~50–150 chars).
+2. **Character encoding transformations are payload-transparent.** JSON/XML/CEF escaping adds characters but preserves semantic content.
+3. **Attack class determines survival, not SIEM config.** The 40% overall survival rate is entirely explained by the 2/5 attack classes that use explicit instruction keywords. The remaining 3 classes use subtler manipulation that wouldn't be caught by keyword-based detection anyway — making them potentially *more* dangerous despite lower keyword survival.
+
+## 6.7 Tables to Populate After GPU Runs
 
 ### Table A — Clean Baseline Accuracy (E1)
 

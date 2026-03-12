@@ -6,14 +6,14 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 
 | Exp | Name | Purpose | Models | Alerts |
 |-----|------|---------|--------|--------|
-| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 2,619 |
-| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 314,280 |
-| E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors |
-| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 314,280 |
-| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 314,280 |
-| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 314,280 |
-| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 314,280 |
-| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 314,280 |
+| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 4,619 |
+| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 554,280 |
+| E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules |
+| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 554,280 |
+| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 554,280 |
+| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 554,280 |
+| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 554,280 |
+| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 554,280 |
 
 ## 5.2 Models Under Evaluation
 
@@ -144,7 +144,19 @@ Following Nasr et al. [2025], we evaluate whether defenses survive when the atta
 - **Level 2:** Attacker knows structured prompt format → crafts payloads that exploit field boundaries
 - **Level 3:** Attacker knows dual-LLM setup → crafts payloads optimized to fool both models simultaneously
 
-## 5.6 Reproducibility
+## 5.6 SOC-Bench Alignment
+
+Our evaluation pipeline produces outputs compatible with the SOC-Bench framework [Cai et al., 2026], enabling direct comparison with multi-agent SOC systems evaluated under that benchmark. Specifically:
+
+**Task Fox (Campaign Detection).** Hades triage decisions are aggregated into SOC-Bench Fox stage outputs comprising three structured outcomes: O1 campaign-scale assessment (campaign detection, scope, affected hosts), O2 activity-type reasoning (MITRE technique classification, kill chain phase), and O3 cross-stage alert triage bundles (priority, recommended actions). All outputs include evidence_id chains for chain-of-custody verification.
+
+**Task Tiger (Attribution/TTP Reporting).** The classifier's MITRE technique identification and RAG-retrieved context naturally produce the data required for Tiger O1 (data source relationships) and O2 (threat graphs). We implement a SOC-Bench adapter layer that transforms flat TriageDecision objects into the richer, evidence-backed JSON schemas SOC-Bench expects.
+
+**Ring Scoring.** We adopt SOC-Bench's graduated ring scoring model (Bullseye=3, Inner=2, Outer=1, Miss=0) rather than binary correct/incorrect for technique identification accuracy. This rewards partial matches — correctly identifying the tactic but wrong sub-technique scores Inner rather than Miss.
+
+**Design Principle Compliance.** Following DP1 (loyalty to existing SOCs), our triage pipeline processes alerts as a SOC analyst would receive them — timestamp-ordered, without attacker narrative context. Following DP3 (real-world basis), our benchmark uses real Splunk detection rule outputs rather than synthetic data.
+
+## 5.7 Reproducibility
 
 All experiments use:
 - Fixed random seeds for any stochastic components

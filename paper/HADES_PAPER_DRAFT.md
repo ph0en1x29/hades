@@ -407,14 +407,14 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 
 | Exp | Name | Purpose | Models | Alerts |
 |-----|------|---------|--------|--------|
-| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 2,619 |
-| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 314,280 |
-| E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors |
-| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 314,280 |
-| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 314,280 |
-| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 314,280 |
-| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 314,280 |
-| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 314,280 |
+| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 4,619 |
+| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 554,280 |
+| E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules |
+| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 554,280 |
+| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 554,280 |
+| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 554,280 |
+| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 554,280 |
+| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 554,280 |
 
 ## 5.2 Models Under Evaluation
 
@@ -545,7 +545,19 @@ Following Nasr et al. [2025], we evaluate whether defenses survive when the atta
 - **Level 2:** Attacker knows structured prompt format → crafts payloads that exploit field boundaries
 - **Level 3:** Attacker knows dual-LLM setup → crafts payloads optimized to fool both models simultaneously
 
-## 5.6 Reproducibility
+## 5.6 SOC-Bench Alignment
+
+Our evaluation pipeline produces outputs compatible with the SOC-Bench framework [Cai et al., 2026], enabling direct comparison with multi-agent SOC systems evaluated under that benchmark. Specifically:
+
+**Task Fox (Campaign Detection).** Hades triage decisions are aggregated into SOC-Bench Fox stage outputs comprising three structured outcomes: O1 campaign-scale assessment (campaign detection, scope, affected hosts), O2 activity-type reasoning (MITRE technique classification, kill chain phase), and O3 cross-stage alert triage bundles (priority, recommended actions). All outputs include evidence_id chains for chain-of-custody verification.
+
+**Task Tiger (Attribution/TTP Reporting).** The classifier's MITRE technique identification and RAG-retrieved context naturally produce the data required for Tiger O1 (data source relationships) and O2 (threat graphs). We implement a SOC-Bench adapter layer that transforms flat TriageDecision objects into the richer, evidence-backed JSON schemas SOC-Bench expects.
+
+**Ring Scoring.** We adopt SOC-Bench's graduated ring scoring model (Bullseye=3, Inner=2, Outer=1, Miss=0) rather than binary correct/incorrect for technique identification accuracy. This rewards partial matches — correctly identifying the tactic but wrong sub-technique scores Inner rather than Miss.
+
+**Design Principle Compliance.** Following DP1 (loyalty to existing SOCs), our triage pipeline processes alerts as a SOC analyst would receive them — timestamp-ordered, without attacker narrative context. Following DP3 (real-world basis), our benchmark uses real Splunk detection rule outputs rather than synthetic data.
+
+## 5.7 Reproducibility
 
 All experiments use:
 - Fixed random seeds for any stochastic components
@@ -701,7 +713,45 @@ This confirms that:
 - metric computation works end-to-end,
 - result serialization to `results/` works end-to-end.
 
-## 6.6 Tables to Populate After GPU Runs
+## 6.6 E3: Payload Survival Through SIEM Normalization
+
+We tested whether adversarial payloads survive 11 common SIEM normalization steps across 5 SIEM platforms (Elasticsearch, Splunk, QRadar, ArcSight, and generic syslog processing).
+
+### 6.6.1 Normalization Rules Tested
+
+| Rule | SIEM | Description |
+|---|---|---|
+| truncate_256 | Elasticsearch | keyword `ignore_above=256` |
+| truncate_1024 | Splunk | `TRUNCATE=1024` |
+| truncate_4096 | QRadar | 4KB payload field max |
+| strip_control | Generic | ASCII control character removal |
+| ascii_fold | Elasticsearch | Unicode NFKD normalization |
+| syslog_escape | Generic | Newline flattening |
+| json_roundtrip | Generic | JSON encode/decode |
+| xml_escape | Windows Event | XML entity encoding |
+| cef_escape | ArcSight | CEF delimiter escaping |
+| splunk_linebreak | Splunk | First-line-only extraction |
+| normalize_ws | Generic | Whitespace collapse |
+
+### 6.6.2 Survival by Attack Class
+
+| Attack Class | Survival Rate | Notes |
+|---|---:|---|
+| Direct misclassification | **100%** | Contains explicit instruction keywords |
+| Confidence manipulation | **100%** | Contains severity/confidence keywords |
+| Reasoning corruption | 0% | Subtle — no detection keywords |
+| Attention hijacking | 0% | Misdirects without explicit instructions |
+| Escalation suppression | 0% | Implicit suppression, hard to keyword-detect |
+
+**Key finding:** The two attack classes most dangerous to SOC operations (direct misclassification and confidence manipulation) survive all tested normalization steps across all SIEMs. Normalization is not a defense.
+
+### 6.6.3 Implications
+
+1. **Field truncation is not protective.** Even Elasticsearch's aggressive 256-char `ignore_above` preserves most injection payloads because effective payloads are compact (~50–150 chars).
+2. **Character encoding transformations are payload-transparent.** JSON/XML/CEF escaping adds characters but preserves semantic content.
+3. **Attack class determines survival, not SIEM config.** The 40% overall survival rate is entirely explained by the 2/5 attack classes that use explicit instruction keywords. The remaining 3 classes use subtler manipulation that wouldn't be caught by keyword-based detection anyway — making them potentially *more* dangerous despite lower keyword survival.
+
+## 6.7 Tables to Populate After GPU Runs
 
 ### Table A — Clean Baseline Accuracy (E1)
 
