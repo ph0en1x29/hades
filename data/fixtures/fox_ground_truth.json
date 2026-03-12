@@ -1,0 +1,90 @@
+{
+  "description": "Ground truth scenarios for Fox scoring validation",
+  "scenarios": [
+    {
+      "scenario_id": "credential_dump_campaign",
+      "description": "Coordinated LSASS credential dumping across multiple hosts (T1003.001)",
+      "stage_id": "S1",
+      "ground_truth": {
+        "stage_id": "S1",
+        "campaign_present": true,
+        "campaign_scope": "targeted",
+        "affected_hosts": ["10.0.1.50", "10.0.1.51", "10.0.1.52", "10.0.2.10"],
+        "primary_activity": "credential_access",
+        "mitre_techniques": ["T1003.001", "T1003.002"],
+        "kill_chain_phase": "exploitation",
+        "true_positive_alert_ids": ["ALERT-001", "ALERT-002", "ALERT-003", "ALERT-004"],
+        "false_positive_alert_ids": ["ALERT-099"],
+        "expected_priority": "critical"
+      }
+    },
+    {
+      "scenario_id": "lateral_movement_smb",
+      "description": "SMB lateral movement with impacket smbexec (T1021.002)",
+      "stage_id": "S2",
+      "ground_truth": {
+        "stage_id": "S2",
+        "campaign_present": true,
+        "campaign_scope": "targeted",
+        "affected_hosts": ["10.0.1.50", "10.0.1.55", "10.0.2.20"],
+        "primary_activity": "lateral_movement",
+        "mitre_techniques": ["T1021.002", "T1059.001"],
+        "kill_chain_phase": "actions",
+        "true_positive_alert_ids": ["ALERT-010", "ALERT-011"],
+        "false_positive_alert_ids": ["ALERT-098"],
+        "expected_priority": "critical"
+      }
+    },
+    {
+      "scenario_id": "c2_http_beaconing",
+      "description": "HTTP-based C2 beaconing with suspicious User-Agent (T1071.001)",
+      "stage_id": "S3",
+      "ground_truth": {
+        "stage_id": "S3",
+        "campaign_present": false,
+        "campaign_scope": "isolated",
+        "affected_hosts": ["10.0.3.100"],
+        "primary_activity": "command_and_control",
+        "mitre_techniques": ["T1071.001"],
+        "kill_chain_phase": "c2",
+        "true_positive_alert_ids": ["ALERT-020"],
+        "false_positive_alert_ids": [],
+        "expected_priority": "high"
+      }
+    },
+    {
+      "scenario_id": "false_positive_scan",
+      "description": "Legitimate vulnerability scanner triggering alerts (noise)",
+      "stage_id": "S4",
+      "ground_truth": {
+        "stage_id": "S4",
+        "campaign_present": false,
+        "campaign_scope": "isolated",
+        "affected_hosts": [],
+        "primary_activity": "discovery",
+        "mitre_techniques": ["T1087.001"],
+        "kill_chain_phase": "reconnaissance",
+        "true_positive_alert_ids": [],
+        "false_positive_alert_ids": ["ALERT-030", "ALERT-031", "ALERT-032", "ALERT-033"],
+        "expected_priority": "low"
+      }
+    },
+    {
+      "scenario_id": "persistence_scheduled_task",
+      "description": "Scheduled task persistence with defense evasion (T1053.005 + T1036.003)",
+      "stage_id": "S5",
+      "ground_truth": {
+        "stage_id": "S5",
+        "campaign_present": true,
+        "campaign_scope": "targeted",
+        "affected_hosts": ["10.0.1.50", "10.0.1.51"],
+        "primary_activity": "persistence",
+        "mitre_techniques": ["T1053.005", "T1036.003", "T1547.001"],
+        "kill_chain_phase": "installation",
+        "true_positive_alert_ids": ["ALERT-040", "ALERT-041", "ALERT-042"],
+        "false_positive_alert_ids": ["ALERT-097"],
+        "expected_priority": "high"
+      }
+    }
+  ]
+}
