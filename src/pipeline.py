@@ -8,9 +8,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from src.evaluation.behavioral_invariants import run_invariant_checks
 from src.evaluation.schemas import (
     EvidenceItem,
     InferenceMode,
+    OverrideRecord,
     ToolInvocation,
     TriageCategory,
     TriageDecision,
@@ -90,29 +92,87 @@ class TriagePipeline:
             or "Classifier returned no reasoning."
         )
 
+        evidence_trace = [
+            EvidenceItem(
+                source_type="alert",
+                source_ref=f"alert:{alert.alert_id}",
+                summary=_build_evidence_summary(alert),
+                score=confidence if result.success else None,
+            ),
+        ]
+        tool_invocations = [
+            ToolInvocation(
+                tool_name=self.classifier.name,
+                arguments={
+                    "alert_id": alert.alert_id,
+                    "event_type": alert.event_type or "",
+                },
+                status="success" if result.success else "error",
+                duration_ms=result.latency_ms,
+            ),
+        ]
+
+        override_record = None
+        alert_dict = alert.to_dict()
+        decision_dict = {
+            "severity": result.data.get("severity") or alert.severity.value.upper(),
+            "classification": classification.value,
+            "confidence": confidence,
+            "reasoning": rationale,
+            "summary": result.data.get("summary") or "",
+        }
+        invariant_result = run_invariant_checks(alert_dict, decision_dict)
+        tool_invocations.append(
+            ToolInvocation(
+                tool_name="behavioral_invariants",
+                arguments={
+                    "alert_id": alert.alert_id,
+                    "checks_run": invariant_result.checks_run,
+                },
+                status="flagged" if invariant_result.injection_suspected else "clean",
+                duration_ms=0,
+            )
+        )
+        if invariant_result.violations:
+            evidence_trace.append(
+                EvidenceItem(
+                    source_type="invariant",
+                    source_ref=f"invariants:{alert.alert_id}",
+                    summary=(
+                        "Behavioral invariant violations: "
+                        + ", ".join(
+                            f"{v.invariant_id}[{v.severity}]"
+                            for v in invariant_result.violations
+                        )
+                    ),
+                    score=float(invariant_result.violation_count),
+                )
+            )
+        if invariant_result.injection_suspected:
+            previous_classification = classification.value
+            classification = TriageCategory.ESCALATE
+            rationale = (
+                rationale
+                + "\n\n[HADES SAFETY LAYER] Escalated due to behavioral invariant violations "
+                + ", ".join(v.invariant_id for v in invariant_result.violations)
+                + "."
+            )
+            override_record = OverrideRecord(
+                actor="system:behavioral_invariants",
+                reason=(
+                    "Potential indirect prompt injection detected via behavioral "
+                    "invariant violations"
+                ),
+                previous_classification=previous_classification,
+                new_classification=classification.value,
+            )
+
         return TriageDecision(
             alert_id=alert.alert_id,
             classification=classification,
             confidence=confidence,
-            evidence_trace=[
-                EvidenceItem(
-                    source_type="alert",
-                    source_ref=f"alert:{alert.alert_id}",
-                    summary=_build_evidence_summary(alert),
-                    score=confidence if result.success else None,
-                ),
-            ],
-            tool_invocations=[
-                ToolInvocation(
-                    tool_name=self.classifier.name,
-                    arguments={
-                        "alert_id": alert.alert_id,
-                        "event_type": alert.event_type or "",
-                    },
-                    status="success" if result.success else "error",
-                    duration_ms=result.latency_ms,
-                ),
-            ],
+            evidence_trace=evidence_trace,
+            tool_invocations=tool_invocations,
             rationale_summary=rationale,
             correlated_events=[],
             mitre_techniques=_coerce_string_list(
@@ -121,6 +181,7 @@ class TriagePipeline:
             processing_time_ms=result.latency_ms,
             mode_used=InferenceMode.DETERMINISTIC,
             model_version=_resolve_model_version(self.classifier.config),
+            override_record=override_record,
         )
 
 
