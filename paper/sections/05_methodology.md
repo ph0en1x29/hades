@@ -8,7 +8,7 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 |-----|------|---------|--------|--------|
 | E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 4,619 |
 | E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 554,280 |
-| E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules |
+| E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
 | E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 554,280 |
 | E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 554,280 |
 | E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 554,280 |
@@ -34,17 +34,22 @@ All models are served via vLLM with tensor parallelism appropriate to the availa
 
 ### 5.3.1 Construction
 
-Our benchmark comprises 2,619 alerts parsed from the Splunk Attack Data repository, covering 8 MITRE ATT&CK techniques across 6 tactics:
+Our benchmark comprises 4,619 alerts parsed from the Splunk Attack Data repository, covering 12 MITRE ATT&CK techniques across 7 tactics:
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|
+| TA0002 Execution | T1059.001 | PowerShell Script Block | 500 |
+| TA0002 Execution | T1569.002 | Service Execution | 500 |
 | TA0003 Persistence | T1053.005 | Scheduled Task | 500 |
 | TA0003 Persistence | T1547.001 | Registry Run Keys | 500 |
 | TA0005 Defense Evasion | T1027 | Obfuscated Files | 500 |
+| TA0005 Defense Evasion | T1036.003 | Masquerading (Rename) | 500 |
+| TA0005 Defense Evasion | T1218.011 | Signed Binary Proxy (Rundll32) | 500 |
 | TA0006 Credential Access | T1003.001 | LSASS Credential Dumping | 500 |
 | TA0006 Credential Access | T1110.001 | RDP Brute Force | 23 |
 | TA0007 Discovery | T1087.001 | Local Account Discovery | 500 |
 | TA0008 Lateral Movement | T1021.002 | SMB Admin Shares | 2 |
+| TA0008 Lateral Movement | T1105 | Ingress Tool Transfer | 500 |
 | TA0011 Command & Control | T1071.001 | HTTP C2 Traffic | 94 |
 
 ### 5.3.2 Dataset Adequacy
@@ -65,9 +70,11 @@ For each clean benchmark alert, we generate adversarial variants by injecting pa
 
 - **12 injection vectors** (HTTP User-Agent, Win Event Username, DNS Query, etc.)
 - **5 attack classes** (misclassification, confidence manipulation, reasoning corruption, attention hijacking, escalation suppression)
-- **2 encoding strategies** (plaintext, underscore-separated following [Neaves2025])
+- **9 encoding strategies** (plaintext, underscore, homoglyph, zero-width, synonym, leetspeak, base64-wrapped, markdown-comment, protocol-constrained)
 
-This produces up to **120 variants per alert** and **314,280 total adversarial samples** for the full benchmark. Payloads are truncated to respect field length constraints per vector.
+Plus 3 protocol-specific constraints (DNS 253-byte, SMB 14-char, TLS CN 64-char) that enforce realistic field length limits.
+
+This produces up to **540 variants per alert** and **554,280 total adversarial samples** for the full benchmark. Payloads are truncated to respect field length constraints per vector.
 
 ## 5.4 Evaluation Metrics
 
