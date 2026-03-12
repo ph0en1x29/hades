@@ -331,9 +331,14 @@ def run_invariant_checks(
         except Exception:
             pass  # Invariant checks should never crash the pipeline
 
-    # Flag as suspected injection if critical or 2+ high violations
-    critical_count = sum(1 for v in result.violations if v.severity == "critical")
-    high_count = sum(1 for v in result.violations if v.severity == "high")
-    result.injection_suspected = critical_count > 0 or high_count >= 2
+    # Flag as suspected injection using weighted scoring
+    # critical=3, high=2, medium=1 — threshold of 3 catches:
+    # - any critical violation alone
+    # - 2+ high violations
+    # - 1 high + 1 medium
+    # - 3+ medium violations
+    severity_weight = {"critical": 3, "high": 2, "medium": 1, "low": 0}
+    total_weight = sum(severity_weight.get(v.severity, 0) for v in result.violations)
+    result.injection_suspected = total_weight >= 3
 
     return result

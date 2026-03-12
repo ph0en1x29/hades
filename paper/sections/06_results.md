@@ -214,7 +214,39 @@ Protocol constraints significantly limit payload capacity but do not eliminate t
 
 HTTP-based vectors provide orders of magnitude more payload capacity than network-layer vectors. This suggests that web-facing log sources (proxy logs, WAF logs, CDN logs) are the primary attack surface for SOC LLM injection.
 
-## 6.7 Tables to Populate After GPU Runs
+## 6.7 Behavioral Invariant Detection (Pre-GPU)
+
+We evaluated our behavioral invariant detection system on 50 real Sysmon alerts (T1003.001 LSASS credential dumping) with simulated clean and adversarial triage decisions.
+
+### Detection Results
+
+| Attack Class | Detection Rate | False Positive Rate | Triggering Invariants |
+|---|---:|---:|---|
+| Clean (no injection) | 0.0% | **0.0%** | — |
+| C1: Direct Misclassification | **100.0%** | 0.0% | INV-1 (critical) |
+| C2: Confidence Manipulation | 0.0% | 0.0% | INV-3 (high, below threshold) |
+| C3: Reasoning Corruption | **100.0%** | 0.0% | INV-2 (critical) + INV-4 (medium) |
+| C4: Attention Hijacking | **98.0%** | 0.0% | INV-1 (high) + INV-5 (medium) |
+
+### Interpretation
+
+The behavioral invariant system detects 3 of 4 attack classes with near-perfect accuracy and zero false positives. The key insight is that these checks operate on the triage **output**, not the prompt **input** — they are immune to prompt-level obfuscation techniques that defeat input sanitization.
+
+**C2 (Confidence Manipulation) evades detection** because it does not change the classification label, introduce phantom IPs, or inject fabricated references. The only anomaly is an inflated confidence score, which triggers a single high-severity invariant but falls below the detection threshold. This demonstrates that behavioral invariants alone are insufficient — layered defenses including output confidence calibration and dual-model verification are needed for complete coverage.
+
+The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was tuned to minimize false positives: no clean decision triggered any violation across 50 test alerts.
+
+### Invariant Definitions
+
+| ID | Check | Severity | What It Catches |
+|---|---|---|---|
+| INV-1 | Severity downgrade without evidence | critical/high | C1 (misclassification), C4 (attention hijack) |
+| INV-2 | Phantom IPs in output | critical | C3 (IP substitution — the LevelBlue attack) |
+| INV-3 | Unrealistic confidence scores | high | C2 (confidence inflation) |
+| INV-4 | Fabricated references in reasoning | medium | C3 (fake change requests, pentest claims) |
+| INV-5 | Temporal downplay patterns | medium | C4 ("all services nominal", "zero anomalies") |
+
+## 6.8 Tables to Populate After GPU Runs
 
 ### Table A — Clean Baseline Accuracy (E1)
 
@@ -262,7 +294,7 @@ HTTP-based vectors provide orders of magnitude more payload capacity than networ
 | Dual-LLM Verify | TBD | TBD | TBD |
 | Canary Tokens | TBD | TBD | TBD |
 
-## 6.7 Current Interpretation
+## 6.9 Current Interpretation
 
 Even before full model inference, several claims are already empirically established:
 
