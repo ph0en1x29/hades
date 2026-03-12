@@ -1,0 +1,36 @@
+# OpenClaw Tool Definition: RAG Threat Intel Search
+name: rag_search
+description: >
+  Search the local threat intelligence knowledge base
+  for relevant ATT&CK techniques, CVE details, or
+  remediation guidance.
+parameters:
+  query:
+    type: string
+    description: Natural language query or technique ID (e.g., T1021.001)
+  source_filter:
+    type: string
+    enum: [all, mitre_attack, nvd_cve, custom]
+    default: all
+    description: Restrict search to specific knowledge source
+  top_k:
+    type: integer
+    default: 5
+    description: Number of results to return
+returns:
+  type: array
+  items:
+    type: object
+    properties:
+      content:
+        type: string
+        description: Retrieved text chunk
+      source:
+        type: string
+        description: Knowledge source name
+      relevance_score:
+        type: number
+        description: Similarity score (0-1)
+      metadata:
+        type: object
+        description: Source-specific metadata (technique ID, CVE ID, etc.)

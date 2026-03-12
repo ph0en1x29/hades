@@ -1,0 +1,88 @@
+# Hades Default Configuration
+
+system:
+  name: hades
+  version: 0.1.0
+  log_level: INFO
+
+# Model configuration
+model:
+  provider: moonshot  # moonshot (API) | vllm | sglang
+  name: moonshotai/Kimi-K2.5
+  quantization: int4
+  context_window: 256000
+  max_prompt_tokens: 20000  # Focused prompt for accuracy
+  
+  # Inference modes
+  thinking:
+    temperature: 1.0
+    top_p: 0.95
+    min_p: 0.01
+  instant:
+    temperature: 0.6
+    top_p: 0.95
+  deterministic:
+    temperature: 0.0
+    seed: 42
+
+# Orchestration
+orchestration:
+  mode: openclaw  # openclaw | swarm
+  max_retries: 2
+  timeout_seconds: 120
+  
+  # Agent confidence thresholds
+  classifier:
+    confidence_threshold: 0.7  # Below this → trigger correlator
+    escalation_threshold: 0.5  # Below this → escalate to human
+  
+# RAG configuration
+rag:
+  vector_store: chromadb
+  embedding_model: BAAI/bge-m3
+  collection_name: hades_threat_intel
+  chunk_size: 512
+  chunk_overlap: 128
+  top_k: 5
+  search_mode: hybrid  # hybrid | semantic | keyword
+  
+  # Knowledge sources
+  sources:
+    - name: mitre_attack
+      path: data/embeddings/mitre_attack_v15
+      enabled: true
+    - name: nvd_cve
+      path: data/embeddings/nvd_cve
+      enabled: true
+    - name: custom_intel
+      path: data/embeddings/custom
+      enabled: false
+
+# Ingestion
+ingestion:
+  mode: file  # file | kafka | redis
+  file:
+    watch_dir: data/datasets/incoming
+    formats: [json, csv]
+  kafka:
+    bootstrap_servers: localhost:9092
+    topic: hades-alerts
+  
+# Output
+output:
+  audit_db: data/audit.sqlite
+  dashboard:
+    enabled: true
+    host: 0.0.0.0
+    port: 8000
+  soar:
+    enabled: false
+    webhook_url: ""
+
+# Context priority (tokens)
+context:
+  current_alert: 2000
+  correlated_events: 8000
+  rag_results: 4000
+  session_history: 4000
+  historical_summaries: 2000

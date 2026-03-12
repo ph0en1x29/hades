@@ -1,0 +1,42 @@
+# Config A: Baseline — K2.5 single-agent, no RAG
+experiment:
+  id: config_a
+  name: "Baseline: K2.5 Single-Agent, No RAG"
+  description: "Baseline local performance without retrieval augmentation"
+
+model:
+  provider: vllm
+  name: moonshotai/Kimi-K2.5
+  quantization: int4
+  deterministic:
+    temperature: 0.0
+    seed: 42
+
+orchestration:
+  mode: single  # No multi-agent
+  
+rag:
+  enabled: false
+
+evaluation:
+  datasets:
+    - data/datasets/cicids2017_alerts.json
+    - data/datasets/cicids2018_alerts.json
+    - data/datasets/beth_alerts.json
+    - data/datasets/synthetic_mitre_alerts.json
+    - data/datasets/false_positive_set.json
+  metrics:
+    - precision
+    - recall
+    - f1_macro
+    - false_positive_rate
+    - latency_p50
+    - latency_p95
+    - tokens_used
+  statistical_tests:
+    mcnemar: true
+    bootstrap_ci:
+      enabled: true
+      iterations: 10000
+      alpha: 0.05
+  output_dir: results/config_a/

@@ -1,0 +1,38 @@
+# Hades — Dependencies
+
+# Core
+pyyaml>=6.0
+pydantic>=2.0
+
+# Model serving (choose one)
+# vllm>=0.7.0  # For local K2.5 serving
+# sglang>=0.4.0  # Alternative serving framework
+
+# RAG pipeline
+chromadb>=0.5.0
+sentence-transformers>=3.0  # For BGE-M3 embeddings
+
+# Evaluation
+scikit-learn>=1.5
+numpy>=1.26
+pandas>=2.2
+scipy>=1.14  # McNemar's test
+matplotlib>=3.9  # Visualization
+seaborn>=0.13
+
+# API clients (for cloud baseline configs G/H)
+openai>=1.50
+anthropic>=0.40
+
+# Ingestion
+kafka-python>=2.0  # Optional: Kafka connector
+redis>=5.0  # Optional: Redis stream
+
+# Dashboard
+fastapi>=0.115
+uvicorn>=0.32
+
+# Utilities
+python-dotenv>=1.0
+rich>=13.0  # CLI output
+tqdm>=4.66

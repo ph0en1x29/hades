@@ -1,0 +1,26 @@
+# OpenClaw Tool Definition: SIEM Query
+name: siem_query
+description: >
+  Query the local SIEM index for log entries matching
+  specified criteria within a time window.
+parameters:
+  query_type:
+    type: string
+    enum: [ip_lookup, signature_search, time_range, user_lookup]
+    description: Type of search to perform
+  value:
+    type: string
+    description: IP address, signature name, time range, or username
+  time_window_minutes:
+    type: integer
+    default: 30
+    description: How far back to search (minutes)
+  max_results:
+    type: integer
+    default: 50
+    description: Maximum number of results to return
+returns:
+  type: array
+  items:
+    type: object
+    description: Matching log entries in unified alert schema
