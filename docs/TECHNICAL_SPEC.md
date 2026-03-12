@@ -249,7 +249,135 @@ Use:
 | Proposal expands back into an unbuildable scope | High | treat all non-v1 features as explicitly deferred |
 | Optional OpenClaw integration becomes a time sink | Medium | do not make it part of the critical path |
 
-## 10. Source Notes
+## 10. Authentication and Encryption Analysis
+
+### 10.1 Authentication Attack Detection
+
+Beyond standard SIEM alert triage, v1 normalization supports authentication event analysis from common log sources:
+
+**Supported log types:**
+- Windows Security Events (4624/4625/4768/4769/4771/4776)
+- Linux auth logs (PAM, sshd)
+- Application authentication logs (OAuth token events, SAML assertions)
+
+**Detection capabilities:**
+
+| Attack | MITRE Technique | Detection Method |
+|---|---|---|
+| Brute force | T1110 | Failed login rate + source correlation |
+| Password spraying | T1110.003 | Low-rate failures across many accounts from few sources |
+| Credential stuffing | T1110.004 | High-rate failures with varied username patterns |
+| Kerberoasting | T1558.003 | Anomalous volume of TGS requests for service accounts |
+| Golden Ticket | T1558.001 | Kerberos tickets with abnormal lifetimes or encryption types |
+| Pass-the-Hash | T1550.002 | NTLM authentication without preceding interactive logon |
+| DCSync | T1003.006 | Domain replication requests from non-DC hosts |
+| Valid account abuse | T1078 | Behavioral anomaly — geolocation, time-of-day, device fingerprint deviation |
+| OAuth token theft | T1528 | Suspicious token refresh patterns, consent phishing indicators |
+
+**Behavioral baselining (v2):** The correlator agent can build per-user authentication profiles (typical login times, source IPs, devices) and flag deviations even when credentials are valid — addressing the hardest class of insider threat and compromised account attacks.
+
+### 10.2 Encrypted Traffic Analysis
+
+Hades can analyze encrypted communications without decryption by examining metadata, handshake characteristics, and traffic patterns:
+
+**TLS Fingerprinting (JA3/JA4):**
+- Extract client hello fingerprints from TLS handshakes (via Zeek or Suricata logs)
+- Cross-reference against known malware fingerprint database in local RAG
+- Detect tool-specific signatures: Cobalt Strike, Metasploit, custom implants
+- No decryption required — fingerprint is derived from cipher suite negotiation
+
+**Certificate Anomaly Detection:**
+- Self-signed certificates on services that should have CA-signed certs
+- Recently issued certificates on typosquat domains resembling the organization
+- Expired or revoked certificates still in active use
+- Unusual Subject Alternative Names or certificate chains
+
+**Behavioral Traffic Analysis (encrypted payload, no decryption):**
+- C2 beaconing detection — regular interval communications (e.g., 60s ± jitter)
+- Data exfiltration indicators — large encrypted uploads to unusual destinations
+- DNS-over-HTTPS tunneling — encrypted DNS bypassing network monitoring
+- Packet size and timing patterns characteristic of reverse shells or tunnels
+
+**Cryptographic Misconfiguration Detection:**
+- Weak cipher suites (RC4, DES, export-grade, NULL ciphers)
+- Deprecated protocol versions (SSLv3, TLS 1.0, TLS 1.1)
+- Missing HSTS headers or certificate pinning
+- Flagged as compliance findings (SOX, HIPAA, CMMC, PCI-DSS)
+
+### 10.3 Multi-Surface Correlation
+
+The key advantage of combining auth + encryption + SIEM analysis in a single system: cross-surface correlation that standalone tools miss.
+
+Example attack chain detected across surfaces:
+1. **Auth surface:** Failed VPN login from unusual IP (low severity alone)
+2. **Encryption surface:** Same IP shows JA3 fingerprint matching known reconnaissance tool
+3. **SIEM surface:** Same IP ran port scans against 3 subnets 10 minutes prior
+4. **Correlator output:** Combined evidence → confirmed reconnaissance campaign → HIGH severity
+
+No single detection surface catches this with confidence. The correlator agent with 256K context can hold all three event streams simultaneously and produce a unified assessment.
+
+## 11. Autonomous Response Architecture (v2 Roadmap)
+
+v1 produces triage decisions for human review. v2 extends the pipeline with autonomous response capabilities, gated by confidence thresholds and configurable human-in-the-loop policies.
+
+### 11.1 Response Action Framework
+
+```
+TriageDecision (v1 output)
+    ↓
+[Decision Gate] — confidence threshold + policy check
+    ↓ (confidence ≥ threshold AND policy allows auto-response)
+    ├→ [Containment] — network isolation, firewall rules, account lockout
+    ├→ [Deception] — honeypot redirection, decoy credential injection
+    ├→ [Remediation] — process termination, malware quarantine, patch trigger
+    └→ [Notification] — SOC escalation, incident ticket creation
+```
+
+### 11.2 Response Tools (OpenClaw tool registry)
+
+| Tool | Action | Risk Level | Default Policy |
+|---|---|---|---|
+| `firewall_block` | Block IP/CIDR at perimeter | Medium | Auto if confidence ≥ 0.95 |
+| `host_isolate` | Quarantine host from network | High | Human approval required |
+| `account_lockout` | Disable compromised account | Medium | Auto if credential abuse confirmed |
+| `honeypot_redirect` | Redirect attacker traffic to decoy | Low | Auto for reconnaissance-phase attacks |
+| `process_kill` | Terminate malicious process | High | Human approval required |
+| `ioc_distribute` | Push IOCs to all network sensors | Low | Auto on confirmed threats |
+| `ticket_create` | Open incident in ticketing system | Low | Always auto |
+
+### 11.3 Confidence-Gated Automation
+
+All autonomous actions require:
+- Triage confidence above a configurable threshold (default: 0.95 for destructive actions, 0.80 for observational)
+- Policy file approval for the action class
+- Full audit trail logging the decision chain
+- Rollback capability (temporary firewall rules auto-expire, account lockouts are time-bounded)
+
+Actions below the confidence threshold produce recommendations instead of executions, preserving the human-in-the-loop for ambiguous cases.
+
+### 11.4 Adaptive Deception (Honeypot Integration)
+
+When Hades identifies early-stage attacks (reconnaissance, scanning), it can redirect rather than block:
+- Route attacker traffic to a honeypot environment via firewall rules or DNS manipulation
+- Monitor attacker behavior in the decoy environment in real-time
+- Extract TTPs, tools, and objectives from honeypot logs
+- Feed honeypot observations back into the triage pipeline for enhanced classification
+- Attacker wastes time on decoys while real systems remain untouched
+
+This produces intelligence value beyond simple blocking — understanding attacker methodology improves future detection.
+
+### 11.5 Throughput Estimates
+
+| Hardware | Tokens/sec | Triage Time (avg) | Alerts/day |
+|---|---|---|---|
+| 1x RTX 4090 (INT4) | ~1-2 | ~250-500s | ~170-350 |
+| 2x A100 80GB | ~15-20 | ~25-33s | ~2,600-3,500 |
+| 4x H100 80GB | ~40+ | ~12s | ~7,000+ |
+| Human analyst | N/A | ~5-10 min | ~50-100 |
+
+Even on modest hardware, Hades processes 3-10x more alerts per day than a human analyst, with consistent quality and full audit trails.
+
+## 12. Source Notes
 
 Feasibility-sensitive claims in this spec are grounded in primary documentation:
 
