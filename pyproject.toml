@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hades"
+version = "0.1.0"
+description = "Offline Agentic SOC Assistant — air-gapped alert triage with Kimi K2.5 + OpenClaw + local RAG"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12"
+authors = [{name = "Jay Li", email = "jay@athenixtech.com"}]
+
+dependencies = [
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "chromadb>=0.5.0",
+    "sentence-transformers>=3.0",
+    "scikit-learn>=1.5",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scipy>=1.14",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "python-dotenv>=1.0",
+    "rich>=13.0",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+cloud = [
+    "openai>=1.50",
+    "anthropic>=0.40",
+]
+kafka = ["kafka-python>=2.0"]
+redis = ["redis>=5.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+all = ["hades[cloud,kafka,redis,dev]"]
+
+[project.scripts]
+hades = "src.main:main"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

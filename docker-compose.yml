@@ -1,13 +1,10 @@
 # Hades — Full Deployment Stack
 # Usage: docker compose up -d
 
-version: "3.9"
-
 services:
   # Model serving (vLLM)
   model-server:
     image: vllm/vllm-openai:latest
-    runtime: nvidia
     deploy:
       resources:
         reservations:
@@ -16,53 +13,71 @@ services:
               count: all
               capabilities: [gpu]
     volumes:
-      - ./data/models:/models
+      - ./data/models:/models:ro
     command: >
-      --model /models/Kimi-K2.5
+      vllm serve /models/Kimi-K2.5
       --quantization int4
       --tensor-parallel-size 2
       --max-model-len 256000
       --port 8001
     ports:
       - "8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # RAG vector store
   chromadb:
     image: chromadb/chroma:latest
     volumes:
-      - ./data/embeddings:/chroma/chroma
+      - chroma_data:/chroma/chroma
     ports:
       - "8002:8000"
+    environment:
+      - ANONYMIZED_TELEMETRY=false
 
   # Hades pipeline
   hades:
     build: .
     depends_on:
-      - model-server
-      - chromadb
+      model-server:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
     volumes:
-      - ./configs:/app/configs
-      - ./data:/app/data
+      - ./configs:/app/configs:ro
+      - ./data/datasets:/app/data/datasets:ro
+      - ./data/embeddings:/app/data/embeddings
       - ./results:/app/results
+      - ./logs:/app/logs
     environment:
       - MODEL_SERVER_URL=http://model-server:8001
       - CHROMADB_URL=http://chromadb:8000
+      - LOG_LEVEL=INFO
     ports:
       - "8000:8000"  # Dashboard
 
-  # Evaluation harness (run on-demand)
+  # Evaluation harness (on-demand)
   evaluator:
     build: .
     depends_on:
-      - model-server
-      - chromadb
+      model-server:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
     volumes:
-      - ./configs:/app/configs
-      - ./data:/app/data
+      - ./configs:/app/configs:ro
+      - ./data/datasets:/app/data/datasets:ro
+      - ./data/embeddings:/app/data/embeddings
       - ./results:/app/results
     environment:
       - MODEL_SERVER_URL=http://model-server:8001
       - CHROMADB_URL=http://chromadb:8000
-    command: python src/evaluation/run_benchmark.py --config /app/configs/eval_config_A.yaml
+    command: python -m src.main --config /app/configs/eval_config_A.yaml --mode eval
     profiles:
-      - eval  # Only runs with: docker compose --profile eval up evaluator
+      - eval
+
+volumes:
+  chroma_data:

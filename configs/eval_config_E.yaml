@@ -1,0 +1,30 @@
+# Config E: Qwen 72B Single-Agent + RAG
+experiment:
+  id: config_e
+  name: "Qwen 72B Single-Agent with RAG"
+  description: "Alternative open-weight model comparison"
+
+model:
+  provider: vllm
+  name: Qwen/Qwen2.5-72B-Instruct
+  quantization: awq
+  deterministic:
+    temperature: 0.0
+    seed: 42
+
+orchestration:
+  mode: single
+
+rag:
+  enabled: true
+  top_k: 5
+  search_mode: hybrid
+
+evaluation:
+  datasets:
+    - data/datasets/cicids2017_alerts.json
+    - data/datasets/cicids2018_alerts.json
+    - data/datasets/beth_alerts.json
+    - data/datasets/synthetic_mitre_alerts.json
+    - data/datasets/false_positive_set.json
+  output_dir: results/config_e/

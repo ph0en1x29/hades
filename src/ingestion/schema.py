@@ -1,9 +1,12 @@
 """Unified Alert Schema v1 — Normalizes SIEM alerts from multiple vendors."""
 
-from dataclasses import dataclass, field
-from datetime import datetime
+from __future__ import annotations
+
+import json
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Self
 from uuid import uuid4
 
 
@@ -22,16 +25,22 @@ class AlertSource(Enum):
     FILE = "file"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class AlertMetadata:
+    """Vendor-specific metadata attached to an alert."""
+
     vendor: str = ""
     device: str = ""
     category: str = ""
 
 
-@dataclass
+@dataclass(slots=True)
 class UnifiedAlert:
-    """Normalized alert schema for downstream processing."""
+    """Normalized alert for downstream processing.
+
+    All SIEM connectors produce this format, regardless of vendor.
+    Immutable after ingestion — downstream agents reference by alert_id.
+    """
 
     alert_id: str = field(default_factory=lambda: str(uuid4()))
     timestamp: str = ""
@@ -46,26 +55,42 @@ class UnifiedAlert:
     protocol: str = "TCP"
     raw_log: str = ""
     metadata: AlertMetadata = field(default_factory=AlertMetadata)
-    ingested_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    ingested_at: str = field(
+        default_factory=lambda: datetime.now(UTC).isoformat()
+    )
 
     def to_dict(self) -> dict:
-        return {
-            "alert_id": self.alert_id,
-            "timestamp": self.timestamp,
-            "source": self.source.value,
-            "severity": self.severity.value,
-            "signature": self.signature,
-            "signature_id": self.signature_id,
-            "src_ip": self.src_ip,
-            "src_port": self.src_port,
-            "dst_ip": self.dst_ip,
-            "dst_port": self.dst_port,
-            "protocol": self.protocol,
-            "raw_log": self.raw_log,
-            "metadata": {
-                "vendor": self.metadata.vendor,
-                "device": self.metadata.device,
-                "category": self.metadata.category,
-            },
-            "ingested_at": self.ingested_at,
-        }
+        """Serialize to plain dict (JSON-safe)."""
+        d = asdict(self)
+        d["source"] = self.source.value
+        d["severity"] = self.severity.value
+        return d
+
+    def to_json(self) -> str:
+        """Serialize to JSON string."""
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        """Deserialize from a plain dict."""
+        return cls(
+            alert_id=data.get("alert_id", str(uuid4())),
+            timestamp=data.get("timestamp", ""),
+            source=AlertSource(data["source"]) if "source" in data else AlertSource.FILE,
+            severity=AlertSeverity(data["severity"]) if "severity" in data else AlertSeverity.MEDIUM,
+            signature=data.get("signature", ""),
+            signature_id=data.get("signature_id", ""),
+            src_ip=data.get("src_ip", ""),
+            src_port=data.get("src_port"),
+            dst_ip=data.get("dst_ip", ""),
+            dst_port=data.get("dst_port"),
+            protocol=data.get("protocol", "TCP"),
+            raw_log=data.get("raw_log", ""),
+            metadata=AlertMetadata(**data.get("metadata", {})),
+            ingested_at=data.get("ingested_at", datetime.now(UTC).isoformat()),
+        )
+
+    @classmethod
+    def from_json(cls, raw: str) -> Self:
+        """Deserialize from a JSON string."""
+        return cls.from_dict(json.loads(raw))

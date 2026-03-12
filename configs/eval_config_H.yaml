@@ -1,0 +1,29 @@
+# Config H: Claude Sonnet (Cloud Baseline) + RAG
+experiment:
+  id: config_h
+  name: "Claude Sonnet Cloud Baseline"
+  description: "Cloud upper-bound comparison — API-based"
+
+model:
+  provider: anthropic
+  name: claude-sonnet-4-5-20250514
+  deterministic:
+    temperature: 0.0
+
+orchestration:
+  mode: single
+
+rag:
+  enabled: true
+  top_k: 5
+  search_mode: hybrid
+
+evaluation:
+  datasets:
+    - data/datasets/cicids2017_alerts.json
+    - data/datasets/cicids2018_alerts.json
+    - data/datasets/beth_alerts.json
+    - data/datasets/synthetic_mitre_alerts.json
+    - data/datasets/false_positive_set.json
+  track_cost: true
+  output_dir: results/config_h/

@@ -1,0 +1,32 @@
+# Config D: K2.5 Multi-Agent + Native Swarm + RAG
+experiment:
+  id: config_d
+  name: "K2.5 Multi-Agent, Native Swarm"
+  description: "K2.5 self-directed swarm mode — compare vs OpenClaw orchestration (Config C)"
+
+model:
+  provider: vllm
+  name: moonshotai/Kimi-K2.5
+  quantization: int4
+  deterministic:
+    temperature: 0.0
+    seed: 42
+
+orchestration:
+  mode: swarm
+  max_agents: 10
+  max_steps: 50
+
+rag:
+  enabled: true
+  top_k: 5
+  search_mode: hybrid
+
+evaluation:
+  datasets:
+    - data/datasets/cicids2017_alerts.json
+    - data/datasets/cicids2018_alerts.json
+    - data/datasets/beth_alerts.json
+    - data/datasets/synthetic_mitre_alerts.json
+    - data/datasets/false_positive_set.json
+  output_dir: results/config_d/

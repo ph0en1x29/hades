@@ -4,15 +4,24 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+dist/
+build/
 
-# Data (large files)
+# Data (large files — downloaded separately)
 data/models/
 data/embeddings/
 data/datasets/*.csv
-*.sqlite
+data/datasets/*.json
+!data/datasets/.gitkeep
 
 # Results (regeneratable)
 results/
+
+# Logs
+logs/
+
+# Databases
+*.sqlite
 
 # IDE
 .vscode/
@@ -25,6 +34,11 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Type checking / linting caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
 
 # Docker
 .docker/

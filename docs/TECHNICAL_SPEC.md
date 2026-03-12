@@ -251,7 +251,7 @@ Two orchestration approaches are implemented and compared:
 ```json
 {
   "eval_id": "uuid-v4",
-  "config_id": "A|B|C|D|E|F|G",
+  "config_id": "A|B|C|D|E|F|G|H",
   "dataset": "cicids2017|cicids2018|beth|synthetic|fp_set",
   "alert_id": "uuid-v4",
   "ground_truth": "true_positive|false_positive|needs_investigation|escalate",

@@ -1,0 +1,30 @@
+# Config G: GPT-4o (Cloud Baseline) + RAG
+experiment:
+  id: config_g
+  name: "GPT-4o Cloud Baseline"
+  description: "Cloud upper-bound comparison — API-based"
+
+model:
+  provider: openai
+  name: gpt-4o
+  deterministic:
+    temperature: 0.0
+    seed: 42
+
+orchestration:
+  mode: single
+
+rag:
+  enabled: true
+  top_k: 5
+  search_mode: hybrid
+
+evaluation:
+  datasets:
+    - data/datasets/cicids2017_alerts.json
+    - data/datasets/cicids2018_alerts.json
+    - data/datasets/beth_alerts.json
+    - data/datasets/synthetic_mitre_alerts.json
+    - data/datasets/false_positive_set.json
+  track_cost: true
+  output_dir: results/config_g/
