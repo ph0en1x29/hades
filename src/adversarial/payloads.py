@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 
 class AttackClass(Enum):
@@ -30,8 +29,8 @@ class AdversarialPayload:
     target_field: str
     payload_text: str
     expected_effect: str
-    original_field_value: Optional[str] = None
-    injected_field_value: Optional[str] = None
+    original_field_value: str | None = None
+    injected_field_value: str | None = None
 
 
 @dataclass
@@ -93,7 +92,7 @@ class PayloadGenerator:
         attack_class: AttackClass,
         target_field: str,
         encoding: PayloadEncoding = PayloadEncoding.PLAIN_TEXT,
-        original_value: Optional[str] = None,
+        original_value: str | None = None,
     ) -> list[AdversarialPayload]:
         """Generate all payload variants for a given attack class and target field."""
         templates = self.templates.get(attack_class, [])
@@ -101,11 +100,7 @@ class PayloadGenerator:
 
         for template in templates:
             encoded = self._encode(template, encoding)
-
-            if original_value:
-                injected = f"{original_value} {encoded}"
-            else:
-                injected = encoded
+            injected = f"{original_value} {encoded}" if original_value else encoded
 
             payloads.append(AdversarialPayload(
                 attack_class=attack_class,
@@ -122,7 +117,7 @@ class PayloadGenerator:
     def generate_all(
         self,
         target_field: str,
-        original_value: Optional[str] = None,
+        original_value: str | None = None,
     ) -> list[AdversarialPayload]:
         """Generate payloads for all attack classes and encodings."""
         all_payloads = []

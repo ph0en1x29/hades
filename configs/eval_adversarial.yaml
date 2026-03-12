@@ -52,12 +52,15 @@ models:
   - name: llama_3.1_70b
     type: local_dense
     notes: "70B dense, INT4"
+
+# Cloud API baselines are intentionally deferred from v1 to preserve air-gapped scope.
+deferred_models:
   - name: gpt_4o
     type: cloud_api
-    notes: "Cloud baseline for vulnerability comparison"
+    notes: "Deferred: optional upper-bound study outside the v1 offline benchmark"
   - name: claude_sonnet
     type: cloud_api
-    notes: "Cloud baseline for vulnerability comparison"
+    notes: "Deferred: optional upper-bound study outside the v1 offline benchmark"
 
 # --- Defense mechanisms to evaluate ---
 defenses:
@@ -109,12 +112,12 @@ statistics:
 experiments:
   E1_baseline:
     description: "Triage accuracy without adversarial input"
-    models: all
+    models: [kimi_k2.5, llama_3.1_70b]
     defense: none
     dataset: baseline
   E2_injection_success:
     description: "Injection success rate per vector × class × model"
-    models: all
+    models: [kimi_k2.5, llama_3.1_70b]
     defense: none
     dataset: adversarial
   E3_payload_survival:
@@ -124,12 +127,12 @@ experiments:
     siem_normalizers: [zeek, suricata, elastic]
   E4_defense_sanitization:
     description: "Sanitization effectiveness vs accuracy trade-off"
-    models: all
+    models: [kimi_k2.5, llama_3.1_70b]
     defense: [sanitization_moderate, sanitization_strict]
     dataset: adversarial
   E5_defense_structured:
     description: "Structured prompt effectiveness vs information loss"
-    models: all
+    models: [kimi_k2.5, llama_3.1_70b]
     defense: structured_prompt
     dataset: adversarial
   E6_defense_training:
@@ -139,11 +142,11 @@ experiments:
     dataset: adversarial
   E7_defense_dual:
     description: "Dual-LLM verification detection rate"
-    models: all
+    models: [kimi_k2.5, llama_3.1_70b]
     defense: dual_llm
     dataset: adversarial
   E8_adaptive:
     description: "Defense robustness under adaptive attacker"
-    models: all
+    models: [kimi_k2.5, llama_3.1_70b]
     defense: all
     dataset: adversarial_adaptive

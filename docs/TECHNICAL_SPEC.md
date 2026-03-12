@@ -351,7 +351,7 @@ Use:
 
 | Experiment | Independent Variable | Dependent Variable | Purpose |
 |---|---|---|---|
-| E1: Baseline triage | Model (K2.5, Llama 70B, GPT-4o, Claude) | F1, precision, recall | Establish triage accuracy without adversarial input |
+| E1: Baseline triage | Local model (K2.5 candidate, Llama 70B baseline) | F1, precision, recall | Establish triage accuracy without adversarial input |
 | E2: Injection success rate | Injection vector × attack class × model | Misclassification rate, confidence delta | Measure vulnerability per vector |
 | E3: Payload survival | Encoding method × SIEM normalizer | Payload preservation rate | Which payloads survive real SIEM processing |
 | E4: Defense — sanitization | Sanitization aggressiveness (none/moderate/strict) | Triage accuracy vs injection resistance | Input-level defense |
@@ -389,7 +389,7 @@ Secondary:
 Strip or escape suspicious patterns in log fields before prompt construction. Three levels: regex-based (fast, brittle), ML-based anomaly detection on field values (moderate), aggressive field truncation (safe, lossy).
 
 **D2 — Structured Prompt Architecture:**
-Separate data fields from instruction context. Alert data passed as structured key-value pairs with explicit field labels, never as free-form text. The LLM receives `user_agent: "<value>"` rather than raw log lines.
+Separate data fields from instruction context. Alert data stays in the same nested schema but each string leaf is wrapped with explicit field labels instead of being merged into raw free-form log text. The defense must not change the alert contract that downstream components evaluate.
 
 **D3 — Adversarial Fine-Tuning:**
 Fine-tune the triage model on a dataset that includes injected alerts with correct labels. The model learns to ignore injection attempts while maintaining triage accuracy.
@@ -398,7 +398,7 @@ Fine-tune the triage model on a dataset that includes injected alerts with corre
 A second model reviews the first model's decision specifically looking for signs of prompt injection influence. The verifier has access to the raw alert AND the first model's reasoning, checking for evidence of manipulation.
 
 **D5 — Canary Token Detection:**
-Insert known-benign canary strings in specific prompt positions. If the model's output references or acts on content from data fields rather than instruction sections, the canary detects cross-boundary influence.
+Insert known-benign canary strings into the alert data boundary, not the instruction scaffold. If the model's output references or acts on that canary, the system records cross-boundary influence.
 
 ## 11. Delivery Plan for August 2026
 

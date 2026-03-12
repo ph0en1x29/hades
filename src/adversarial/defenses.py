@@ -1,9 +1,13 @@
 """Defense mechanisms against adversarial injection in LLM triage."""
 
+from __future__ import annotations
+
 import re
+import secrets
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -59,7 +63,7 @@ class SanitizationDefense(Defense):
         self.level = level
 
     def apply(self, alert: dict[str, Any]) -> tuple[dict[str, Any], DefenseResult]:
-        sanitized = dict(alert)
+        sanitized = deepcopy(alert)
         result = DefenseResult(defense_name=self.name, alert_modified=False)
 
         for field_path in self.UNTRUSTED_FIELDS:
@@ -85,7 +89,7 @@ class SanitizationDefense(Defense):
         return sanitized, result
 
     @staticmethod
-    def _get_nested(d: dict, path: str) -> Any:
+    def _get_nested(d: dict[str, Any], path: str) -> Any:
         keys = path.split(".")
         for k in keys:
             if isinstance(d, dict) and k in d:
@@ -95,7 +99,7 @@ class SanitizationDefense(Defense):
         return d
 
     @staticmethod
-    def _set_nested(d: dict, path: str, value: Any) -> None:
+    def _set_nested(d: dict[str, Any], path: str, value: Any) -> None:
         keys = path.split(".")
         for k in keys[:-1]:
             if k not in d:
@@ -110,30 +114,48 @@ class StructuredPromptDefense(Defense):
     name = "structured_prompt"
 
     def apply(self, alert: dict[str, Any]) -> tuple[dict[str, Any], DefenseResult]:
-        """Convert free-form alert fields into explicitly labeled key-value format."""
-        structured = {}
+        """Wrap string leaves with field markers while preserving alert structure."""
         result = DefenseResult(defense_name=self.name, alert_modified=True)
-
-        for key, value in self._flatten(alert):
-            if isinstance(value, str):
-                # Wrap in explicit field markers to prevent instruction interpretation
-                structured[key] = f"[FIELD:{key}] {value} [/FIELD]"
-                result.fields_sanitized.append(key)
-            else:
-                structured[key] = value
-
+        structured = self._structure_value(alert, path="", result=result)
         return structured, result
 
+    def _structure_value(
+        self,
+        value: Any,
+        *,
+        path: str,
+        result: DefenseResult,
+    ) -> Any:
+        if isinstance(value, dict):
+            return {
+                key: self._structure_value(
+                    item,
+                    path=self._join_path(path, key),
+                    result=result,
+                )
+                for key, item in value.items()
+            }
+
+        if isinstance(value, list):
+            return [
+                self._structure_value(
+                    item,
+                    path=f"{path}[{index}]",
+                    result=result,
+                )
+                for index, item in enumerate(value)
+            ]
+
+        if isinstance(value, str):
+            field_path = path or "root"
+            result.fields_sanitized.append(field_path)
+            return f"[FIELD:{field_path}] {value} [/FIELD]"
+
+        return value
+
     @staticmethod
-    def _flatten(d: dict, prefix: str = "") -> list[tuple[str, Any]]:
-        items = []
-        for k, v in d.items():
-            full_key = f"{prefix}.{k}" if prefix else k
-            if isinstance(v, dict):
-                items.extend(StructuredPromptDefense._flatten(v, full_key))
-            else:
-                items.append((full_key, v))
-        return items
+    def _join_path(prefix: str, key: str) -> str:
+        return f"{prefix}.{key}" if prefix else key
 
 
 class CanaryDefense(Defense):
@@ -142,20 +164,29 @@ class CanaryDefense(Defense):
     name = "canary_token"
 
     CANARY_PREFIX = "CANARY_"
+    CANARY_FIELD = "prompt_boundary_canary"
 
-    def __init__(self, canary_id: Optional[str] = None) -> None:
-        import secrets
+    def __init__(self, canary_id: str | None = None) -> None:
         self.canary_id = canary_id or f"{self.CANARY_PREFIX}{secrets.token_hex(4)}"
 
     def apply(self, alert: dict[str, Any]) -> tuple[dict[str, Any], DefenseResult]:
-        """Insert canary and check output for canary leakage (post-processing step)."""
+        """Inject a canary into alert metadata so output leakage can be detected."""
+        instrumented = deepcopy(alert)
+        metadata = instrumented.get("metadata")
+        metadata_copy = dict(metadata) if isinstance(metadata, dict) else {}
+        metadata_copy[self.CANARY_FIELD] = self.canary_id
+        instrumented["metadata"] = metadata_copy
+
         result = DefenseResult(
             defense_name=self.name,
-            alert_modified=False,
-            notes=f"Canary ID: {self.canary_id}. Check model output for canary reference.",
+            alert_modified=True,
+            fields_sanitized=[f"metadata.{self.CANARY_FIELD}"],
+            notes=(
+                "Canary inserted into alert data boundary. "
+                f"Check model output for leaked token {self.canary_id}."
+            ),
         )
-        # Canary detection happens after model inference, not during alert processing
-        return alert, result
+        return instrumented, result
 
     def check_output(self, model_output: str) -> bool:
         """Check if model output references the canary (indicates cross-boundary influence)."""

@@ -43,6 +43,7 @@ The attacker doesn't hack the LLM. They hack the **data pipeline** that feeds it
 - Research prototype — scaffold with schemas, agents, retrieval, and configs
 - Primary spec: `docs/TECHNICAL_SPEC.md`
 - Design review: `docs/PROPOSAL_REVIEW.md`
+- Reviewer changelog: `docs/REVIEWER_CHANGELOG.md`
 - Target venues: USENIX Security 2027, IEEE S&P, ACM CCS
 
 ## Scope

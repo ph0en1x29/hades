@@ -60,7 +60,7 @@ Hades does not replace detection or response tooling. It fills the triage gap wh
 
 ## Current Position
 
-Research scaffold as of March 12, 2026. Design validated, adversarial pivot approved.
+Research scaffold as of March 12, 2026. Adversarial pivot drafted; runtime wiring, tests, and benchmark execution remain in progress.
 
 ## v1 Architecture (Research Prototype)
 
