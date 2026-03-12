@@ -1,4 +1,4 @@
-"""Alert Classifier Agent — First-pass triage classification.
+"""Alert Classifier Agent — first-pass triage via local OpenAI-compatible LLM.
 
 Classifies incoming alerts into:
   - True Positive: confirmed threat requiring response
@@ -9,37 +9,64 @@ Classifies incoming alerts into:
 
 from __future__ import annotations
 
+import asyncio
 import time
 from typing import TYPE_CHECKING, Any
 
 from src.agents.base import AgentResult, BaseAgent
+from src.agents.triage_parser import parse_triage_response
+from src.agents.triage_prompt import (
+    SYSTEM_INSTRUCTION,
+    estimate_prompt_tokens,
+    format_alert_for_triage,
+)
 from src.evaluation.schemas import TriageCategory
+from src.runtime.openai_compat import OpenAICompatChatClient, OpenAICompatError
 
 if TYPE_CHECKING:
     from src.ingestion.schema import UnifiedAlert
 
-# Few-shot classification prompt template
-CLASSIFIER_SYSTEM_PROMPT = """\
-You are a SOC analyst performing alert triage. Classify the following \
-SIEM alert into exactly one category:
+# Prompt source unified with the dedicated triage prompt module.
+CLASSIFIER_SYSTEM_PROMPT = SYSTEM_INSTRUCTION
 
-- TRUE_POSITIVE: Confirmed malicious activity requiring incident response.
-- FALSE_POSITIVE: Benign activity that triggered a false alarm.
-- NEEDS_INVESTIGATION: Ambiguous — requires additional log correlation.
-- ESCALATE: Complex or critical — requires human analyst review.
 
-Respond with a JSON object:
-{
-  "classification": "<category>",
-  "confidence": <0.0-1.0>,
-  "reasoning": "<brief explanation>",
-  "mitre_techniques": ["<T-code>", ...] or []
-}
-"""
+def _map_decision_to_category(
+    llm_classification: str,
+    llm_severity: str,
+) -> TriageCategory:
+    normalized_class = (llm_classification or "").strip().lower()
+    normalized_severity = (llm_severity or "").strip().lower()
+
+    if normalized_class in {"true_positive", TriageCategory.TRUE_POSITIVE.value}:
+        return TriageCategory.TRUE_POSITIVE
+    if normalized_class in {"false_positive", TriageCategory.FALSE_POSITIVE.value}:
+        return TriageCategory.FALSE_POSITIVE
+    if normalized_class in {"needs_investigation", TriageCategory.NEEDS_INVESTIGATION.value}:
+        return TriageCategory.NEEDS_INVESTIGATION
+    if normalized_class in {"escalate", TriageCategory.ESCALATE.value}:
+        return TriageCategory.ESCALATE
+
+    if normalized_severity == "critical":
+        return TriageCategory.ESCALATE
+    if normalized_severity in {"high", "medium"}:
+        return TriageCategory.TRUE_POSITIVE
+    if normalized_severity == "low":
+        return TriageCategory.NEEDS_INVESTIGATION
+    if normalized_severity == "info":
+        return TriageCategory.FALSE_POSITIVE
+    return TriageCategory.NEEDS_INVESTIGATION
 
 
 class ClassifierAgent(BaseAgent):
-    """First-pass alert classifier using LLM inference."""
+    """First-pass alert classifier using local LLM inference."""
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        super().__init__(config)
+        self.client = OpenAICompatChatClient(
+            base_url=str(config.get("base_url") or ""),
+            api_key=str(config.get("api_key") or ""),
+            timeout_seconds=int(config.get("timeout_seconds", 90)),
+        )
 
     @property
     def name(self) -> str:
@@ -57,60 +84,91 @@ class ClassifierAgent(BaseAgent):
         """
         start = time.monotonic()
 
-        # TODO: Replace with actual LLM inference via the chosen runtime adapter
-        # For now, return a placeholder that exercises the full schema
         try:
-            # Build prompt from alert data
-            alert_context = (
-                f"Signature: {alert.signature}\n"
-                f"Source: {alert.src_ip}:{alert.src_port} → "
-                f"{alert.dst_ip}:{alert.dst_port}\n"
-                f"Protocol: {alert.protocol}\n"
-                f"Severity: {alert.severity.value}\n"
-                f"Raw log: {alert.raw_log[:500]}"
+            system_prompt, user_prompt = format_alert_for_triage(
+                alert,
+                use_structured=bool(self.config.get("use_structured_prompt", False)),
+                include_raw_log=bool(self.config.get("include_raw_log", True)),
+                max_raw_log_chars=int(self.config.get("max_raw_log_chars", 2000)),
             )
 
             if context and "correlated_events" in context:
-                alert_context += (
-                    f"\n\nCorrelated events ({len(context['correlated_events'])}):\n"
-                    + "\n".join(
-                        str(e) for e in context["correlated_events"][:5]
-                    )
+                correlated = context["correlated_events"][:5]
+                user_prompt += (
+                    f"\n\nCorrelated events ({len(correlated)}):\n"
+                    + "\n".join(str(event) for event in correlated)
                 )
 
             if context and "rag_results" in context:
-                alert_context += (
-                    "\n\nThreat intelligence:\n"
-                    + "\n".join(
-                        r.get("content", "")[:200]
-                        for r in context["rag_results"][:3]
-                    )
+                rag_items = context["rag_results"][:3]
+                user_prompt += (
+                    "\n\nRetrieved threat intelligence:\n"
+                    + "\n".join(str(item.get("content", ""))[:300] for item in rag_items)
                 )
 
-            # --- LLM call goes here ---
-            # response = await self.llm.generate(
-            #     system=CLASSIFIER_SYSTEM_PROMPT,
-            #     user=alert_context,
-            # )
-            # parsed = json.loads(response.text)
-            # ---
+            model_name = str(
+                self.config.get("model")
+                or self.config.get("model_name")
+                or self.config.get("model_version")
+                or "moonshotai/Kimi-K2.5"
+            )
+            temperature = float(self.config.get("temperature", 0.0))
+            max_tokens = int(self.config.get("max_tokens", 512))
+            seed = self.config.get("seed")
 
+            completion = await asyncio.to_thread(
+                self.client.chat_completion,
+                model=model_name,
+                system=system_prompt,
+                user=user_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                seed=int(seed) if seed is not None else None,
+                response_format={"type": "json_object"},
+            )
+            parsed = parse_triage_response(completion.content)
+
+            classification = _map_decision_to_category(parsed.classification, parsed.severity)
             elapsed_ms = int((time.monotonic() - start) * 1000)
 
             return AgentResult(
                 agent_name=self.name,
-                success=True,
+                success=parsed.parse_success,
+                data={
+                    "classification": classification.value,
+                    "confidence": parsed.confidence,
+                    "reasoning": parsed.reasoning or parsed.parse_error or "No reasoning returned",
+                    "mitre_techniques": parsed.mitre_techniques,
+                    "recommended_actions": parsed.recommended_actions,
+                    "evidence": parsed.evidence,
+                    "llm_severity": parsed.severity,
+                    "llm_classification": parsed.classification,
+                    "prompt_tokens": completion.prompt_tokens or estimate_prompt_tokens(system_prompt, user_prompt),
+                    "completion_tokens": completion.completion_tokens,
+                    "total_tokens": completion.total_tokens,
+                    "finish_reason": completion.finish_reason,
+                    "model_version": completion.model,
+                },
+                error=parsed.parse_error,
+                latency_ms=elapsed_ms,
+                tokens_used=completion.total_tokens,
+            )
+
+        except OpenAICompatError as exc:
+            elapsed_ms = int((time.monotonic() - start) * 1000)
+            return AgentResult(
+                agent_name=self.name,
+                success=False,
                 data={
                     "classification": TriageCategory.NEEDS_INVESTIGATION.value,
                     "confidence": 0.0,
-                    "reasoning": "LLM inference not yet connected",
-                    "mitre_techniques": [],
-                    "needs_correlation": True,
-                    "prompt_tokens": len(alert_context.split()),
+                    "reasoning": "Model server unavailable; falling back to safe investigation state",
+                    "mitre_techniques": alert.benchmark.mitre_techniques,
+                    "fallback": True,
                 },
+                error=str(exc),
                 latency_ms=elapsed_ms,
             )
-
         except Exception as exc:
             elapsed_ms = int((time.monotonic() - start) * 1000)
             return AgentResult(

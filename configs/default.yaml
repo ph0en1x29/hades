@@ -33,6 +33,16 @@ orchestration:
   optional_future_adapter: openclaw
   max_retries: 1
   timeout_seconds: 90
+  classifier:
+    base_url: http://localhost:8001
+    model: moonshotai/Kimi-K2.5
+    timeout_seconds: 90
+    temperature: 0.0
+    max_tokens: 512
+    seed: 42
+    use_structured_prompt: false
+    include_raw_log: true
+    max_raw_log_chars: 2000
 
 rag:
   enabled: true
