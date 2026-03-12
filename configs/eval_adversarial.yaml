@@ -1,0 +1,149 @@
+# Adversarial Evaluation Configuration
+# Tests LLM triage robustness against injection through SIEM log fields
+
+evaluation:
+  name: adversarial_robustness
+  version: "0.1"
+
+# --- Baseline (clean alerts, no injection) ---
+baseline:
+  dataset: data/datasets/benchmark_alerts.jsonl
+  split: locked_test
+  metrics: [macro_f1, per_class_precision_recall, fp_rate, latency_p50, latency_p95]
+
+# --- Adversarial dataset generation ---
+adversarial:
+  source_alerts: data/datasets/benchmark_alerts.jsonl
+  output_dir: data/adversarial/
+
+  # Injection vectors to test (from vectors.py)
+  vectors:
+    - http_user_agent
+    - http_referer
+    - dns_query
+    - smb_hostname
+    - snmp_community
+    - email_subject
+    - tls_cert_cn
+    - tls_cert_san
+    - ssh_banner
+    - ldap_bind_dn
+
+  # Attack classes to test (from payloads.py)
+  attack_classes:
+    - direct_misclassification
+    - confidence_manipulation
+    - reasoning_corruption
+    - attention_hijacking
+    - escalation_suppression
+
+  # Encoding variants
+  encodings:
+    - plain_text
+    - base64_fragment
+    - unicode_homoglyph
+    - comment_wrapped
+
+# --- Models to evaluate ---
+models:
+  - name: kimi_k2.5
+    type: local_moe
+    notes: "1T/32B MoE, INT4, vLLM"
+  - name: llama_3.1_70b
+    type: local_dense
+    notes: "70B dense, INT4"
+  - name: gpt_4o
+    type: cloud_api
+    notes: "Cloud baseline for vulnerability comparison"
+  - name: claude_sonnet
+    type: cloud_api
+    notes: "Cloud baseline for vulnerability comparison"
+
+# --- Defense mechanisms to evaluate ---
+defenses:
+  - name: none
+    description: "No defense (baseline vulnerability)"
+  - name: sanitization_moderate
+    description: "D1: Regex-based pattern stripping, moderate level"
+    config:
+      level: moderate
+  - name: sanitization_strict
+    description: "D1: Aggressive field truncation"
+    config:
+      level: strict
+  - name: structured_prompt
+    description: "D2: Key-value field markers, no free-form text"
+  - name: adversarial_training
+    description: "D3: Model fine-tuned on injected examples"
+    config:
+      training_data: data/adversarial/training_set.jsonl
+  - name: dual_llm
+    description: "D4: Second model verifies first model's decision"
+    config:
+      verifier_model: llama_3.1_70b
+  - name: canary_token
+    description: "D5: Detect cross-boundary influence via canary strings"
+
+# --- Metrics ---
+metrics:
+  primary:
+    - attack_success_rate       # % of injected alerts that flip classification
+    - severity_downgrade_rate   # % of critical/high alerts downgraded
+  secondary:
+    - confidence_manipulation_delta  # avg confidence change (clean vs injected)
+    - reasoning_corruption_rate      # % where payload appears in evidence trace
+    - defense_overhead_latency       # latency increase per defense
+    - defense_accuracy_impact        # F1 change with defense enabled
+    - adaptive_resistance            # ASR when attacker knows the defense
+
+# --- Statistical analysis ---
+statistics:
+  confidence_intervals: paired_bootstrap
+  multiclass_comparison: bowker
+  binary_subtask: mcnemar
+  inter_rater: fleiss_kappa
+  significance_level: 0.05
+  bootstrap_iterations: 10000
+
+# --- Experiment matrix ---
+experiments:
+  E1_baseline:
+    description: "Triage accuracy without adversarial input"
+    models: all
+    defense: none
+    dataset: baseline
+  E2_injection_success:
+    description: "Injection success rate per vector × class × model"
+    models: all
+    defense: none
+    dataset: adversarial
+  E3_payload_survival:
+    description: "Which payloads survive SIEM normalization"
+    vectors: all
+    encodings: all
+    siem_normalizers: [zeek, suricata, elastic]
+  E4_defense_sanitization:
+    description: "Sanitization effectiveness vs accuracy trade-off"
+    models: all
+    defense: [sanitization_moderate, sanitization_strict]
+    dataset: adversarial
+  E5_defense_structured:
+    description: "Structured prompt effectiveness vs information loss"
+    models: all
+    defense: structured_prompt
+    dataset: adversarial
+  E6_defense_training:
+    description: "Adversarial fine-tuning effectiveness"
+    models: [kimi_k2.5, llama_3.1_70b]
+    defense: adversarial_training
+    dataset: adversarial
+  E7_defense_dual:
+    description: "Dual-LLM verification detection rate"
+    models: all
+    defense: dual_llm
+    dataset: adversarial
+  E8_adaptive:
+    description: "Defense robustness under adaptive attacker"
+    models: all
+    defense: all
+    dataset: adversarial_adaptive
