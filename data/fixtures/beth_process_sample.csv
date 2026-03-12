@@ -1,0 +1,4 @@
+timestamp,process_name,username,sourceip,label,sus,evil
+2021-05-01 10:00:00,bash,root,10.100.1.186,benign,0,0
+2021-05-01 10:01:00,curl,root,10.100.1.186,suspicious,1,0
+2021-05-01 10:02:00,nc,root,10.100.1.186,attack,1,1

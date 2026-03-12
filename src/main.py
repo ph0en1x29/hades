@@ -50,6 +50,7 @@ def setup_logging(level: str = "INFO") -> None:
 def load_alerts(input_path: str | Path) -> list[UnifiedAlert]:
     """Load unified alerts from a CSV or JSONL file."""
     from src.ingestion.parsers import (
+        load_beth_csv,
         load_cicids2018_csv,
         load_splunk_attack_data_jsonl,
     )
@@ -62,6 +63,13 @@ def load_alerts(input_path: str | Path) -> list[UnifiedAlert]:
 
     suffix = path.suffix.lower()
     if suffix == ".csv":
+        lowered_name = path.name.lower()
+        if "beth" in lowered_name or "dns" in lowered_name or "process" in lowered_name:
+            logger.warning(
+                "CSV ingestion using BETH engineering scaffold path; "
+                "not valid as a benchmark-of-record dataset."
+            )
+            return load_beth_csv(path)
         logger.warning(
             "CSV ingestion uses the CIC-IDS2018 engineering scaffold path only; "
             "it is not valid as a benchmark-of-record dataset."
