@@ -1,26 +1,61 @@
-# Hades — Offline SOC Triage Research Prototype
+# Hades — Offline Agentic SOC Assistant
 
-Hades is a scoped research prototype for offline SOC alert triage. The repository now contains the proposal, public schemas, runtime scaffolding, local retrieval abstraction, packaging metadata, and basic tests needed to build the system, but it still does not contain an end-to-end production implementation.
+> Rules tell you WHAT happened. Hades tells you WHY it matters and WHAT to do about it.
+
+## The Problem
+
+Enterprise SOCs generate 2,000-10,000 alerts daily. Detection (Splunk, Suricata, CrowdStrike) and response (SOAR playbooks, firewall scripts) are well-automated. **The triage decision in between is not.** A human analyst reads each alert, decides if it's real, how bad it is, and what to do. They handle 50-100 per day. The rest are ignored.
+
+Cloud AI (GPT-4, Claude) can help — but organizations with air-gap requirements (government, defense, healthcare, critical infrastructure) **cannot send SIEM data to cloud APIs**. Alert data contains internal topology, hostnames, user identities, and active vulnerabilities.
+
+**Hades fills the triage gap with a fully offline LLM pipeline.**
+
+```text
+Detection (existing SIEM/IDS/EDR) → alerts
+    ↓
+HADES (offline LLM triage) → structured decisions with evidence
+    ↓
+Response (existing SOAR/scripts) → actions
+```
+
+## What Makes This Different from Rules
+
+| | Rules/Scripts | Hades |
+|---|---|---|
+| Known patterns | ✅ | ✅ |
+| Novel/unseen attacks | ❌ needs new rule | ✅ reasons from threat knowledge |
+| Correlate disparate alerts | ❌ only with pre-written rules | ✅ holds full context (256K tokens) |
+| Explain reasoning | ❌ "Rule 4625 triggered" | ✅ natural language evidence trail |
+| Handle ambiguity | ❌ binary match | ✅ probabilistic with confidence |
 
 ## Status
 
-- Reviewed and reframed on March 12, 2026.
-- Current repository state: initial scaffold, not a validated system.
-- Primary proposal artifact: `docs/TECHNICAL_SPEC.md`
-- Findings-first review artifact: `docs/PROPOSAL_REVIEW.md`
+- Research prototype — initial scaffold, not a validated system
+- Primary spec: `docs/TECHNICAL_SPEC.md`
+- Design review: `docs/PROPOSAL_REVIEW.md`
 
-## v1 Scope
+## v1 Scope (Research Paper)
 
-- File replay input using one normalized alert schema
-- Deterministic triage pipeline instead of agent swarm
+- File replay input → normalized alert schema
+- Deterministic triage pipeline with optional RAG retrieval
 - Local CLI and/or FastAPI dashboard for analyst review
 - Structured evidence trace for auditability
-- Local hybrid retrieval using Qdrant
-- One high-capacity local model candidate and one smaller local baseline
+- Local hybrid retrieval using Qdrant (MITRE ATT&CK + CVE)
+- Authentication attack detection (brute force, Kerberoasting, Pass-the-Hash, credential abuse)
+- Encrypted traffic analysis (JA3/JA4 fingerprinting, certificate anomalies, beaconing detection)
+- Evaluation on 1,100+ alerts with statistical rigor (bootstrap CI, Fleiss kappa, McNemar)
+
+## v2 Roadmap (Autonomous Response)
+
+- Confidence-gated firewall rule creation
+- Honeypot redirection for early-stage attacks
+- Host isolation and account lockout
+- SOAR integration for automated playbook execution
+- Real-time SIEM connectors (Splunk, Elastic, QRadar)
 
 ## Explicit Non-Goals for v1
 
-- Telegram or other internet-dependent analyst interfaces
+- Internet-dependent interfaces
 - Native swarm orchestration as a required path
 - Multi-SIEM live connectors
 - Automated SOAR/ticketing actions

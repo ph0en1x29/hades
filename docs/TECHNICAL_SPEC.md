@@ -21,9 +21,66 @@ This revision deliberately removes or defers features that would weaken either r
 - no requirement to store raw model chain-of-thought
 - no broad eight-configuration benchmark in v1
 
-## 2. System Boundaries
+## 2. Problem Statement
 
-### 2.1 In Scope for v1
+### 2.1 The SOC Triage Gap
+
+Modern enterprise SOCs rely on a layered detection and response stack:
+
+```text
+Layer 1 — Detection: SIEM (Splunk, QRadar, ELK), IDS/IPS (Suricata, Snort),
+           EDR (CrowdStrike, Carbon Black), threat intel feeds (STIX/TAXII)
+           → Generates alerts using rules, signatures, and IOC matching
+
+Layer 2 — Triage: HUMAN ANALYST reads each alert, decides severity,
+           correlates related events, determines response
+           → This is the bottleneck
+
+Layer 3 — Response: SOAR (Phantom, XSOAR), firewall scripts, playbooks
+           → Executes predefined actions based on analyst decisions
+```
+
+Layer 1 and Layer 3 are well-automated. Layer 2 — the triage decision — remains manual, slow, and expensive. An average enterprise SOC generates 2,000-10,000 alerts per day. A trained analyst triages 50-100. The rest are either ignored or bulk-closed.
+
+### 2.2 Why Rules Are Insufficient
+
+Existing detection tools are rule-based: Sigma rules, YARA signatures, correlation searches. These detect what they are programmed to detect.
+
+| Capability | Rules/Scripts | LLM-based Triage |
+|---|---|---|
+| Detect known attack pattern | ✅ Excellent | ✅ Also capable |
+| Detect novel/unseen pattern | ❌ Requires new rule | ✅ Reasons from first principles |
+| Correlate disparate alerts into one attack chain | ❌ Only with pre-written correlation rules | ✅ Holds full context, finds connections |
+| Explain reasoning to analyst | ❌ "Rule 4625 triggered" | ✅ "This appears to be lateral movement because..." |
+| Handle ambiguous signals | ❌ Binary match/no-match | ✅ Probabilistic assessment with confidence |
+| Adapt without rule updates | ❌ New attack = new rule written by human | ✅ Generalizes from threat knowledge |
+
+**Example — slow password spray:**
+A Sigma rule alerts on ">10 failed logins in 5 minutes." An attacker performing 3 failed logins per hour across 8 service accounts over 4 hours (24 total events) evades the threshold. No rule fires. An LLM with 256K context sees all 24 events, recognizes the pattern as T1110.003 (Password Spraying) with deliberate rate-limiting, and escalates.
+
+### 2.3 Why Offline Matters
+
+Cloud-based AI triage (GPT-4, Claude) exists but is unusable for organizations with air-gap requirements: government/defense (CMMC, ITAR), healthcare (HIPAA), critical infrastructure (NERC CIP), and financial institutions with strict data residency. SIEM alert data contains internal network topology, hostnames, IP ranges, user identities, and active vulnerability information — sending this to a cloud API is a security incident, not a solution.
+
+### 2.4 What Hades Does
+
+Hades fills the triage gap with an offline LLM pipeline:
+
+```text
+Layer 1 — Detection (existing tools, unchanged)
+    ↓ generates alerts
+Layer 2 — Triage (HADES — replaces manual analyst decision-making)
+    ↓ produces structured decisions with evidence
+Layer 3 — Response (existing SOAR/scripts, now fed by AI decisions)
+```
+
+Hades does not replace Splunk or firewalls. It replaces the analyst's manual triage work on each alert. The research question is: **can an offline LLM make triage decisions at human-level accuracy, with sufficient auditability for SOC deployment?**
+
+> Rules tell you WHAT happened. Hades tells you WHY it matters and WHAT to do about it.
+
+## 3. System Boundaries
+
+### 3.1 In Scope for v1
 
 - Replay alerts from local JSON or JSONL fixtures
 - Normalize inputs into `UnifiedAlert`
@@ -33,7 +90,7 @@ This revision deliberately removes or defers features that would weaken either r
 - Expose results through CLI output and/or a local FastAPI dashboard
 - Evaluate on a locked test set derived from transformed benchmark fixtures
 
-### 2.2 Explicitly Out of Scope for v1
+### 3.2 Explicitly Out of Scope for v1
 
 - Telegram bots or any internet-dependent operator workflow
 - Live Splunk, Elastic, QRadar, syslog, Kafka, or Redis ingestion
@@ -42,11 +99,11 @@ This revision deliberately removes or defers features that would weaken either r
 - A large cloud-vs-local comparison matrix
 - Claims of real-time production throughput
 
-## 3. Repo Reality Check
+## 4. Repo Reality Check
 
 The repository currently contains schemas, configs, documentation, runtime scaffolding, local retrieval abstractions, packaging metadata, and basic tests. It still does not contain the end-to-end ingestion loop, benchmark runner, transformed benchmark fixtures, or analyst workflow described in the proposal. The spec must therefore track planned artifacts, not present the system as already validated.
 
-## 4. Architecture Decisions
+## 5. Architecture Decisions
 
 | Area | v1 Decision | Deferred |
 |---|---|---|
@@ -57,9 +114,9 @@ The repository currently contains schemas, configs, documentation, runtime scaff
 | Audit | evidence trace + rationale summary | raw chain-of-thought retention |
 | Evaluation | locked benchmark with transformation pipeline | broad cloud baseline study |
 
-## 5. Component Specification
+## 6. Component Specification
 
-### 5.1 Alert Ingestion and Normalization
+### 6.1 Alert Ingestion and Normalization
 
 The v1 ingestion path consumes replay fixtures from disk. Each raw record is transformed into `UnifiedAlert` and retains provenance fields that identify:
 
@@ -71,7 +128,7 @@ The v1 ingestion path consumes replay fixtures from disk. Each raw record is tra
 
 Normalization is allowed to leave some network fields empty when the source dataset does not contain them. Missing values must remain explicit rather than fabricated.
 
-### 5.2 Triage Runtime
+### 6.2 Triage Runtime
 
 The v1 runtime is a deterministic pipeline:
 
@@ -84,7 +141,7 @@ The v1 runtime is a deterministic pipeline:
 
 `src/openclaw/` remains a possible adapter layer for later tool-based orchestration, but the v1 design does not require OpenClaw. If it is used at all in v1, it must be treated as an implementation detail behind the deterministic pipeline rather than the central research contribution.
 
-### 5.3 Model Strategy
+### 6.3 Model Strategy
 
 Hades keeps `Kimi K2.5` as a candidate high-capacity local model, but it is no longer assumed to be frictionless for development or evaluation.
 
@@ -99,7 +156,7 @@ Implication for v1:
 - The initial benchmark path must be able to run on one practical local baseline model.
 - Kimi K2.5 local deployment is a gated evaluation target that becomes mandatory only after deployment is validated on available hardware.
 
-### 5.4 Retrieval Strategy
+### 6.4 Retrieval Strategy
 
 The original proposal named ChromaDB with hybrid retrieval, but the current documented hybrid Search API in Chroma is Chroma Cloud-only, with local support described as future work. The revised v1 uses Qdrant because Qdrant documents:
 
@@ -117,7 +174,7 @@ v1 RAG choices:
 - knowledge sources: MITRE ATT&CK plus a curated CVE subset
 - retrieval goal: evidence augmentation, not autonomous action selection
 
-### 5.5 Output and Audit Layer
+### 6.5 Output and Audit Layer
 
 The audit record must not require storing raw chain-of-thought. The stable artifact is `TriageDecision`, which includes:
 
@@ -130,9 +187,9 @@ The audit record must not require storing raw chain-of-thought. The stable artif
 
 This is the artifact used for review, debugging, and evaluation.
 
-## 6. Public Interfaces
+## 7. Public Interfaces
 
-### 6.1 `UnifiedAlert`
+### 7.1 `UnifiedAlert`
 
 Defined in `src/ingestion/schema.py`.
 
@@ -144,7 +201,7 @@ Required behavior:
 - metadata block for vendor-specific detail
 - provenance block for dataset path, parser version, and raw-record linkage
 
-### 6.2 `TriageDecision`
+### 7.2 `TriageDecision`
 
 Defined in `src/evaluation/schemas.py`.
 
@@ -156,7 +213,7 @@ Required behavior:
 - rationale summary safe for analyst review
 - explicit override record
 
-### 6.3 Evaluation Config
+### 7.3 Evaluation Config
 
 Defined by `configs/eval_config_A.yaml`.
 
@@ -168,9 +225,9 @@ Required sections:
 - annotator protocol
 - statistical analysis plan
 
-## 7. Evaluation Design
+## 8. Evaluation Design
 
-### 7.1 Benchmark Inputs
+### 8.1 Benchmark Inputs
 
 Raw datasets such as CICIDS, CIC-IDS2018, and BETH are not directly usable as SOC alert fixtures. Hades therefore adds a transformation stage that produces normalized alert records and records the transformation version.
 
@@ -181,17 +238,17 @@ Each benchmark item must preserve:
 - source record ids or row range
 - label provenance
 
-### 7.2 Split Policy
+### 8.2 Split Policy
 
 The benchmark uses a locked test set. Prompt or threshold tuning is allowed only on a development split. Scenario-aware grouping is required so that near-duplicate samples do not leak across splits.
 
-### 7.3 Contamination Controls
+### 8.3 Contamination Controls
 
 - RAG corpora may contain public ATT&CK or CVE knowledge.
 - RAG corpora must not contain benchmark labels, benchmark rationales, or transformed benchmark records.
 - Development notes used during prompt tuning must be kept separate from the locked test set.
 
-### 7.4 Metrics
+### 8.4 Metrics
 
 Primary metric:
 
@@ -205,11 +262,11 @@ Secondary metrics:
 - abstain or escalate rate
 - latency p50 and p95
 
-### 7.5 Human Review
+### 8.5 Human Review
 
 If human review is included, use three reviewers and measure agreement with a multi-rater metric such as Fleiss' kappa. Do not describe the procedure as Cohen's kappa when there are three raters.
 
-### 7.6 Statistical Analysis
+### 8.6 Statistical Analysis
 
 Use:
 
@@ -217,7 +274,7 @@ Use:
 - Bowker or Stuart-Maxwell style tests when comparing paired multiclass predictions
 - McNemar only for clearly defined binary sub-analyses, such as false-positive vs not-false-positive
 
-## 8. Delivery Plan for August 2026
+## 9. Delivery Plan for August 2026
 
 ### Phase 1: April 2026
 
@@ -239,7 +296,7 @@ Use:
 - rerun locked evaluation with final prompt and threshold settings
 - write paper/report around the implemented system only
 
-## 9. Risks and Mitigations
+## 10. Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
@@ -249,9 +306,9 @@ Use:
 | Proposal expands back into an unbuildable scope | High | treat all non-v1 features as explicitly deferred |
 | Optional OpenClaw integration becomes a time sink | Medium | do not make it part of the critical path |
 
-## 10. Authentication and Encryption Analysis
+## 11. Authentication and Encryption Analysis
 
-### 10.1 Authentication Attack Detection
+### 12.1 Authentication Attack Detection
 
 Beyond standard SIEM alert triage, v1 normalization supports authentication event analysis from common log sources:
 
@@ -276,7 +333,7 @@ Beyond standard SIEM alert triage, v1 normalization supports authentication even
 
 **Behavioral baselining (v2):** The correlator agent can build per-user authentication profiles (typical login times, source IPs, devices) and flag deviations even when credentials are valid — addressing the hardest class of insider threat and compromised account attacks.
 
-### 10.2 Encrypted Traffic Analysis
+### 12.2 Encrypted Traffic Analysis
 
 Hades can analyze encrypted communications without decryption by examining metadata, handshake characteristics, and traffic patterns:
 
@@ -304,7 +361,7 @@ Hades can analyze encrypted communications without decryption by examining metad
 - Missing HSTS headers or certificate pinning
 - Flagged as compliance findings (SOX, HIPAA, CMMC, PCI-DSS)
 
-### 10.3 Multi-Surface Correlation
+### 12.3 Multi-Surface Correlation
 
 The key advantage of combining auth + encryption + SIEM analysis in a single system: cross-surface correlation that standalone tools miss.
 
@@ -316,11 +373,11 @@ Example attack chain detected across surfaces:
 
 No single detection surface catches this with confidence. The correlator agent with 256K context can hold all three event streams simultaneously and produce a unified assessment.
 
-## 11. Autonomous Response Architecture (v2 Roadmap)
+## 12. Autonomous Response Architecture (v2 Roadmap)
 
 v1 produces triage decisions for human review. v2 extends the pipeline with autonomous response capabilities, gated by confidence thresholds and configurable human-in-the-loop policies.
 
-### 11.1 Response Action Framework
+### 12.1 Response Action Framework
 
 ```
 TriageDecision (v1 output)
@@ -333,7 +390,7 @@ TriageDecision (v1 output)
     └→ [Notification] — SOC escalation, incident ticket creation
 ```
 
-### 11.2 Response Tools (OpenClaw tool registry)
+### 12.2 Response Tools (OpenClaw tool registry)
 
 | Tool | Action | Risk Level | Default Policy |
 |---|---|---|---|
@@ -345,7 +402,7 @@ TriageDecision (v1 output)
 | `ioc_distribute` | Push IOCs to all network sensors | Low | Auto on confirmed threats |
 | `ticket_create` | Open incident in ticketing system | Low | Always auto |
 
-### 11.3 Confidence-Gated Automation
+### 12.3 Confidence-Gated Automation
 
 All autonomous actions require:
 - Triage confidence above a configurable threshold (default: 0.95 for destructive actions, 0.80 for observational)
@@ -355,7 +412,7 @@ All autonomous actions require:
 
 Actions below the confidence threshold produce recommendations instead of executions, preserving the human-in-the-loop for ambiguous cases.
 
-### 11.4 Adaptive Deception (Honeypot Integration)
+### 12.4 Adaptive Deception (Honeypot Integration)
 
 When Hades identifies early-stage attacks (reconnaissance, scanning), it can redirect rather than block:
 - Route attacker traffic to a honeypot environment via firewall rules or DNS manipulation
@@ -366,7 +423,7 @@ When Hades identifies early-stage attacks (reconnaissance, scanning), it can red
 
 This produces intelligence value beyond simple blocking — understanding attacker methodology improves future detection.
 
-### 11.5 Throughput Estimates
+### 12.5 Throughput Estimates
 
 | Hardware | Tokens/sec | Triage Time (avg) | Alerts/day |
 |---|---|---|---|
@@ -377,7 +434,7 @@ This produces intelligence value beyond simple blocking — understanding attack
 
 Even on modest hardware, Hades processes 3-10x more alerts per day than a human analyst, with consistent quality and full audit trails.
 
-## 12. Source Notes
+## 13. Source Notes
 
 Feasibility-sensitive claims in this spec are grounded in primary documentation:
 
