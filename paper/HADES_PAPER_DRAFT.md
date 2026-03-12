@@ -751,6 +751,43 @@ We tested whether adversarial payloads survive 11 common SIEM normalization step
 2. **Character encoding transformations are payload-transparent.** JSON/XML/CEF escaping adds characters but preserves semantic content.
 3. **Attack class determines survival, not SIEM config.** The 40% overall survival rate is entirely explained by the 2/5 attack classes that use explicit instruction keywords. The remaining 3 classes use subtler manipulation that wouldn't be caught by keyword-based detection anyway — making them potentially *more* dangerous despite lower keyword survival.
 
+### 6.6.4 Extended: Encoding Strategy Effectiveness
+
+We tested 9 encoding strategies (6 evasion, 3 protocol-constrained) across all 11 normalization rules (1,485 total tests).
+
+| Encoding | Type | Keyword Survival | LLM-Readable? |
+|---|---|---:|---|
+| Markdown comment | Evasion | **33.3%** | Yes |
+| Synonym substitution | Evasion | **20.0%** | Yes |
+| Homoglyph (Cyrillic) | Evasion | 6.7% | **Yes** (tokenizer handles Unicode) |
+| Zero-width chars | Evasion | 0.0% | **Yes** (invisible to display) |
+| Leetspeak | Evasion | 0.0% | **Yes** (LLMs trained on internet text) |
+| Base64 wrapped | Evasion | 0.0% | **Partial** (some models decode) |
+| DNS constrained | Protocol | **33.3%** | N/A (protocol-limited) |
+| TLS CN constrained | Protocol | **26.7%** | N/A (64-char limit) |
+| SMB constrained | Protocol | 6.7% | N/A (15-char limit) |
+
+**Critical methodological note:** Low keyword survival for evasion encodings does not mean ineffectiveness. Homoglyph, zero-width, and leetspeak encodings are *designed* to evade keyword-based detection — they show 0% keyword survival because our detector can't read them, but LLMs can. These encodings would bypass sanitization defenses (D1) while remaining semantically valid to the model. Whether they actually succeed requires GPU-based E2 experiments.
+
+This reveals a **dual vulnerability**: payloads using direct keywords survive SIEM normalization (§6.6.2), while payloads using evasion encodings survive keyword-based defenses. No single defense layer addresses both.
+
+### 6.6.5 Protocol Constraint Impact
+
+Protocol constraints significantly limit payload capacity but do not eliminate the threat:
+
+| Protocol | Max Payload | Effective Instructions | Viability |
+|---|---:|---:|---|
+| HTTP User-Agent | ~8KB | ~200 words | **Excellent** — unlimited attack surface |
+| HTTP Referer | ~8KB | ~200 words | **Excellent** |
+| TLS Cert SAN | ~2KB | ~50 words | **Strong** — room for full instructions |
+| Email Subject | ~998 chars | ~25 words | **Strong** |
+| SSH Banner | ~255 chars | ~6 words | **Moderate** — fits short commands |
+| DNS Query | 253 bytes | ~4 words | **Tight** — needs compression |
+| TLS Cert CN | 64 chars | ~2 words | **Weak** — barely fits |
+| SMB Hostname | 15 chars | ~1 word | **Minimal** — insufficient alone |
+
+HTTP-based vectors provide orders of magnitude more payload capacity than network-layer vectors. This suggests that web-facing log sources (proxy logs, WAF logs, CDN logs) are the primary attack surface for SOC LLM injection.
+
 ## 6.7 Tables to Populate After GPU Runs
 
 ### Table A — Clean Baseline Accuracy (E1)
