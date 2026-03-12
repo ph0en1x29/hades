@@ -14,11 +14,13 @@ services:
               capabilities: [gpu]
     volumes:
       - ./data/models:/models:ro
+    # Default: DeepSeek R1. Override MODEL_NAME env var for other models.
+    # Full precision (no quantization) on lab GPU cluster.
+    # Models: deepseek-ai/DeepSeek-R1, THUDM/glm-5, moonshotai/Kimi-K2.5, Qwen/Qwen3.5
     command: >
-      vllm serve /models/Kimi-K2.5
-      --quantization int4
-      --tensor-parallel-size 2
-      --max-model-len 256000
+      vllm serve /models/${MODEL_NAME:-DeepSeek-R1}
+      --tensor-parallel-size 4
+      --max-model-len 128000
       --port 8001
     ports:
       - "8001:8001"

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from src.evaluation.dataset_gate import (
     benchmark_contract_issues,
     validate_benchmark_config,
@@ -88,6 +90,8 @@ class TestBenchmarkConfigValidation:
             raise AssertionError("engineering scaffold benchmark should be rejected")
 
     def test_config_accepts_public_benchmark_of_record(self) -> None:
+        repo_root = Path(__file__).resolve().parent.parent
+
         config = {
             "dataset_preparation": {
                 "raw_sources": [
@@ -106,7 +110,7 @@ class TestBenchmarkConfigValidation:
             },
         }
 
-        validate_benchmark_config(config, base_dir="/Users/jay/Hades")
+        validate_benchmark_config(config, base_dir=repo_root)
 
 
 class TestLoadedAlertValidation:

@@ -44,23 +44,37 @@ adversarial:
     - unicode_homoglyph
     - comment_wrapped
 
-# --- Models to evaluate ---
+# --- Models to evaluate (full precision, Penn State GPU cluster) ---
 models:
+  - name: deepseek_r1
+    type: local_moe
+    total_params: 671B
+    active_params: 37B
+    notes: "#1 cybersecurity reasoning, vLLM tensor-parallel on 4×H100"
+  - name: glm_5
+    type: local_moe
+    total_params: 744B
+    active_params: 32B
+    notes: "#1 overall reasoning benchmark, vLLM tensor-parallel on 4×H100"
   - name: kimi_k2.5
     type: local_moe
-    notes: "1T/32B MoE, INT4, vLLM"
-  - name: llama_3.1_70b
-    type: local_dense
-    notes: "70B dense, INT4"
+    total_params: 1T
+    active_params: 32B
+    notes: "Largest MoE, agent swarm mode, vLLM tensor-parallel on 4×H100"
+  - name: qwen_3.5
+    type: local_moe
+    total_params: 397B
+    active_params: 17B
+    notes: "Best GPQA Diamond (88.4%), smallest active params, 2×A100 sufficient"
 
-# Cloud API baselines are intentionally deferred from v1 to preserve air-gapped scope.
+# Cloud API baselines — optional upper-bound comparison, not core contribution
 deferred_models:
   - name: gpt_4o
     type: cloud_api
-    notes: "Deferred: optional upper-bound study outside the v1 offline benchmark"
+    notes: "Optional: upper-bound study, breaks air-gap assumption"
   - name: claude_sonnet
     type: cloud_api
-    notes: "Deferred: optional upper-bound study outside the v1 offline benchmark"
+    notes: "Optional: upper-bound study, breaks air-gap assumption"
 
 # --- Defense mechanisms to evaluate ---
 defenses:
@@ -83,7 +97,7 @@ defenses:
   - name: dual_llm
     description: "D4: Second model verifies first model's decision"
     config:
-      verifier_model: llama_3.1_70b
+      verifier_model: qwen_3.5  # smallest active params, fastest inference as verifier
   - name: canary_token
     description: "D5: Detect cross-boundary influence via canary strings"
 
@@ -112,12 +126,12 @@ statistics:
 experiments:
   E1_baseline:
     description: "Triage accuracy without adversarial input"
-    models: [kimi_k2.5, llama_3.1_70b]
+    models: [deepseek_r1, glm_5, kimi_k2.5, qwen_3.5]
     defense: none
     dataset: baseline
   E2_injection_success:
     description: "Injection success rate per vector × class × model"
-    models: [kimi_k2.5, llama_3.1_70b]
+    models: [deepseek_r1, glm_5, kimi_k2.5, qwen_3.5]
     defense: none
     dataset: adversarial
   E3_payload_survival:
@@ -127,26 +141,26 @@ experiments:
     siem_normalizers: [zeek, suricata, elastic]
   E4_defense_sanitization:
     description: "Sanitization effectiveness vs accuracy trade-off"
-    models: [kimi_k2.5, llama_3.1_70b]
+    models: [deepseek_r1, glm_5, kimi_k2.5, qwen_3.5]
     defense: [sanitization_moderate, sanitization_strict]
     dataset: adversarial
   E5_defense_structured:
     description: "Structured prompt effectiveness vs information loss"
-    models: [kimi_k2.5, llama_3.1_70b]
+    models: [deepseek_r1, glm_5, kimi_k2.5, qwen_3.5]
     defense: structured_prompt
     dataset: adversarial
   E6_defense_training:
     description: "Adversarial fine-tuning effectiveness"
-    models: [kimi_k2.5, llama_3.1_70b]
+    models: [deepseek_r1, glm_5, kimi_k2.5, qwen_3.5]
     defense: adversarial_training
     dataset: adversarial
   E7_defense_dual:
     description: "Dual-LLM verification detection rate"
-    models: [kimi_k2.5, llama_3.1_70b]
+    models: [deepseek_r1, glm_5, kimi_k2.5, qwen_3.5]
     defense: dual_llm
     dataset: adversarial
   E8_adaptive:
     description: "Defense robustness under adaptive attacker"
-    models: [kimi_k2.5, llama_3.1_70b]
+    models: [deepseek_r1, glm_5, kimi_k2.5, qwen_3.5]
     defense: all
     dataset: adversarial_adaptive

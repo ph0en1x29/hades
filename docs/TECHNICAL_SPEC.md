@@ -214,18 +214,35 @@ The v1 runtime is a deterministic pipeline:
 
 ### 7.3 Model Strategy
 
-Hades keeps `Kimi K2.5` as a candidate high-capacity local model, but it is no longer assumed to be frictionless for development or evaluation.
+Hades uses a **multi-model cross-architecture comparison** to strengthen scientific rigor. With access to Penn State Cyber Security Lab GPU hardware (multi-A100/H100 cluster), all models run at full precision without quantization compromise.
 
-Source-backed constraints:
+#### Primary Evaluation Models (Local, Full Precision)
 
-- Moonshot's official model card recommends `vLLM`, `SGLang`, or `KTransformers` for deployment and documents a 256k context window plus different parameter settings for thinking and instant modes.
-- Moonshot's deployment guide explicitly says its commands are examples only, says inference engines are still changing, and currently points users to nightly builds for some Kimi-specific parsing features.
+| Model | Architecture | Total Params | Active Params | VRAM (FP16) | Key Strength |
+|---|---|---|---|---|---|
+| DeepSeek R1 | Dense MoE | 671B | ~37B | 4×H100 (320GB) | #1 for cybersecurity reasoning |
+| GLM-5 | Dense MoE | 744B | ~32B | 4×H100 (320GB) | #1 overall reasoning benchmark |
+| Kimi K2.5 | Sparse MoE | 1T | 32B | 4×H100 (320GB) | Largest MoE, agent swarm mode |
+| Qwen 3.5 | Dense MoE | 397B | 17B | 2×A100 (160GB) | Best GPQA Diamond (88.4%), smallest active params |
 
-Implication for v1:
+#### Why Multi-Model Matters for This Research
 
-- Hades must remain model-agnostic at the interface level.
-- The initial benchmark path must be able to run on one practical local baseline model.
-- Kimi K2.5 local deployment is a gated evaluation target that becomes mandatory only after deployment is validated on available hardware.
+Different architectures have **different vulnerability profiles** to prompt injection:
+- MoE routing decisions may be manipulable (K2.5, Qwen 3.5)
+- Dense attention patterns vs sparse attention affect context sensitivity (DeepSeek R1 vs K2.5)
+- Models trained with different safety RLHF exhibit different injection resistance
+- Cross-model consistency of triage decisions is itself a publishable finding
+
+#### Experiment Design Impact
+
+Each experiment (E1-E8) runs across all 4 models, producing a model×defense×attack matrix. This enables:
+- Per-architecture vulnerability profiling
+- Defense transferability analysis (does D2 work on all architectures?)
+- Publication-grade comparison tables
+
+#### Deployment via vLLM/SGLang
+
+All models served via vLLM with tensor parallelism across available GPUs. Model-agnostic interface preserved — only the vLLM endpoint config changes between runs.
 
 ### 7.4 Retrieval Strategy
 
@@ -400,8 +417,8 @@ Use:
 
 | Experiment | Independent Variable | Dependent Variable | Purpose |
 |---|---|---|---|
-| E1: Baseline triage | Local model (K2.5 candidate, Llama 70B baseline) | F1, precision, recall | Establish triage accuracy after dataset gate exit criteria are met |
-| E2: Injection success rate | Injection vector × attack class × model | Misclassification rate, confidence delta | Measure vulnerability per vector |
+| E1: Baseline triage | Model (DeepSeek R1, GLM-5, K2.5, Qwen 3.5) | F1, precision, recall | Establish triage accuracy per model after dataset gate exit |
+| E2: Injection success rate | Injection vector × attack class × model (4 models) | Misclassification rate, confidence delta | Measure vulnerability per vector per architecture |
 | E3: Payload survival | Encoding method × SIEM normalizer | Payload preservation rate | Which payloads survive real SIEM processing |
 | E4: Defense — sanitization | Sanitization aggressiveness (none/moderate/strict) | Triage accuracy vs injection resistance | Input-level defense |
 | E5: Defense — structured prompts | Raw text vs structured-only alert fields | Injection success vs information loss | Architectural defense |

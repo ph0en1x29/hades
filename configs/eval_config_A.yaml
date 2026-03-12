@@ -7,8 +7,19 @@ experiment:
 
 model:
   provider: vllm
-  name: moonshotai/Kimi-K2.5
-  status: candidate
+  primary_models:
+    - name: deepseek-ai/DeepSeek-R1
+      active_params: 37B
+      notes: "#1 cybersecurity reasoning"
+    - name: THUDM/glm-5
+      active_params: 32B
+      notes: "#1 overall reasoning"
+    - name: moonshotai/Kimi-K2.5
+      active_params: 32B
+      notes: "Largest MoE, agent swarm"
+    - name: Qwen/Qwen3.5
+      active_params: 17B
+      notes: "Best GPQA, smallest active"
   deterministic:
     temperature: 0.0
     seed: 42
