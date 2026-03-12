@@ -24,7 +24,7 @@ class VectorStore:
         self.collection_name = config.get("collection_name", "hades_threat_intel")
         self.persist_dir = config.get("persist_dir", "data/qdrant")
         self.url = config.get("url") or os.getenv("QDRANT_URL")
-        self.embedding_model = config.get("dense_embedding_model", "BAAI/bge-small-en")
+        self.embedding_model = config.get("dense_embedding_model", "BAAI/bge-m3")
         self.sparse_embedding_model = config.get("sparse_embedding_model")
         self.retrieval_mode = config.get("retrieval_mode", "hybrid")
         self._client: Any = None

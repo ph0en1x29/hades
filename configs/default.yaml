@@ -19,7 +19,7 @@ model:
   status: candidate
   validated_for_local_eval: false
   context_window: 256000
-  max_prompt_tokens: 16000
+  max_prompt_tokens: 20000  # Budget: 2K alert + 4K retrieved + 2K policy + 2K correlated + 10K reserve
   deterministic:
     temperature: 0.0
     seed: 42
@@ -39,7 +39,7 @@ rag:
   vector_store: qdrant
   deployment_mode: local
   collection_name: hades_threat_intel
-  dense_embedding_model: BAAI/bge-small-en-v1.5
+  dense_embedding_model: BAAI/bge-m3
   sparse_embedding_model: Qdrant/bm25
   retrieval_mode: hybrid
   top_k: 5
