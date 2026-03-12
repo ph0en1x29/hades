@@ -4,7 +4,7 @@
 
 CORTEX [Wei2025] is the closest prior work: a multi-agent LLM system for collaborative alert triage that demonstrates significant false positive reduction across enterprise scenarios. However, CORTEX does not evaluate adversarial robustness — all alerts are assumed benign or malicious without considering that the alert data itself may contain adversarial content. Our work complements CORTEX by asking: what happens when the data CORTEX processes is deliberately crafted to manipulate its decisions?
 
-Commercial LLM-based SOC tools (Microsoft Security Copilot, CrowdStrike Charlotte AI, Splunk AI Assistant) are widely deployed but have not published adversarial robustness evaluations. The vulnerability we characterize applies to any system that feeds SIEM log data into an LLM prompt.
+Commercial LLM-based SOC tools are rapidly being adopted: Microsoft Security Copilot achieves 26% faster and 44% more accurate SOC tasks in randomized controlled trials [Microsoft2024]; CrowdStrike Charlotte AI reports 98%+ accuracy in threat assessment. Simbian's SOC benchmark [Simbian2025] shows frontier LLMs complete 61–67% of 100 real-world investigation tasks — establishing that LLM SOC agents are capable enough to be deployed but imperfect enough that adversarial manipulation could have outsized impact. None of these systems have published adversarial robustness evaluations. The vulnerability we characterize applies to any system that feeds SIEM log data into an LLM prompt.
 
 ## 8.2 Prompt Injection Attacks
 
@@ -14,7 +14,15 @@ Commercial LLM-based SOC tools (Microsoft Security Copilot, CrowdStrike Charlott
 
 **Real-world validation.** Neaves [2025] at LevelBlue (AT&T Cybersecurity) demonstrates three successful indirect prompt injections through SOC/SIEM log files: HTTP User-Agent, SSH username, and Windows Event 4625 authentication records. In all cases, the LLM triage agent followed injected instructions, falsifying source IPs and hiding attack indicators. Unit 42 [2026] reports 22 distinct IDPI techniques observed in production telemetry, including the first documented case of AI-based ad review evasion. These demonstrations validate our threat model with independent evidence.
 
-**PromptArmor** [Shi2025] surveys simple prompt injection defenses and references AgentDojo. OWASP LLM Top 10 [2025] ranks prompt injection as LLM01, the #1 vulnerability for LLM applications.
+**Indirect Prompt Injection in the Wild** [Chang2026] decomposes IPI into trigger and attack fragments, achieving near-100% retrieval across 11 benchmarks at $0.21/query. A single poisoned email coerced GPT-4o into exfiltrating SSH keys with >80% success. This establishes that IPI retrieval is a "critical open vulnerability" — Hades operates as a post-retrieval detection layer.
+
+**AgentSentry** [Zhang2026] introduces temporal causal diagnostics — counterfactual re-executions at tool-return boundaries to detect multi-turn IPI. It achieves 74.55% Utility Under Attack, +20.8–33.6pp over prior baselines. However, AgentSentry's counterfactual re-execution requires replaying tool calls — infeasible in live SOC environments where SIEM queries are non-deterministic. Hades uses behavioral invariant checking as a lightweight alternative.
+
+**Adaptive IPI attacks** [Zhan2025, NAACL Findings] systematically bypass all 8 evaluated IPI defenses with >50% ASR using adaptive attacks, confirming that static defenses are insufficient in agent contexts.
+
+**DataFilter** [Meng2025] proposes a model-agnostic defense that strips injections from external data before LLM processing, reporting near-zero ASR. However, DataFilter was not evaluated against the SOC-specific injection vectors we characterize (SIEM field injection, protocol-constrained payloads). Whether DataFilter's training generalizes to domain-specific attack patterns (e.g., homoglyph substitution in hostnames, zero-width characters in User-Agent strings) remains an open question our E8 adaptive experiments can address.
+
+OWASP LLM Top 10 [2025] ranks prompt injection as LLM01, the #1 vulnerability for LLM applications.
 
 ## 8.3 Security Benchmarks
 
@@ -42,15 +50,18 @@ Commercial LLM-based SOC tools (Microsoft Security Copilot, CrowdStrike Charlott
 
 Table 1 summarizes how our work fills gaps in the existing literature.
 
-| Capability | CyBench | AgentDojo | CORTEX | SOC-Bench | Hades |
-|---|---|---|---|---|---|
-| SOC-specific evaluation | ✗ | ✗ | ✓ | ✓ | ✓ |
-| Adversarial robustness | ✗ | ✓ | ✗ | ✗ | ✓ |
-| SIEM log field injection | ✗ | ✗ | ✗ | ✗ | ✓ |
-| Adaptive attacker eval | ✗ | ✗ | ✗ | ✗ | ✓ |
-| Rule-linked benchmark | ✗ | ✗ | ✗ | ✓ | ✓ |
-| Cross-model comparison | ✗ | ✗ | ✗ | ✗ | ✓ |
-| Defense evaluation | ✗ | ✓ | ✗ | ✗ | ✓ |
-| Open-source framework | ✓ | ✓ | ✗ | ✗ | ✓ |
+| Capability | CyBench | AgentDojo | AgentSentry | CORTEX | SOC-Bench | Hades |
+|---|---|---|---|---|---|---|
+| SOC-specific evaluation | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
+| Adversarial robustness | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ |
+| SIEM log field injection | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Adaptive attacker eval | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Rule-linked benchmark | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| Cross-model MoE comparison | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Defense evaluation | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ |
+| Behavioral invariant detection | ✗ | ✗ | partial | ✗ | ✗ | ✓ |
+| Open-source framework | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
 
-**Our unique contributions:** (1) the first systematic adversarial evaluation of LLM triage systems through SIEM log field injection, (2) cross-architecture vulnerability comparison of 4 frontier MoE models, (3) defense evaluation following the adaptive attacker methodology of [Nasr2025], and (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements.
+**Our unique contributions:** (1) the first systematic adversarial evaluation of LLM triage systems through SIEM log field injection, (2) cross-architecture vulnerability comparison of 4 frontier MoE models, (3) defense evaluation following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements, and (5) SOC-Bench-compatible output schemas enabling direct comparison with future SOC AI systems.
+
+No prior work occupies the intersection of SOC-specific evaluation, SIEM-channel adversarial attack, and adaptive defense evaluation. AgentSentry [Zhang2026a] addresses adversarial robustness but not SOC workflows; CORTEX [Wei2025] addresses SOC triage but not adversarial robustness; SOC-Bench [Liu2026] defines evaluation structure but assumes benign inputs. Hades fills the gap where all three concerns converge.

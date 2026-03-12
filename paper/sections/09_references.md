@@ -32,4 +32,14 @@
 
 [Zou2026] Yicheng Zou et al. *Overcoming the Retrieval Barrier: Indirect Prompt Injection in the Wild for LLM Systems.* arXiv:2601.07072, January 2026.
 
+[Zhan2025] Qiusi Zhan, Richard Fang, Henil Shalin Panchal, Daniel Kang. *Adaptive Attacks Break Defenses Against Indirect Prompt Injection Attacks on LLM Agents.* NAACL 2025 Findings (pp. 7116–7132). arXiv:2503.00061.
+
+[Chang2026] Chang, H. et al. *Overcoming the Retrieval Barrier: Indirect Prompt Injection in the Wild for LLM Systems.* arXiv:2601.07072, January 2026.
+
 [Zhang2025] Andy K. Zhang, Neil Perry, Rber Cakir, Dan Boneh, Percy Liang et al. *CyBench: A Framework for Evaluating Cybersecurity Capabilities and Risks of Language Models.* ICLR 2025 Oral. arXiv:2408.08926.
+
+[Meng2025] Meng, Feng et al. *Defending Against Prompt Injection with DataFilter.* arXiv:2510.19207, October 2025 (v2 February 2026). Model-agnostic defense reporting near-zero ASR.
+
+[Microsoft2024] Microsoft Security. *Randomized Controlled Trial: Microsoft Security Copilot.* Microsoft Whitepaper, 2024. (26% faster, 44% more accurate across SOC tasks)
+
+[Simbian2025] Simbian AI. *AI in the SOC: Benchmarking LLMs for Autonomous Alert Triage.* June 2025. 100 real-world investigation tasks; LLMs score 61–67%.
