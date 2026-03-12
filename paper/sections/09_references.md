@@ -1,0 +1,29 @@
+# References
+
+[Debenedetti2024] Edoardo Debenedetti, Jie Zhang, Mislav Balunović, Luca Beurer-Kellner, Marc Fischer, Florian Tramèr. *AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses in LLM Agents.* NeurIPS 2024. arXiv:2406.13352.
+
+[Engelen2021] Gints Engelen, Vera Rimmer, Wouter Joosen. *Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study.* IEEE SPW 2021.
+
+[Jing2024] Jing et al. *SecBench: A Comprehensive Multi-Dimensional Benchmarking Dataset for Evaluating LLMs in Cybersecurity.* arXiv:2412.20787, 2024.
+
+[Lekssays2025] Ahmed Lekssays et al. *TechniqueRAG: Retrieval-Augmented Generation for MITRE ATT&CK Technique Identification.* ACL Findings 2025. arXiv:2505.11988.
+
+[Liu2026] Yicheng Cai, Mitchell DeStefano, Guodong Dong, Pulkit Handa, Peng Liu, Tejas Singhal, Peiyu Tseng, Winston Jen White. *Design Principles for the Construction of a Benchmark Evaluating Security Operation Capabilities of Multi-Agent AI Systems.* Penn State Cyber Security Lab, 2026. (SOC-Bench)
+
+[Nasr2025] Milad Nasr et al. *The Attacker Moves Second: Evaluating the Robustness of LLM Defenses Against Adaptive Prompt Injection.* arXiv:2510.09023, October 2025. (14 authors from OpenAI, Anthropic, DeepMind, ETH Zurich)
+
+[Neaves2025] Tom Neaves. *Rogue AI Agents In Your SOCs and SIEMs – Indirect Prompt Injection via Log Files.* LevelBlue (AT&T Cybersecurity) SpiderLabs Blog, September 2025. https://www.levelblue.com/blogs/spiderlabs-blog/rogue-ai-agents-in-your-socs-and-siems-indirect-prompt-injection-via-log-files
+
+[OWASP2025] OWASP Foundation. *OWASP Top 10 for LLM Applications 2025.* LLM01: Prompt Injection. https://genai.owasp.org/llmrisk/llm01-prompt-injection/
+
+[PaloAlto2026] Unit 42, Palo Alto Networks. *Fooling AI Agents: Web-Based Indirect Prompt Injection Observed in the Wild.* March 2026. https://unit42.paloaltonetworks.com/ai-agent-prompt-injection/
+
+[Shabtai2025] Shabtai et al. *RAM: Mapping SIEM Rules to MITRE ATT&CK TTPs Using LLMs.* 2025.
+
+[Sharafaldin2018] Iman Sharafaldin, Arash Habibi Lashkari, Ali A. Ghorbani. *Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization.* ICISSP 2018.
+
+[Shi2025] Shi et al. *PromptArmor: Simple and Effective Defenses Against Prompt Injection Attacks.* arXiv, July 2025.
+
+[Wei2025] Wei et al. *CORTEX: Collaborative LLM Agents for Alert Triage.* arXiv:2510.00311, September 2025.
+
+[Zhang2025] Andy K. Zhang, Neil Perry, Rber Cakir, Dan Boneh, Percy Liang et al. *CyBench: A Framework for Evaluating Cybersecurity Capabilities and Risks of Language Models.* ICLR 2025 Oral. arXiv:2408.08926.

@@ -1,0 +1,41 @@
+# 1. Introduction
+
+Security Operations Centers (SOCs) process thousands of alerts daily, yet human analysts can effectively triage only 50–100 alerts per shift [MDPI2025]. This capacity gap has driven rapid adoption of Large Language Models (LLMs) for automated alert triage, where models classify incoming Security Information and Event Management (SIEM) alerts by severity, identify potential attack patterns, and recommend response actions [Wei2025]. Commercial platforms now embed LLM-based assistants directly into SIEM workflows, and research systems like CORTEX demonstrate that multi-agent LLM architectures can substantially reduce false positive rates across enterprise scenarios.
+
+However, this integration introduces a fundamental and largely unexplored vulnerability: **the data that LLM triage systems process originates from the same adversaries they are designed to detect.** SIEM platforms log network traffic, authentication events, and system telemetry — all of which contain fields whose content is directly controlled by external actors. When an LLM processes these logs, attacker-controlled data enters the model's context window alongside system instructions, creating a classic indirect prompt injection attack surface [OWASP2025].
+
+## 1.1 The Overlooked Attack Surface
+
+Unlike conventional prompt injection, where a malicious user interacts directly with an LLM interface, the threat we characterize operates through the organization's own data pipeline:
+
+> **Attacker → Network traffic → SIEM normalization → Log storage → LLM prompt construction → Triage decision**
+
+At each stage, attacker-controlled content is preserved and eventually presented to the LLM as "data" to analyze. The model cannot reliably distinguish between legitimate log fields and injected instructions, because the boundary between data and instruction is defined only by prompt formatting — a boundary that LLMs are known to violate [Nasr2025].
+
+This is not theoretical. Neaves [2025] demonstrated successful prompt injection through HTTP User-Agent headers, SSH username fields, and Windows Event Log authentication records, causing LLM-based SIEM assistants to falsify source IP addresses, hide attack indicators, and fabricate decoy events. Unit 42 [2026] reported 22 distinct indirect prompt injection techniques observed in production telemetry.
+
+## 1.2 Research Question
+
+We pose the following question:
+
+> *Can adversaries manipulate LLM-based SOC triage systems through crafted network traffic, and what defense mechanisms effectively mitigate this threat?*
+
+This question has three components: (1) characterizing the attack surface specific to SOC triage, (2) measuring vulnerability across different model architectures, and (3) evaluating whether proposed defenses survive adaptive attackers.
+
+## 1.3 Contributions
+
+This paper makes the following contributions:
+
+1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Three vectors are validated against production systems [Neaves2025].
+
+2. **Systematic adversarial evaluation.** We evaluate 4 frontier LLMs (DeepSeek R1, GLM-5, Kimi K2.5, Qwen 3.5) under 5 attack classes, 4 encoding strategies, and 3 attacker knowledge levels, producing over 300,000 adversarial alert variants from a benchmark of 2,619 rule-linked SIEM alerts.
+
+3. **Defense evaluation with adaptive attackers.** We test 5 defense mechanisms — input sanitization, structured prompt architecture, adversarial fine-tuning, dual-LLM verification, and canary token detection — following the methodology of Nasr et al. [2025] to verify that defenses survive adaptive attack escalation.
+
+4. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
+
+5. **Open-source evaluation framework.** We release Hades, a modular pipeline for adversarial evaluation of LLM triage systems, with reproducible experiments and documented methodology.
+
+## 1.4 Paper Organization
+
+Section 2 provides background on SOC triage and LLM security. Section 3 defines our threat model, including the injection vector taxonomy and attacker knowledge assumptions. Section 4 describes the Hades system architecture. Section 5 details our experimental methodology. Section 6 presents results. Section 7 discusses implications, and Section 8 surveys related work.
