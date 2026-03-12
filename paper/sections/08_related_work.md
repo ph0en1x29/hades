@@ -24,7 +24,15 @@ Commercial LLM-based SOC tools are rapidly being adopted: Microsoft Security Cop
 
 OWASP LLM Top 10 [2025] ranks prompt injection as LLM01, the #1 vulnerability for LLM applications.
 
-## 8.3 Security Benchmarks
+## 8.3 MoE Architecture Vulnerabilities
+
+Our cross-model comparison (DeepSeek R1, GLM-5, Kimi K2.5, Qwen 3.5) uses exclusively Mixture-of-Experts architectures, making MoE-specific adversarial research directly relevant.
+
+**L³ (Large Language Lobotomy)** [TeLintelo2026] demonstrates a training-free attack that silences safety-critical experts in MoE models, increasing ASR from 7.3% to 70.4% (peak 86.3%) by disabling <20% of layer-wise experts while preserving utility. **SAFEx** [Lai2025] identifies that safety behavior concentrates in specific expert groups (HCDG/HRCG) — disabling just 12 experts in Qwen3-30B reduces refusal rate by 22%.
+
+These findings suggest that different MoE architectures may exhibit different adversarial vulnerability profiles depending on how safety-critical behavior is distributed across experts — a hypothesis our E1-E8 cross-model experiments can test. If injection payloads differentially exploit expert routing patterns, this would be the first demonstration of architecture-dependent IPI vulnerability in SOC contexts.
+
+## 8.4 Security Benchmarks
 
 **CyBench** [Zhang2025] evaluates LLM offensive cybersecurity capabilities across 40 CTF-style tasks (ICLR 2025 Oral). Funded by a $2.9M Open Philanthropy grant, it benchmarks whether LLMs can *attack* systems. We benchmark whether LLMs deployed *defensively* can be attacked through their data pipelines — the complementary question.
 
@@ -32,7 +40,7 @@ OWASP LLM Top 10 [2025] ranks prompt injection as LLM01, the #1 vulnerability fo
 
 **SecBench** [Jing2024] benchmarks LLM cybersecurity knowledge through MCQ-style assessments. Unlike SecBench, we evaluate operational performance under adversarial conditions, not knowledge recall.
 
-## 8.4 SIEM Data and Normalization
+## 8.5 SIEM Data and Normalization
 
 **SIEVE** [2025] generates synthetic SIEM logs using text augmentation techniques. While synthetic data addresses volume concerns, it lacks the provenance and rule associations required for benchmark-quality evaluation [Liu2026].
 
@@ -40,13 +48,13 @@ OWASP LLM Top 10 [2025] ranks prompt injection as LLM01, the #1 vulnerability fo
 
 **Splunk Attack Data** provides curated attack datasets mapped to MITRE ATT&CK techniques with corresponding detection rules from the Splunk Security Content repository. This is our primary benchmark source, satisfying rule association, MITRE mapping, and provenance requirements.
 
-## 8.5 RAG for Threat Intelligence
+## 8.6 RAG for Threat Intelligence
 
 **TechniqueRAG** [Lekssays2025] (ACL Findings 2025) applies retrieval-augmented generation to MITRE ATT&CK technique identification, using BGE embeddings on ATT&CK descriptions. Our RAG component follows a similar architecture but focuses on retrieving context for triage decisions rather than technique classification.
 
 **RAM** [Shabtai2025] maps SIEM rules to MITRE ATT&CK TTPs using LLMs, providing the intellectual foundation for our rule-linked benchmark construction.
 
-## 8.6 Gap Analysis
+## 8.7 Gap Analysis
 
 Table 1 summarizes how our work fills gaps in the existing literature.
 

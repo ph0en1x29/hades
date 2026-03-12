@@ -43,3 +43,7 @@
 [Microsoft2024] Microsoft Security. *Randomized Controlled Trial: Microsoft Security Copilot.* Microsoft Whitepaper, 2024. (26% faster, 44% more accurate across SOC tasks)
 
 [Simbian2025] Simbian AI. *AI in the SOC: Benchmarking LLMs for Autonomous Alert Triage.* June 2025. 100 real-world investigation tasks; LLMs score 61–67%.
+
+[TeLintelo2026] Jona Te Lintelo et al. *Large Language Lobotomy: Jailbreaking Mixture-of-Experts via Expert Silencing (L³).* arXiv:2602.08741, February 2026. Training-free MoE attack; ASR 7.3%→70.4%.
+
+[Lai2025] Zhenglin Lai et al. *SAFEx: Analyzing Vulnerabilities of MoE-Based LLMs via Stable Safety-critical Expert Identification.* arXiv:2506.17368, October 2025. Safety concentrated in <12 experts in Qwen3-30B.
