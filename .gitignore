@@ -16,6 +16,8 @@ data/datasets/*.json
 data/datasets/splunk_attack_data/
 data/datasets/cic-ids2018/
 data/datasets/beth/
+data/mitre_attack/enterprise-attack.json
+data/mitre_attack/rag_documents/
 !data/datasets/.gitkeep
 
 # Benchmark outputs (regeneratable via scripts/build_benchmark_pack.py)

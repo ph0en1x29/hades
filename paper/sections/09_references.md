@@ -26,4 +26,10 @@
 
 [Wei2025] Wei et al. *CORTEX: Collaborative LLM Agents for Alert Triage.* arXiv:2510.00311, September 2025.
 
+[Habibzadeh2025] Ali Habibzadeh et al. *Large Language Models for Security Operations Centers: A Comprehensive Survey.* arXiv:2509.10858, September 2025.
+
+[Zhang2026a] Tian Zhang et al. *AgentSentry: Mitigating Indirect Prompt Injection in LLM Agents via Temporal Causal Diagnostics and Context Purification.* arXiv:2602.22724, February 2026.
+
+[Zou2026] Yicheng Zou et al. *Overcoming the Retrieval Barrier: Indirect Prompt Injection in the Wild for LLM Systems.* arXiv:2601.07072, January 2026.
+
 [Zhang2025] Andy K. Zhang, Neil Perry, Rber Cakir, Dan Boneh, Percy Liang et al. *CyBench: A Framework for Evaluating Cybersecurity Capabilities and Risks of Language Models.* ICLR 2025 Oral. arXiv:2408.08926.
