@@ -1,6 +1,6 @@
-"""Unified Alert Schema v1 — Normalizes SIEM alerts from multiple vendors."""
+"""Unified alert schema for the Hades v1 prototype."""
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -16,10 +16,9 @@ class AlertSeverity(Enum):
 
 
 class AlertSource(Enum):
-    SPLUNK = "splunk"
-    ELASTIC = "elastic"
-    QRADAR = "qradar"
-    FILE = "file"
+    FILE_REPLAY = "file_replay"
+    NORMALIZED_JSON = "normalized_json"
+    NORMALIZED_JSONL = "normalized_jsonl"
 
 
 @dataclass
@@ -27,45 +26,44 @@ class AlertMetadata:
     vendor: str = ""
     device: str = ""
     category: str = ""
+    message: str = ""
+
+
+@dataclass
+class AlertProvenance:
+    dataset_name: str = ""
+    source_path: str = ""
+    source_record_id: Optional[str] = None
+    source_record_index: Optional[int] = None
+    original_format: str = ""
+    parser_version: str = "alert_normalization_v1"
+    transform_version: str = "alert_projection_v1"
+    collected_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 @dataclass
 class UnifiedAlert:
-    """Normalized alert schema for downstream processing."""
+    """Normalized alert object used by the deterministic triage path."""
 
     alert_id: str = field(default_factory=lambda: str(uuid4()))
-    timestamp: str = ""
-    source: AlertSource = AlertSource.FILE
+    timestamp: Optional[str] = None
+    source: AlertSource = AlertSource.FILE_REPLAY
     severity: AlertSeverity = AlertSeverity.MEDIUM
-    signature: str = ""
-    signature_id: str = ""
-    src_ip: str = ""
+    signature: Optional[str] = None
+    signature_id: Optional[str] = None
+    event_type: Optional[str] = None
+    src_ip: Optional[str] = None
     src_port: Optional[int] = None
-    dst_ip: str = ""
+    dst_ip: Optional[str] = None
     dst_port: Optional[int] = None
-    protocol: str = "TCP"
+    protocol: Optional[str] = None
     raw_log: str = ""
     metadata: AlertMetadata = field(default_factory=AlertMetadata)
+    provenance: AlertProvenance = field(default_factory=AlertProvenance)
     ingested_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     def to_dict(self) -> dict:
-        return {
-            "alert_id": self.alert_id,
-            "timestamp": self.timestamp,
-            "source": self.source.value,
-            "severity": self.severity.value,
-            "signature": self.signature,
-            "signature_id": self.signature_id,
-            "src_ip": self.src_ip,
-            "src_port": self.src_port,
-            "dst_ip": self.dst_ip,
-            "dst_port": self.dst_port,
-            "protocol": self.protocol,
-            "raw_log": self.raw_log,
-            "metadata": {
-                "vendor": self.metadata.vendor,
-                "device": self.metadata.device,
-                "category": self.metadata.category,
-            },
-            "ingested_at": self.ingested_at,
-        }
+        payload = asdict(self)
+        payload["source"] = self.source.value
+        payload["severity"] = self.severity.value
+        return payload

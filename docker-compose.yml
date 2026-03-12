@@ -1,68 +1,26 @@
-# Hades — Full Deployment Stack
+# Hades v1 prototype services
 # Usage: docker compose up -d
 
 version: "3.9"
 
 services:
-  # Model serving (vLLM)
-  model-server:
-    image: vllm/vllm-openai:latest
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+  qdrant:
+    image: qdrant/qdrant:latest
     volumes:
-      - ./data/models:/models
-    command: >
-      --model /models/Kimi-K2.5
-      --quantization int4
-      --tensor-parallel-size 2
-      --max-model-len 256000
-      --port 8001
+      - ./data/qdrant:/qdrant/storage
     ports:
-      - "8001:8001"
+      - "6333:6333"
+      - "6334:6334"
 
-  # RAG vector store
-  chromadb:
-    image: chromadb/chroma:latest
-    volumes:
-      - ./data/embeddings:/chroma/chroma
-    ports:
-      - "8002:8000"
-
-  # Hades pipeline
   hades:
     build: .
     depends_on:
-      - model-server
-      - chromadb
+      - qdrant
     volumes:
       - ./configs:/app/configs
       - ./data:/app/data
       - ./results:/app/results
     environment:
-      - MODEL_SERVER_URL=http://model-server:8001
-      - CHROMADB_URL=http://chromadb:8000
+      - QDRANT_URL=http://qdrant:6333
     ports:
-      - "8000:8000"  # Dashboard
-
-  # Evaluation harness (run on-demand)
-  evaluator:
-    build: .
-    depends_on:
-      - model-server
-      - chromadb
-    volumes:
-      - ./configs:/app/configs
-      - ./data:/app/data
-      - ./results:/app/results
-    environment:
-      - MODEL_SERVER_URL=http://model-server:8001
-      - CHROMADB_URL=http://chromadb:8000
-    command: python src/evaluation/run_benchmark.py --config /app/configs/eval_config_A.yaml
-    profiles:
-      - eval  # Only runs with: docker compose --profile eval up evaluator
+      - "8000:8000"
