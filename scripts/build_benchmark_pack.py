@@ -91,6 +91,38 @@ BENCHMARK_TECHNIQUES = {
         "rule_name": "Suspicious HTTP User-Agent",
         "max_events": 500,
     },
+    "T1036.003": {
+        "tactic": "TA0005 Defense Evasion",
+        "name": "Masquerading: Rename System Utilities",
+        "parser": "sysmon",
+        "file": "T1036.003/windows-sysmon.log",
+        "rule_name": "Renamed System Utility Execution",
+        "max_events": 500,
+    },
+    "T1105": {
+        "tactic": "TA0011 Command and Control",
+        "name": "Ingress Tool Transfer",
+        "parser": "sysmon",
+        "file": "T1105/windows-sysmon.log",
+        "rule_name": "Remote File Download via Ingress Tool",
+        "max_events": 500,
+    },
+    "T1569.002": {
+        "tactic": "TA0002 Execution",
+        "name": "Service Execution",
+        "parser": "sysmon",
+        "file": "T1569.002/windows-sysmon.log",
+        "rule_name": "Service Execution via sc.exe",
+        "max_events": 500,
+    },
+    "T1218.011": {
+        "tactic": "TA0005 Defense Evasion",
+        "name": "Rundll32 Signed Binary Proxy Execution",
+        "parser": "sysmon",
+        "file": "T1218.011/windows-sysmon.log",
+        "rule_name": "Suspicious Rundll32 Execution",
+        "max_events": 500,
+    },
 }
 
 

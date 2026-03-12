@@ -10,9 +10,9 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 
 | Metric | Value |
 |---|---:|
-| Total alerts | **2,619** |
-| MITRE techniques | **8** |
-| ATT&CK tactics | **6** |
+| Total alerts | **4,619** |
+| MITRE techniques | **12** |
+| ATT&CK tactics | **7** |
 | Contract failures | **0** |
 | Parser types | Sysmon XML, Suricata JSON |
 | Provenance coverage | **100%** |
@@ -28,20 +28,25 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 | T1087.001 | Local Account Discovery | 500 |
 | T1021.002 | SMB Admin Shares | 2 |
 | T1027 | Obfuscated Files / Information | 500 |
+| T1036.003 | Masquerading: Rename System Utilities | 500 |
 | T1053.005 | Scheduled Task | 500 |
-| T1547.001 | Registry Run Keys | 500 |
 | T1071.001 | HTTP C2 Traffic | 94 |
+| T1105 | Ingress Tool Transfer | 500 |
+| T1218.011 | Rundll32 Signed Binary Proxy Execution | 500 |
+| T1547.001 | Registry Run Keys | 500 |
+| T1569.002 | Service Execution | 500 |
 
 ### 6.1.3 Tactic Distribution
 
 | Tactic | Alerts | % |
 |---|---:|---:|
-| TA0003 Persistence | 1,000 | 38.2% |
-| TA0005 Defense Evasion | 500 | 19.1% |
-| TA0006 Credential Access | 523 | 20.0% |
-| TA0007 Discovery | 500 | 19.1% |
-| TA0008 Lateral Movement | 2 | 0.1% |
-| TA0011 Command and Control | 94 | 3.6% |
+| TA0002 Execution | 500 | 10.8% |
+| TA0003 Persistence | 1,000 | 21.6% |
+| TA0005 Defense Evasion | 1,500 | 32.5% |
+| TA0006 Credential Access | 523 | 11.3% |
+| TA0007 Discovery | 500 | 10.8% |
+| TA0008 Lateral Movement | 2 | 0.0% |
+| TA0011 Command and Control | 594 | 12.9% |
 
 ## 6.2 Adversarial Dataset Generation Results
 
@@ -55,8 +60,8 @@ The adversarial injector produced the following experiment space:
 | Attack classes | 5 |
 | Encoding strategies | 2 |
 | Variants per alert | **120** |
-| Benchmark alerts | 2,619 |
-| Total adversarial variants | **314,280** |
+| Benchmark alerts | 4,619 |
+| Total adversarial variants | **554,280** |
 
 ### 6.2.2 Injection Vector Capacity
 
@@ -187,6 +192,6 @@ This confirms that:
 Even before full model inference, several claims are already empirically established:
 
 1. **Dataset adequacy is solved for v1.** We now have a benchmark-of-record with rule associations, MITRE mappings, provenance chains, and enforced contract validation.
-2. **The adversarial experiment space is concrete, not speculative.** We can generate 314,280 realistic adversarial samples today.
+2. **The adversarial experiment space is concrete, not speculative.** We can generate 554,280 realistic adversarial samples today.
 3. **The highest-value injection vectors are operationally grounded.** HTTP User-Agent, Windows Event authentication fields, and SSH usernames are all both realistic and externally validated.
 4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.

@@ -2,15 +2,16 @@
   "version": "1.0",
   "created": "2026-03-12",
   "source": "splunk_attack_data",
-  "total_alerts": 2619,
-  "techniques": 8,
+  "total_alerts": 4619,
+  "techniques": 12,
   "tactics": {
     "TA0006 Credential Access": 523,
     "TA0007 Discovery": 500,
     "TA0008 Lateral Movement": 2,
-    "TA0005 Defense Evasion": 500,
+    "TA0005 Defense Evasion": 1500,
     "TA0003 Persistence": 1000,
-    "TA0011 Command and Control": 94
+    "TA0011 Command and Control": 594,
+    "TA0002 Execution": 500
   },
   "technique_breakdown": {
     "T1003.001": 500,
@@ -20,7 +21,11 @@
     "T1027": 500,
     "T1053.005": 500,
     "T1547.001": 500,
-    "T1071.001": 94
+    "T1071.001": 94,
+    "T1036.003": 500,
+    "T1105": 500,
+    "T1569.002": 500,
+    "T1218.011": 500
   },
   "contract_failures": 0,
   "notes": "Benchmark pack for Hades adversarial evaluation. All alerts pass dataset gate benchmark contract checks."
