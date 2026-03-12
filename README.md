@@ -1,111 +1,66 @@
-# Hades — Offline Agentic SOC Assistant
+# Hades — Offline SOC Triage Research Prototype
 
-An air-gapped, multi-agent Security Operations Center (SOC) assistant built on **Kimi K2.5** (open-source 1T MoE), **OpenClaw** (tool orchestration), and a **local RAG pipeline** (MITRE ATT&CK + CVE threat intelligence).
+Hades is a scoped research prototype for offline SOC alert triage. The repository currently contains the proposal, public schemas, and baseline configuration needed to build the system, but it does not yet contain an end-to-end production implementation.
 
-Hades processes SIEM alerts through a specialized agent pipeline to produce triage classifications, correlated event timelines, and incident response playbooks — all without external network dependencies.
+## Status
 
-## Architecture
+- Reviewed and reframed on March 12, 2026.
+- Current repository state: initial scaffold, not a validated system.
+- Primary proposal artifact: `docs/TECHNICAL_SPEC.md`
+- Findings-first review artifact: `docs/PROPOSAL_REVIEW.md`
 
+## v1 Scope
+
+- File replay input using one normalized alert schema
+- Deterministic triage pipeline instead of agent swarm
+- Local CLI and/or FastAPI dashboard for analyst review
+- Structured evidence trace for auditability
+- Local hybrid retrieval using Qdrant
+- One high-capacity local model candidate and one smaller local baseline
+
+## Explicit Non-Goals for v1
+
+- Telegram or other internet-dependent analyst interfaces
+- Native swarm orchestration as a required path
+- Multi-SIEM live connectors
+- Automated SOAR/ticketing actions
+- Large cloud-model comparison matrix
+
+## Why The Scope Changed
+
+The original proposal mixed an ambitious research agenda with claims the repo could not yet support. This revision narrows the project to something one engineer can plausibly build and evaluate by August 2026, while keeping a clean path to later research extensions.
+
+Two stack decisions are intentionally conservative:
+
+- `Kimi K2.5` remains a candidate core model, but Moonshot's own deployment guidance recommends specific inference engines and currently points users to nightly builds for some features. Hades therefore treats Kimi as a gated deployment target, not a guaranteed day-one runtime.
+- `Qdrant` replaces `Chroma` for the local RAG plan because Qdrant documents local mode plus dense, sparse, and hybrid retrieval, while Chroma's newer hybrid Search API is currently documented as Chroma Cloud-only.
+
+## Source-Backed Feasibility Notes
+
+- Moonshot model card: [moonshotai/Kimi-K2.5](https://huggingface.co/moonshotai/Kimi-K2.5)
+- Moonshot deployment guide: [Kimi-K2.5 deployment guide](https://huggingface.co/moonshotai/Kimi-K2.5/blob/main/docs/deploy_guidance.md)
+- vLLM OpenAI-compatible serving: [vLLM docs](https://docs.vllm.ai/en/latest/serving/openai_compatible_server/)
+- Qdrant local quickstart: [Qdrant quickstart](https://qdrant.tech/documentation/quick-start/)
+- Qdrant hybrid retrieval and local mode: [Qdrant LangChain integration docs](https://qdrant.tech/documentation/frameworks/langchain/)
+- Chroma hybrid search availability: [Chroma Search API overview](https://docs.trychroma.com/cloud/search-api/overview)
+
+## Repository Layout
+
+```text
+hades/
+├── configs/    # Prototype configs and optional tool contracts
+├── docs/       # Revised technical spec and review
+├── src/        # Public schemas and entrypoint scaffold
+└── docker-compose.yml
 ```
-┌──────────────┐   ┌──────────────────┐   ┌──────────────────┐
-│ Data Ingest  │──▶│ OpenClaw Routing  │──▶│ Kimi K2.5 Engine │
-│ (SIEM/Logs)  │   │ (Tools + Context) │   │ (Reasoning/Orch) │
-└──────────────┘   └──────────────────┘   └────────┬─────────┘
-                                                    │
-                                    ┌───────────────┼───────────────┐
-                                    ▼               ▼               ▼
-                            ┌──────────┐   ┌──────────────┐  ┌──────────┐
-                            │Classifier│   │Log Correlator│  │ Playbook │
-                            │  Agent   │   │    Agent     │  │Generator │
-                            └────┬─────┘   └──────┬───────┘  └────┬─────┘
-                                 │                 │               │
-                            ┌────▼─────────────────▼───────────────▼────┐
-                            │        Local RAG (ATT&CK + CVE)          │
-                            └──────────────────────────────────────────┘
-                                                │
-                            ┌───────────────────▼──────────────────────┐
-                            │      Output & Decision Layer (Audit)     │
-                            └──────────────────────────────────────────┘
-```
-
-## Key Features
-
-- **Zero network dependency** after initial setup — fully air-gapped operation
-- **Multi-agent pipeline** — classifier, correlator, playbook generator with parallel execution
-- **Auditable decisions** — full reasoning chain + confidence scores for compliance
-- **Modular** — swap models, SIEM connectors, or RAG sources independently
-- **Evaluation-first** — benchmark harness built alongside the system
 
 ## Quick Start
 
 ```bash
-# 1. Set up environment
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-
-# 2. Download model weights (requires internet)
-python scripts/download_model.py --model moonshotai/Kimi-K2.5 --quantization int4
-
-# 3. Build RAG knowledge base
-python scripts/build_rag.py --sources mitre,cve,custom
-
-# 4. Start the pipeline
 python src/main.py --config configs/default.yaml
-
-# 5. Run evaluation
-python src/evaluation/run_benchmark.py --config configs/eval_config_A.yaml
 ```
 
-## Project Structure
-
-```
-hades/
-├── configs/                 # YAML configs (model, pipeline, eval)
-├── data/
-│   ├── datasets/            # Evaluation datasets (CICIDS, BETH, synthetic)
-│   ├── embeddings/          # Pre-built vector store
-│   └── models/              # Local model weights
-├── docs/                    # Technical spec, architecture, paper drafts
-├── scripts/                 # Setup, download, build scripts
-├── src/
-│   ├── ingestion/           # SIEM connectors + normalization
-│   ├── openclaw/            # OpenClaw integration + tool definitions
-│   ├── agents/              # Classifier, correlator, playbook agents
-│   ├── rag/                 # Vector store + embedding + retrieval
-│   ├── evaluation/          # Benchmark harness + metrics
-│   └── output/              # Decision aggregation + audit logging
-├── tests/                   # Unit + integration tests
-└── docker-compose.yml       # Full deployment stack
-```
-
-## Hardware Requirements
-
-| Tier | Hardware | Performance | Use Case |
-|------|----------|-------------|----------|
-| Development | Moonshot API or Qwen 72B local | Variable | Prompt engineering, pipeline testing |
-| Evaluation | 2× A100 80GB + 256GB RAM | ~15-20 tok/s | Full benchmark suite |
-| Production | 4× H100 80GB + 512GB RAM | ~40+ tok/s | Real-time SOC deployment |
-| Minimum (POC) | 1× RTX 4090 + 256GB RAM | ~1-2 tok/s (1.58-bit) | Air-gapped demo only |
-
-## Research Context
-
-- **Institution**: Penn State University, College of IST
-- **Advisor**: Dr. Peng Liu (Cyber Security Lab)
-- **Program**: BS Cybersecurity Analytics & Operations
-- **Timeline**: March – August 2026
-- **Paper target**: USENIX Security 2027 / ACM CCS 2026 Workshop
-
-## License
-
-MIT
-
-## Citation
-
-```bibtex
-@misc{hades2026,
-  title={Hades: An Offline Agentic SOC Assistant Using Open-Source MoE Models},
-  author={Li, Jay},
-  year={2026},
-  institution={Penn State University}
-}
-```
+`src/main.py` is still a scaffold entrypoint. The revised docs define what the implementation should build next.

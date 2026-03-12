@@ -1,42 +1,84 @@
-# Config A: Baseline — K2.5 single-agent, no RAG
+# Config A: locked benchmark for the scoped Hades prototype
+
 experiment:
-  id: config_a
-  name: "Baseline: K2.5 Single-Agent, No RAG"
-  description: "Baseline local performance without retrieval augmentation"
+  id: config_a_locked_local
+  name: "Locked Local Benchmark"
+  description: "Deterministic triage path with local retrieval and a locked test split"
 
 model:
   provider: vllm
   name: moonshotai/Kimi-K2.5
-  quantization: int4
+  status: candidate
   deterministic:
     temperature: 0.0
     seed: 42
 
 orchestration:
-  mode: single  # No multi-agent
-  
+  mode: deterministic_pipeline
+
 rag:
-  enabled: false
+  enabled: true
+  vector_store: qdrant
+  retrieval_mode: hybrid
+  sources:
+    - mitre_attack
+    - curated_cve
+
+dataset_preparation:
+  raw_sources:
+    - name: cicids2018
+      type: flow_dataset
+    - name: beth
+      type: host_event_dataset
+    - name: curated_benign
+      type: benign_alert_fixture
+  transform:
+    enabled: true
+    version: alert_projection_v1
+    output_dir: data/benchmarks/normalized
+    preserve_raw_reference: true
+    require_provenance_fields: true
+
+split_policy:
+  strategy: scenario_holdout
+  group_by: [dataset_name, scenario_id]
+  development_split: dev
+  locked_report_split: test
+  tuning_allowed_on: [dev]
+  reporting_allowed_on: [test]
+
+contamination_controls:
+  disallow_benchmark_labels_in_rag: true
+  disallow_benchmark_rationales_in_rag: true
+  disallow_transformed_benchmark_records_in_rag: true
+  require_separate_prompt_notes_for_test: true
+
+annotator_protocol:
+  reviewers_required: 3
+  agreement_metric: fleiss_kappa
+  adjudication: majority_vote_then_faculty_review
+
+statistical_analysis:
+  primary_metric: macro_f1
+  confidence_intervals:
+    method: bootstrap
+    iterations: 10000
+    alpha: 0.05
+  paired_tests:
+    - name: paired_bootstrap_macro_f1
+    - name: bowker_multiclass_symmetry
+  binary_subtask_tests:
+    - name: mcnemar_false_positive_vs_not
+    - name: mcnemar_missed_detection_vs_not
 
 evaluation:
-  datasets:
-    - data/datasets/cicids2017_alerts.json
-    - data/datasets/cicids2018_alerts.json
-    - data/datasets/beth_alerts.json
-    - data/datasets/synthetic_mitre_alerts.json
-    - data/datasets/false_positive_set.json
   metrics:
-    - precision
-    - recall
-    - f1_macro
-    - false_positive_rate
+    - macro_f1
+    - precision_per_class
+    - recall_per_class
+    - benign_false_positive_rate
+    - missed_detection_rate
+    - abstain_or_escalate_rate
     - latency_p50
     - latency_p95
-    - tokens_used
-  statistical_tests:
-    mcnemar: true
-    bootstrap_ci:
-      enabled: true
-      iterations: 10000
-      alpha: 0.05
-  output_dir: results/config_a/
+  output_dir: results/config_a_locked_local/

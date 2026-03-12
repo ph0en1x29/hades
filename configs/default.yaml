@@ -1,88 +1,78 @@
-# Hades Default Configuration
+# Hades v1 prototype configuration
 
 system:
   name: hades
-  version: 0.1.0
+  version: 0.2.0
+  stage: scoped_prototype
   log_level: INFO
 
-# Model configuration
-model:
-  provider: moonshot  # moonshot (API) | vllm | sglang
-  name: moonshotai/Kimi-K2.5
-  quantization: int4
-  context_window: 256000
-  max_prompt_tokens: 20000  # Focused prompt for accuracy
-  
-  # Inference modes
-  thinking:
-    temperature: 1.0
-    top_p: 0.95
-    min_p: 0.01
-  instant:
-    temperature: 0.6
-    top_p: 0.95
-  deterministic:
-    temperature: 0.0
-    seed: 42
-
-# Orchestration
-orchestration:
-  mode: openclaw  # openclaw | swarm
-  max_retries: 2
-  timeout_seconds: 120
-  
-  # Agent confidence thresholds
-  classifier:
-    confidence_threshold: 0.7  # Below this → trigger correlator
-    escalation_threshold: 0.5  # Below this → escalate to human
-  
-# RAG configuration
-rag:
-  vector_store: chromadb
-  embedding_model: BAAI/bge-m3
-  collection_name: hades_threat_intel
-  chunk_size: 512
-  chunk_overlap: 128
-  top_k: 5
-  search_mode: hybrid  # hybrid | semantic | keyword
-  
-  # Knowledge sources
-  sources:
-    - name: mitre_attack
-      path: data/embeddings/mitre_attack_v15
-      enabled: true
-    - name: nvd_cve
-      path: data/embeddings/nvd_cve
-      enabled: true
-    - name: custom_intel
-      path: data/embeddings/custom
-      enabled: false
-
-# Ingestion
-ingestion:
-  mode: file  # file | kafka | redis
-  file:
-    watch_dir: data/datasets/incoming
-    formats: [json, csv]
-  kafka:
-    bootstrap_servers: localhost:9092
-    topic: hades-alerts
-  
-# Output
-output:
-  audit_db: data/audit.sqlite
+interfaces:
+  cli: true
   dashboard:
     enabled: true
     host: 0.0.0.0
     port: 8000
-  soar:
-    enabled: false
-    webhook_url: ""
 
-# Context priority (tokens)
+model:
+  provider: vllm
+  name: moonshotai/Kimi-K2.5
+  status: candidate
+  validated_for_local_eval: false
+  context_window: 256000
+  max_prompt_tokens: 16000
+  deterministic:
+    temperature: 0.0
+    seed: 42
+  human_review:
+    confidence_threshold: 0.70
+    auto_escalate_threshold: 0.50
+
+orchestration:
+  mode: deterministic_pipeline
+  adapter: none
+  optional_future_adapter: openclaw
+  max_retries: 1
+  timeout_seconds: 90
+
+rag:
+  enabled: true
+  vector_store: qdrant
+  deployment_mode: local
+  collection_name: hades_threat_intel
+  dense_embedding_model: BAAI/bge-m3
+  sparse_embedding_model: Qdrant/bm25
+  retrieval_mode: hybrid
+  top_k: 5
+  sources:
+    - name: mitre_attack
+      path: data/knowledge/mitre_attack
+      enabled: true
+    - name: curated_cve
+      path: data/knowledge/curated_cve
+      enabled: true
+
+ingestion:
+  mode: file_replay
+  replay_dir: data/datasets/incoming
+  accepted_formats: [json, jsonl]
+  normalized_schema_version: unified_alert_v1
+  parser_version: alert_normalization_v1
+
+output:
+  audit_store: data/audit.sqlite
+  decision_dir: results/decisions
+  write_jsonl: true
+  evidence_trace: structured
+
+evaluation:
+  locked_test_required: true
+  annotator_metric: fleiss_kappa
+  statistical_tests:
+    - paired_bootstrap
+    - bowker
+
 context:
   current_alert: 2000
-  correlated_events: 8000
-  rag_results: 4000
-  session_history: 4000
-  historical_summaries: 2000
+  retrieved_evidence: 4000
+  policy_instructions: 2000
+  historical_summaries: 1000
