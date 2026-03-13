@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HADES — Project Reference</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 2rem; margin-bottom: 0.25rem; }
+  h1 span { color: var(--red); }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+  h2 {
+    font-size: 1.25rem;
+    color: var(--accent);
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1.05rem; color: var(--purple); margin: 1.5rem 0 0.5rem; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .stat .num {
+    font-size: 1.75rem;
+    font-weight: 700;
+    display: block;
+  }
+  .stat .label {
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .green { color: var(--green); }
+  .yellow { color: var(--yellow); }
+  .red { color: var(--red); }
+  .accent { color: var(--accent); }
+  .purple { color: var(--purple); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.9rem;
+  }
+  th, td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+  .status-complete { color: var(--green); }
+  .status-blocked { color: var(--yellow); }
+  .status-progress { color: var(--accent); }
+  .mermaid {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    text-align: center;
+  }
+  .tldr {
+    background: #1a2332;
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+  .fox-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.5rem 0;
+  }
+  .fox-bar .bar {
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 0.75rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #fff;
+  }
+  .bar-clean { background: var(--green); width: 95.7%; }
+  .bar-adversarial { background: var(--red); width: 51%; }
+  .bar-container { flex: 1; }
+  .experiment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.75rem;
+  }
+  .exp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .exp-card .exp-id {
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.25rem;
+  }
+  .exp-card .exp-status {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+  }
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.65rem;
+    top: 0.5rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .timeline-item.done::before { background: var(--green); }
+  .timeline-item.current::before { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .timeline-item .period { font-weight: 600; font-size: 0.85rem; color: var(--muted); }
+  .timeline-item .milestone { font-weight: 600; }
+  .attack-flow { font-size: 0.9rem; line-height: 2; }
+  .attack-flow .step {
+    display: inline-block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    margin: 0.15rem 0;
+  }
+  .attack-flow .arrow { color: var(--red); margin: 0 0.25rem; font-weight: bold; }
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1><span>HADES</span> Project Reference</h1>
+<p class="subtitle">Adversarial Robustness of LLM-Based SOC Alert Triage &nbsp;·&nbsp; Advisor: Dr. Peng Liu, LIONS Center</p>
+
+<div class="tldr">
+  <strong>One-liner:</strong> Attackers hide prompt injections in network traffic → SIEM logs it faithfully → LLM triage reads the poison → wrong security decision. HADES tests how bad it gets and what defenses work.
+</div>
+
+<!-- Key Stats -->
+<div class="stats">
+  <div class="stat"><span class="num green">12,147</span><span class="label">Benchmark Alerts</span></div>
+  <div class="stat"><span class="num accent">27</span><span class="label">ATT&CK Techniques</span></div>
+  <div class="stat"><span class="num purple">~1.46M</span><span class="label">Adversarial Variants</span></div>
+  <div class="stat"><span class="num">13,474</span><span class="label">Lines of Code</span></div>
+  <div class="stat"><span class="num green">64</span><span class="label">Commits</span></div>
+  <div class="stat"><span class="num yellow">26</span><span class="label">GPU-Blocked TBDs</span></div>
+</div>
+
+<!-- The Attack -->
+<h2>🎯 The Attack (SIEM Pipeline Injection)</h2>
+<div class="card">
+  <p style="margin-bottom:1rem; color: var(--muted);">The core insight: SIEMs are faithful loggers. They don't sanitize — they record.</p>
+  <div class="attack-flow">
+    <span class="step" style="border-color: var(--red);">🔴 Attacker crafts HTTP header / DNS query / TLS cert with prompt injection</span>
+    <span class="arrow">→</span>
+    <span class="step">📡 Network traffic hits target</span>
+    <span class="arrow">→</span>
+    <span class="step">📋 SIEM logs it verbatim</span>
+    <span class="arrow">→</span>
+    <span class="step">🔧 Normalizer includes payload in alert</span>
+    <span class="arrow">→</span>
+    <span class="step" style="border-color: var(--red);">🤖 LLM triage reads poisoned alert → wrong decision</span>
+  </div>
+  <table style="margin-top: 1.25rem;">
+    <tr><th>Dimension</th><th>Count</th><th>Examples</th></tr>
+    <tr><td>Injection Vectors</td><td>12</td><td>HTTP User-Agent, DNS TXT, TLS CN, hostname, URL path...</td></tr>
+    <tr><td>Attack Classes</td><td>5</td><td>Misclassification, confidence manipulation, reasoning corruption, attention hijacking, escalation suppression</td></tr>
+    <tr><td>Encodings</td><td>9</td><td>Plaintext, Base64, homoglyph, zero-width, leetspeak, ROT13...</td></tr>
+  </table>
+</div>
+
+<!-- System Architecture -->
+<h2>🏗️ System Architecture</h2>
+<div class="mermaid">
+graph LR
+  subgraph Ingestion
+    A[Raw Logs<br/>Sysmon · Suricata · WinSec · BETH · CICIDS] --> B[5 Parsers]
+    B --> C[UnifiedAlert Schema<br/>JSON validated]
+  end
+  subgraph RAG
+    D[691 MITRE ATT&CK Docs] --> E[Qdrant Vector Store<br/>Hybrid Retrieval]
+  end
+  subgraph Triage
+    C --> F[Classifier Agent]
+    E --> F
+    F --> G[Correlator Agent]
+    G --> H[Playbook Agent]
+    H --> I[TriageDecision]
+  end
+  subgraph Evaluation
+    I --> J[Behavioral Invariants<br/>INV-1 to INV-6]
+    I --> K[Fox Ring Scorer<br/>SOC-Bench Compatible]
+    I --> L[Statistical Tests<br/>Bootstrap CI · McNemar · etc]
+  end
+  subgraph Adversarial
+    M[Payload Generator<br/>12 vectors × 5 classes × 9 encodings] --> C
+    N[Defense Layer<br/>Sanitize · Structured · Canary · Dual-LLM] --> F
+  end
+
+  style A fill:#1a2332,stroke:#58a6ff
+  style I fill:#1a2332,stroke:#3fb950
+  style M fill:#1a2332,stroke:#f85149
+  style N fill:#1a2332,stroke:#d29922
+</div>
+
+<!-- Threat Model -->
+<h2>🛡️ Threat Model</h2>
+<div class="mermaid">
+graph TB
+  ATK[🔴 Adversary<br/>Controls network traffic only<br/>No model access] --> CRAFT[Craft Payloads<br/>12 vectors · 9 encodings]
+  CRAFT --> NET[Network Traffic<br/>HTTP headers · DNS · TLS · hostnames]
+  NET --> SIEM[📋 SIEM<br/>Faithful logger — records verbatim]
+  SIEM --> NORM[Normalizer<br/>Payload survives in alert fields]
+  NORM --> LLM[🤖 LLM Triage<br/>Reads poisoned context]
+  LLM --> DEC{Decision}
+  DEC -->|Clean| GOOD[✅ Correct Triage]
+  DEC -->|Poisoned| BAD[❌ Wrong Classification<br/>Suppressed Escalation<br/>Corrupted Reasoning]
+
+  DEF[🛡️ Defenses] --> LLM
+  DEF --> NORM
+  INV[Behavioral Invariants<br/>INV-1 to INV-6] --> DEC
+
+  style ATK fill:#3b1219,stroke:#f85149
+  style BAD fill:#3b1219,stroke:#f85149
+  style GOOD fill:#0d2818,stroke:#3fb950
+  style DEF fill:#2b1d0e,stroke:#d29922
+  style INV fill:#1a1530,stroke:#bc8cff
+</div>
+
+<!-- Fox Score Impact -->
+<h2>📊 Fox Score Impact (Mock Inference)</h2>
+<div class="card">
+  <p style="margin-bottom: 0.75rem; color: var(--muted);">SOC-Bench Fox scoring — campaign detection accuracy. Pre-GPU simulation using mock inference.</p>
+  <div class="fox-bar">
+    <span style="width: 80px; font-size: 0.85rem;">Clean</span>
+    <div class="bar-container"><div class="bar bar-clean">95.7 / 100</div></div>
+  </div>
+  <div class="fox-bar">
+    <span style="width: 80px; font-size: 0.85rem;">Adversarial</span>
+    <div class="bar-container"><div class="bar bar-adversarial">51.0 / 100</div></div>
+  </div>
+  <p style="margin-top: 0.75rem; font-size: 0.95rem;">
+    <strong class="red">−44.7 point degradation</strong> — the attack nearly halves detection accuracy.
+  </p>
+</div>
+
+<!-- Key Results -->
+<h2>🔬 Key Results (Pre-GPU)</h2>
+<div class="card">
+  <table>
+    <tr><th>Finding</th><th>Result</th><th>Implication</th></tr>
+    <tr><td>Payload survival (E3)</td><td class="red">40% survive all 11 SIEM rules</td><td>SIEM normalization doesn't stop injections</td></tr>
+    <tr><td>Evasion encodings</td><td class="yellow">Homoglyph + zero-width bypass keyword defenses</td><td>Simple filters are insufficient</td></tr>
+    <tr><td>Best layered defense</td><td class="yellow">60% indicator removal (plaintext only)</td><td>Input sanitization alone won't work</td></tr>
+    <tr><td>Behavioral invariants</td><td class="green">100% C1/C3, 98% C4, 0% FP</td><td>Output validation catches what input filtering misses</td></tr>
+    <tr><td>E2E adversarial test</td><td class="green">100% detection, 0% FPR (30 tests)</td><td>Pipeline works end-to-end on mock data</td></tr>
+    <tr><td>Fox score delta</td><td class="red">95.7 → 51.0 (−44.7)</td><td>Attack impact is dramatic and measurable</td></tr>
+  </table>
+</div>
+
+<!-- Behavioral Invariants -->
+<h2>🔒 Behavioral Invariants</h2>
+<div class="card">
+  <p style="margin-bottom: 0.75rem; color: var(--muted);">Model-agnostic constraints that triage outputs must satisfy regardless of input manipulation.</p>
+  <table>
+    <tr><th>ID</th><th>Check</th><th>What It Catches</th></tr>
+    <tr><td>INV-1</td><td>Classification in valid set</td><td>Injection producing garbage labels</td></tr>
+    <tr><td>INV-2</td><td>Confidence ∈ [0, 1]</td><td>Confidence manipulation out of bounds</td></tr>
+    <tr><td>INV-3</td><td>High confidence benign → flag</td><td>Suppression attacks (hiding real threats)</td></tr>
+    <tr><td>INV-4</td><td>MITRE technique consistency</td><td>Technique injection / hallucination</td></tr>
+    <tr><td>INV-5</td><td>Reasoning ≥ minimum length</td><td>Reasoning truncation / corruption</td></tr>
+    <tr><td>INV-6</td><td>Confidence-severity alignment</td><td>C2 attacks INV-3 misses (low confidence on real threats)</td></tr>
+  </table>
+</div>
+
+<!-- Experiments -->
+<h2>🧪 Experiments (E1–E8)</h2>
+<div class="experiment-grid">
+  <div class="exp-card">
+    <div class="exp-id">E1 — Clean Baseline</div>
+    <div>Triage accuracy on 12,147 unmodified alerts across 4 models</div>
+    <div class="exp-status status-blocked">⏳ GPU-blocked</div>
+  </div>
+  <div class="exp-card">
+    <div class="exp-id">E2 — Injection Success Rate</div>
+    <div>Attack success per vector × class × model. The core attack measurement.</div>
+    <div class="exp-status status-blocked">⏳ GPU-blocked</div>
+  </div>
+  <div class="exp-card">
+    <div class="exp-id">E3 — Payload Survival</div>
+    <div>Do payloads survive SIEM normalization? 40% survive all 11 rules.</div>
+    <div class="exp-status status-complete">✅ Complete</div>
+  </div>
+  <div class="exp-card">
+    <div class="exp-id">E4 — Defense Effectiveness</div>
+    <div>5 defenses × 4 models. Which combination works best?</div>
+    <div class="exp-status status-blocked">⏳ GPU-blocked</div>
+  </div>
+  <div class="exp-card">
+    <div class="exp-id">E5 — Behavioral Invariants</div>
+    <div>Do invariants catch attacks that defenses miss? (Layered evaluation)</div>
+    <div class="exp-status status-blocked">⏳ GPU-blocked</div>
+  </div>
+  <div class="exp-card">
+    <div class="exp-id">E6 — Cross-Model Comparison</div>
+    <div>Which MoE architecture is most/least robust? Statistical significance tests.</div>
+    <div class="exp-status status-blocked">⏳ GPU-blocked</div>
+  </div>
+  <div class="exp-card">
+    <div class="exp-id">E7 — Encoding Evasion</div>
+    <div>Which encoding strategies bypass which defenses?</div>
+    <div class="exp-status status-blocked">⏳ GPU-blocked</div>
+  </div>
+  <div class="exp-card">
+    <div class="exp-id">E8 — Adaptive Attack</div>
+    <div>Attacker knows the defense — can they still bypass it?</div>
+    <div class="exp-status status-blocked">⏳ GPU-blocked</div>
+  </div>
+</div>
+
+<!-- Dataset Strategy -->
+<h2>📁 Dataset Strategy</h2>
+<div class="card">
+  <table>
+    <tr><th>Dataset</th><th>Role</th><th>Adequacy (C1-C5)</th><th>Status</th></tr>
+    <tr><td><strong>Splunk Attack Data</strong></td><td>Benchmark of Record</td><td class="green">4/5 (missing C5 multi-stage)</td><td>12,147 alerts active</td></tr>
+    <tr><td>SOC-Bench Colonial Pipeline</td><td>Target: full kill-chain</td><td class="accent">5/5 (if accessible)</td><td>Pending Prof Liu access</td></tr>
+    <tr><td><s>CICIDS</s></td><td>Engineering scaffold only</td><td class="red">0/5</td><td>Excluded from benchmarks</td></tr>
+    <tr><td>BETH</td><td>Engineering scaffold only</td><td class="yellow">Synthetic</td><td>Parser dev only</td></tr>
+  </table>
+  <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted);">
+    Dataset gate (<code>src/evaluation/dataset_gate.py</code>) programmatically rejects scaffolds from benchmark claims.
+  </p>
+</div>
+
+<!-- SOC-Bench Mapping -->
+<h2>🦊 SOC-Bench Alignment</h2>
+<div class="card">
+  <table>
+    <tr><th>SOC-Bench Task</th><th>Function</th><th>HADES Mapping</th></tr>
+    <tr><td><strong>Fox</strong></td><td>Early campaign detection</td><td class="green">PRIMARY — O1/O2/O3 output, ring scorer</td></tr>
+    <tr><td><strong>Tiger</strong></td><td>Threat intelligence</td><td class="yellow">SECONDARY — RAG TTP mapping</td></tr>
+    <tr><td>Panda</td><td>Containment</td><td class="muted" style="color:var(--muted)">Downstream dependency</td></tr>
+    <tr><td>Goat</td><td>File forensics</td><td style="color:var(--muted)">Out of scope</td></tr>
+    <tr><td>Mouse</td><td>Exfiltration</td><td style="color:var(--muted)">Out of scope</td></tr>
+  </table>
+</div>
+
+<!-- Related Work -->
+<h2>📚 Positioning</h2>
+<div class="card">
+  <table>
+    <tr><th>System</th><th>SOC-specific</th><th>Adversarial</th><th>SIEM Injection</th><th>Adaptive Eval</th></tr>
+    <tr><td>CyBench (ICLR 2025)</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>AgentDojo (NeurIPS 2024)</td><td>—</td><td class="green">✅</td><td>—</td><td>—</td></tr>
+    <tr><td>CORTEX (Sep 2025)</td><td class="green">✅</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td><strong>HADES</strong></td><td class="green">✅</td><td class="green">✅</td><td class="green">✅</td><td class="green">✅</td></tr>
+  </table>
+  <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--muted);">SOC-Bench omitted — different purpose (task performance vs adversarial robustness).</p>
+</div>
+
+<!-- Models -->
+<h2>🤖 Target Models</h2>
+<div class="stats">
+  <div class="stat"><span class="num" style="font-size: 1.2rem;">DeepSeek R1</span><span class="label">671B params · MoE</span></div>
+  <div class="stat"><span class="num" style="font-size: 1.2rem;">GLM-5</span><span class="label">744B params · MoE</span></div>
+  <div class="stat"><span class="num" style="font-size: 1.2rem;">Kimi K2.5</span><span class="label">1T params · MoE</span></div>
+  <div class="stat"><span class="num" style="font-size: 1.2rem;">Qwen 3.5</span><span class="label">397B params · MoE</span></div>
+</div>
+<p style="color: var(--muted); font-size: 0.9rem;">~40-60 GPU hours on 4×A100 or 2×H100. vLLM serving via <code>scripts/lab_setup.sh</code>.</p>
+
+<!-- Timeline -->
+<h2>📅 Timeline</h2>
+<div class="timeline">
+  <div class="timeline-item done">
+    <span class="period">Mar 10 – Apr 6</span>
+    <div class="milestone">Complete Phase 1, finalize benchmark, first advisor meeting</div>
+    <div style="color: var(--muted); font-size: 0.85rem;">Baseline results + dataset adequacy argument</div>
+  </div>
+  <div class="timeline-item current">
+    <span class="period">Apr 7 – May 4</span>
+    <div class="milestone">Adversarial campaigns + defense implementation</div>
+    <div style="color: var(--muted); font-size: 0.85rem;">Attack dataset + 5 defense modules (scaffolding largely done)</div>
+  </div>
+  <div class="timeline-item">
+    <span class="period">May 5 – Jun 1</span>
+    <div class="milestone">Integration testing + GPU prep</div>
+    <div style="color: var(--muted); font-size: 0.85rem;">E1-E8 experiment configs validated</div>
+  </div>
+  <div class="timeline-item">
+    <span class="period">Jun 2 – Jun 29</span>
+    <div class="milestone">GPU experiments E1-E8</div>
+    <div style="color: var(--muted); font-size: 0.85rem;">Statistical analysis, cross-model comparison</div>
+  </div>
+  <div class="timeline-item">
+    <span class="period">Jul 1 – Jul 27</span>
+    <div class="milestone">Paper writing</div>
+    <div style="color: var(--muted); font-size: 0.85rem;">Results, analysis, discussion, figures → draft v1</div>
+  </div>
+  <div class="timeline-item">
+    <span class="period">Jul 28 – Aug 31</span>
+    <div class="milestone">Review cycles + submission</div>
+    <div style="color: var(--muted); font-size: 0.85rem;">Target: ACM CCS Workshop on AI for CTI (Nov 2026)</div>
+  </div>
+</div>
+
+<!-- Publication -->
+<h2>🎯 Publication Targets</h2>
+<div class="card">
+  <table>
+    <tr><th>Venue</th><th>Type</th><th>Timeline</th></tr>
+    <tr><td><strong>ACM CCS Workshop on AI for CTI</strong></td><td>Primary target</td><td class="green">November 2026</td></tr>
+    <tr><td>USENIX Security 2027</td><td>Stretch</td><td class="yellow">2027</td></tr>
+    <tr><td>IEEE S&P 2027</td><td>Stretch</td><td class="yellow">2027</td></tr>
+  </table>
+</div>
+
+<!-- Open Questions -->
+<h2>❓ Open Questions for Prof Liu</h2>
+<div class="card">
+  <ol style="padding-left: 1.25rem; line-height: 2;">
+    <li>Is the threat model framed correctly? Better angle he sees?</li>
+    <li>Are E1-E8 the right experiments?</li>
+    <li>SOC-Bench Colonial Pipeline data access — feasible?</li>
+    <li>Real-world validation corpus (50-100 anonymized alerts) — possible?</li>
+    <li>scale_label + campaign-type fields — needed for first eval or Phase 2?</li>
+    <li>GPU scheduling: June-July, ~40-60 hours on 4×A100</li>
+    <li>Lab meeting presentation opportunity?</li>
+  </ol>
+</div>
+
+<footer>
+  HADES Reference · github.com/ph0en1x29/hades · 64 commits · 70 files · 13,474 LOC · Updated March 2026
+</footer>
+
+<script>
+  mermaid.initialize({
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1a2332',
+      primaryBorderColor: '#58a6ff',
+      primaryTextColor: '#e6edf3',
+      lineColor: '#8b949e',
+      secondaryColor: '#161b22',
+      tertiaryColor: '#0d1117',
+      fontSize: '14px'
+    }
+  });
+</script>
+</body>
+</html>
