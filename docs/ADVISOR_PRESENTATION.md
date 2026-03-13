@@ -65,18 +65,21 @@ Indirect Prompt Injection (IPI) through SIEM log fields:
 
 ### What We've Built (Pre-GPU)
 
-✅ **Benchmark:** 4,619 alerts, 12 MITRE techniques, 7 tactics, 554K adversarial variants
-✅ **Parsers:** 4 format parsers (Sysmon, Suricata, BETH, CIC-IDS2018) — all tested
+✅ **Benchmark:** 11,147 alerts, 29 MITRE techniques, 9 tactics, 854K+ adversarial variants
+✅ **Parsers:** 5 format parsers (Sysmon, Suricata, Windows Security XML, BETH, CIC-IDS2018) — all tested
 ✅ **Adversarial framework:** 12 vectors, 5 attack classes, 9 encodings, injector + defense harnesses
 ✅ **E3 Results (no GPU needed):**
   - Payload survival: 40% of attack classes survive all 11 SIEM normalization rules
   - Evasion encodings: homoglyph/zero-width/leetspeak bypass keyword defenses but LLMs can still read them
   - Defense analysis: best layered defense achieves only 60% indicator removal on plaintext
+✅ **Behavioral invariants:** 100% detection (C1/C3), 98% (C4), 0% false positives — key differentiator
 ✅ **Fox ring scorer:** Validated — perfect score 100/100, adversarial score 9/100 (91-point drop)
+✅ **Full pipeline:** Classifier → Correlator → Playbook, end-to-end with campaign demo (95.7/100 Fox)
 ✅ **RAG pipeline:** 691 MITRE ATT&CK techniques ingested, Qdrant hybrid retrieval ready
 ✅ **Dataset gate:** Programmatic enforcement of benchmark provenance requirements
-✅ **Paper:** 1,031 lines, ~10K words, 24 references, 10 sections
-✅ **Validation:** 18/18 architecture tests passing
+✅ **Statistical framework:** Bootstrap CI, paired bootstrap, McNemar, Fleiss' κ, Cohen's d, Bowker
+✅ **Paper:** 1,139 lines, ~11.3K words, 24 references, 10 sections
+✅ **Validation:** 25/25 comprehensive checks, 21/21 reproducibility suite, 16 test files
 ✅ **Lab setup script:** One-command GPU deployment (`bash scripts/lab_setup.sh --model deepseek`)
 
 ---
@@ -87,7 +90,7 @@ Your core directive: *"Until datasets are scientifically defensible, the work is
 
 **Our approach:**
 1. **Engineering scaffold** (CIC-IDS2018) — network flows, no SIEM rules. Used for parser development only.
-2. **Benchmark of record** (Splunk Attack Data) — Sysmon/Suricata logs with MITRE technique mappings and detection rule associations. 4,619 alerts across 12 techniques.
+2. **Benchmark of record** (Splunk Attack Data) — Sysmon/Suricata/Windows Security logs with MITRE technique mappings and detection rule associations. 11,147 alerts across 29 techniques, 9 tactics.
 3. **Strategic benchmark** (SOC-Bench) — your benchmark, grounded in Colonial Pipeline. Hades outputs are SOC-Bench-compatible (Fox/Tiger schemas).
 
 **Programmatic enforcement:** `dataset_gate.py` rejects `engineering_scaffold` datasets from benchmark claims at code level.
@@ -153,4 +156,4 @@ Our 4-model comparison can test this. If confirmed, this is a novel finding with
 ---
 
 *Repository: github.com/ph0en1x29/hades (private)*
-*Validation: 18/18 tests passing | Paper: 24 references | Benchmark: 4,619 alerts*
+*Validation: 25/25 comprehensive, 21/21 reproducibility | Paper: 24 references, ~11.3K words | Benchmark: 11,147 alerts, 29 techniques*
