@@ -10,9 +10,9 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 
 | Metric | Value |
 |---|---:|
-| Total alerts | **4,619** |
-| MITRE techniques | **12** |
-| ATT&CK tactics | **7** |
+| Total alerts | **7,119** |
+| MITRE techniques | **17** |
+| ATT&CK tactics | **8** |
 | Contract failures | **0** |
 | Parser types | Sysmon XML, Suricata JSON |
 | Provenance coverage | **100%** |
@@ -30,6 +30,18 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 | T1027 | Obfuscated Files / Information | 500 |
 | T1036.003 | Masquerading: Rename System Utilities | 500 |
 | T1053.005 | Scheduled Task | 500 |
+| T1055.001 | Process Injection (Cobalt Strike) | 500 |
+| T1071.001 | HTTP C2 Traffic | 94 |
+| T1105 | Ingress Tool Transfer | 500 |
+| T1204.002 | User Execution: Malicious File | 500 |
+| T1218.011 | Rundll32 Signed Binary Proxy | 500 |
+| T1543.003 | Create/Modify Windows Service | 500 |
+| T1547.001 | Registry Run Keys | 500 |
+| T1548.002 | Bypass UAC | 500 |
+| T1562.001 | Impair Defenses: Disable Tools | 500 |
+| T1569.002 | Service Execution | 500 |
+| T1036.003 | Masquerading: Rename System Utilities | 500 |
+| T1053.005 | Scheduled Task | 500 |
 | T1071.001 | HTTP C2 Traffic | 94 |
 | T1105 | Ingress Tool Transfer | 500 |
 | T1218.011 | Rundll32 Signed Binary Proxy Execution | 500 |
@@ -40,13 +52,14 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 
 | Tactic | Alerts | % |
 |---|---:|---:|
-| TA0002 Execution | 500 | 10.8% |
-| TA0003 Persistence | 1,000 | 21.6% |
-| TA0005 Defense Evasion | 1,500 | 32.5% |
-| TA0006 Credential Access | 523 | 11.3% |
-| TA0007 Discovery | 500 | 10.8% |
+| TA0002 Execution | 1,000 | 14.0% |
+| TA0003 Persistence | 1,500 | 21.1% |
+| TA0004 Privilege Escalation | 500 | 7.0% |
+| TA0005 Defense Evasion | 2,500 | 35.1% |
+| TA0006 Credential Access | 523 | 7.3% |
+| TA0007 Discovery | 500 | 7.0% |
 | TA0008 Lateral Movement | 2 | 0.0% |
-| TA0011 Command and Control | 594 | 12.9% |
+| TA0011 Command and Control | 594 | 8.3% |
 
 ## 6.2 Adversarial Dataset Generation Results
 
@@ -58,10 +71,13 @@ The adversarial injector produced the following experiment space:
 |---|---:|
 | Injection vectors | 12 |
 | Attack classes | 5 |
-| Encoding strategies | 2 |
-| Variants per alert | **120** |
-| Benchmark alerts | 4,619 |
-| Total adversarial variants | **554,280** |
+| Base encoding strategies | 2 |
+| Evasion encodings | 6 |
+| Protocol constraints | 3 |
+| Total encoding strategies | **11** |
+| Variants per alert (base) | **120** |
+| Benchmark alerts | 7,119 |
+| Total adversarial variants (base) | **854,280** |
 
 ### 6.2.2 Injection Vector Capacity
 

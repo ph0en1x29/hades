@@ -150,7 +150,7 @@ def test_fox_e2e_pipeline() -> None:
     assert len(result.decisions) == 7
 
     # Convert to Fox format
-    fox_output = triage_decisions_to_fox_stage(result.decisions, stage_id="darkside-stage-1")
+    fox_output = triage_decisions_to_fox_stage(result.decisions, stage_id="darkside-stage-1", alerts=alerts)
     assert fox_output.stage_id == "darkside-stage-1"
 
     # Score against ground truth

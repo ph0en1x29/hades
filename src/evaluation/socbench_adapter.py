@@ -180,14 +180,27 @@ def triage_decisions_to_fox_stage(
     decisions: list[TriageDecision],
     stage_id: str = "S1",
     stage_timestamp: str | None = None,
+    alerts: list[Any] | None = None,
 ) -> FoxStageOutput:
     """Convert a batch of Hades TriageDecisions into a SOC-Bench Fox stage output.
 
     This is the key adapter — it transforms our flat triage classifications
     into the richer, evidence-backed, campaign-aware format SOC-Bench expects.
+
+    Args:
+        decisions: Triage decisions from pipeline
+        stage_id: SOC-Bench stage identifier
+        stage_timestamp: ISO timestamp for the stage
+        alerts: Optional list of UnifiedAlert objects for IP extraction
     """
     if stage_timestamp is None:
         stage_timestamp = datetime.now(UTC).isoformat()
+
+    # Build alert lookup by ID for IP extraction
+    alert_map: dict[str, Any] = {}
+    if alerts:
+        for a in alerts:
+            alert_map[a.alert_id] = a
 
     # Classify decisions
     true_positives = [d for d in decisions if d.classification == TriageCategory.TRUE_POSITIVE]
@@ -204,11 +217,13 @@ def triage_decisions_to_fox_stage(
         for t in (d.mitre_techniques or []):
             if t not in all_techniques:
                 all_techniques.append(t)
-        if hasattr(d, 'alert') and d.alert:
-            if d.alert.src_ip:
-                affected_ips.add(d.alert.src_ip)
-            if d.alert.dst_ip:
-                affected_ips.add(d.alert.dst_ip)
+        # Try to get IPs from alert object (if attached) or alert map
+        alert = getattr(d, 'alert', None) or alert_map.get(d.alert_id)
+        if alert:
+            if getattr(alert, 'src_ip', None):
+                affected_ips.add(alert.src_ip)
+            if getattr(alert, 'dst_ip', None):
+                affected_ips.add(alert.dst_ip)
 
     # O1: Campaign assessment
     campaign_detected = len(critical) >= 3  # threshold: 3+ related true positives

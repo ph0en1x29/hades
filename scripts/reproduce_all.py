@@ -76,6 +76,9 @@ def main():
         "tests/test_beth_parser.py",
         "tests/test_full_pipeline.py",
         "tests/test_fox_e2e.py",
+        "tests/test_parser_edge_cases.py",
+        "tests/test_cross_technique.py",
+        "tests/test_adversarial_stress.py",
     ]
     test_results = []
     for tf in test_files:

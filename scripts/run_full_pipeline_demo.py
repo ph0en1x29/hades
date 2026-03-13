@@ -154,7 +154,7 @@ def main() -> None:
 
     # === Part 4: SOC-Bench Fox Scoring ===
     print("\n─── Part 4: SOC-Bench Fox Scoring ───")
-    fox_output = triage_decisions_to_fox_stage(result.decisions, stage_id="demo-stage-1")
+    fox_output = triage_decisions_to_fox_stage(result.decisions, stage_id="demo-stage-1", alerts=all_alerts)
 
     ground_truth = FoxGroundTruth(
         stage_id="demo-stage-1",

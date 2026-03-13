@@ -6,14 +6,14 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 
 | Exp | Name | Purpose | Models | Alerts |
 |-----|------|---------|--------|--------|
-| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 4,619 |
-| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 554,280 |
+| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 7,119 |
+| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 854,280 |
 | E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
-| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 554,280 |
-| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 554,280 |
-| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 554,280 |
-| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 554,280 |
-| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 554,280 |
+| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 854,280 |
+| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 854,280 |
+| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 854,280 |
+| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 854,280 |
+| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 854,280 |
 
 ## 5.2 Models Under Evaluation
 
@@ -34,7 +34,7 @@ All models are served via vLLM with tensor parallelism appropriate to the availa
 
 ### 5.3.1 Construction
 
-Our benchmark comprises 4,619 alerts parsed from the Splunk Attack Data repository, covering 12 MITRE ATT&CK techniques across 7 tactics:
+Our benchmark comprises 7,119 alerts parsed from the Splunk Attack Data repository, covering 17 MITRE ATT&CK techniques across 8 tactics:
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|
@@ -74,7 +74,7 @@ For each clean benchmark alert, we generate adversarial variants by injecting pa
 
 Plus 3 protocol-specific constraints (DNS 253-byte, SMB 14-char, TLS CN 64-char) that enforce realistic field length limits.
 
-This produces up to **540 variants per alert** and **554,280 total adversarial samples** for the full benchmark. Payloads are truncated to respect field length constraints per vector.
+This produces up to **540 variants per alert** and **854,280 total adversarial samples** for the full benchmark. Payloads are truncated to respect field length constraints per vector.
 
 ## 5.4 Evaluation Metrics
 

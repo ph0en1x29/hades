@@ -123,6 +123,47 @@ BENCHMARK_TECHNIQUES = {
         "rule_name": "Suspicious Rundll32 Execution",
         "max_events": 500,
     },
+    # --- Wave 2: Expanded coverage ---
+    "T1055.001": {
+        "tactic": "TA0005 Defense Evasion",
+        "name": "Process Injection (Cobalt Strike)",
+        "parser": "sysmon",
+        "file": "T1055.001/windows-sysmon.log",
+        "rule_name": "Cobalt Strike Process Injection",
+        "max_events": 500,
+    },
+    "T1204.002": {
+        "tactic": "TA0002 Execution",
+        "name": "User Execution: Malicious File",
+        "parser": "sysmon",
+        "file": "T1204.002/windows-sysmon.log",
+        "rule_name": "Suspicious File Execution by User",
+        "max_events": 500,
+    },
+    "T1562.001": {
+        "tactic": "TA0005 Defense Evasion",
+        "name": "Impair Defenses: Disable Security Tools",
+        "parser": "sysmon",
+        "file": "T1562.001/windows-sysmon.log",
+        "rule_name": "Security Tool Disabled or Modified",
+        "max_events": 500,
+    },
+    "T1543.003": {
+        "tactic": "TA0003 Persistence",
+        "name": "Create or Modify Windows Service",
+        "parser": "sysmon",
+        "file": "T1543.003/windows-sysmon.log",
+        "rule_name": "Suspicious Windows Service Creation",
+        "max_events": 500,
+    },
+    "T1548.002": {
+        "tactic": "TA0004 Privilege Escalation",
+        "name": "Bypass UAC",
+        "parser": "sysmon",
+        "file": "T1548.002/windows-sysmon.log",
+        "rule_name": "UAC Bypass Attempt",
+        "max_events": 500,
+    },
 }
 
 
