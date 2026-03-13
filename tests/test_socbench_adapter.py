@@ -9,21 +9,17 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.evaluation.schemas import (
+    EvidenceItem,
     TriageCategory,
     TriageDecision,
-    EvidenceItem,
 )
 from src.evaluation.socbench_adapter import (
-    FoxO1CampaignAssessment,
-    FoxO2ActivityReasoning,
-    FoxO3TriageBundle,
     FoxStageOutput,
     triage_decisions_to_fox_stage,
 )
@@ -80,7 +76,7 @@ def main():
         [isolated_decision],
         stage_id="S1",
     )
-    
+
     assert isinstance(fox_isolated, FoxStageOutput), "Should return FoxStageOutput"
     assert fox_isolated.stage_id == "S1"
     assert not fox_isolated.o1_campaign.campaign_detected, "Single alert should not be campaign"
@@ -103,7 +99,7 @@ def main():
         campaign_decisions,
         stage_id="S2",
     )
-    
+
     # With 4 correlated true positives, campaign should be detected
     assert fox_campaign.o1_campaign.campaign_detected, "4 true positives should trigger campaign"
     assert len(fox_campaign.o3_triage.alert_ids) == 4
@@ -118,7 +114,7 @@ def main():
         rationale="LSASS memory access detected indicating credential dumping attempt",
     )
     fox_cred = triage_decisions_to_fox_stage([cred_decision], stage_id="S3")
-    
+
     # O2 should have activity type inferred from techniques
     assert fox_cred.o2_activity.activity_type != "", "Should infer activity type"
     assert "T1003.001" in fox_cred.o2_activity.mitre_techniques
@@ -141,7 +137,7 @@ def main():
         classification=TriageCategory.ESCALATE,
     )
     fox_escalate = triage_decisions_to_fox_stage([escalate_decision], stage_id="S4")
-    
+
     # Escalation should result in critical priority
     assert fox_escalate.o3_triage.priority == "critical", \
         f"Escalation should have critical priority, got {fox_escalate.o3_triage.priority}"
@@ -190,7 +186,7 @@ def main():
 
     json_str = fox_campaign.to_json()
     parsed = json.loads(json_str)
-    
+
     assert "stage_id" in parsed
     assert "o1_campaign" in parsed
     assert "o2_activity" in parsed
@@ -233,7 +229,7 @@ def main():
         for i in range(1, 5)
     ]
     fox_multi = triage_decisions_to_fox_stage(multi_tech_decisions, stage_id="S9")
-    
+
     # Should aggregate techniques across all decisions
     total_techniques = len(fox_multi.o2_activity.mitre_techniques)
     assert total_techniques == 4, f"Expected 4 techniques, got {total_techniques}"
@@ -247,7 +243,7 @@ def main():
         for i, c in enumerate([0.9, 0.8, 0.7, 0.6])
     ]
     fox_conf = triage_decisions_to_fox_stage(mixed_conf_decisions, stage_id="S10")
-    
+
     # Should average confidence
     expected_avg = (0.9 + 0.8 + 0.7 + 0.6) / 4
     assert abs(fox_conf.o2_activity.confidence - expected_avg) < 0.01, \

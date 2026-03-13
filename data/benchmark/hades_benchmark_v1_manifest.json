@@ -3,7 +3,7 @@
   "created": "2026-03-12",
   "source": "splunk_attack_data",
   "total_alerts": 11147,
-  "techniques": 29,
+  "techniques": 25,
   "tactics": {
     "TA0006 Credential Access": 1023,
     "TA0007 Discovery": 1500,
@@ -19,11 +19,11 @@
     "T1003.001": 500,
     "T1110.001": 23,
     "T1087.001": 500,
-    "T1021.002": 2,
+    "T1021.002": 4,
     "T1027": 500,
-    "T1053.005": 500,
+    "T1053.005": 514,
     "T1547.001": 500,
-    "T1071.001": 94,
+    "T1071.001": 104,
     "T1036.003": 500,
     "T1105": 500,
     "T1569.002": 500,
@@ -33,19 +33,15 @@
     "T1562.001": 500,
     "T1543.003": 500,
     "T1548.002": 500,
-    "T1059.001": 500,
+    "T1059.001": 502,
     "T1566.001": 500,
     "T1003.003": 500,
     "T1047": 500,
     "T1136.001": 500,
     "T1082": 500,
     "T1018": 500,
-    "T1112": 500,
-    "T1053.005_sec": 14,
-    "T1021.002_sec": 2,
-    "T1059.001_ps": 2,
-    "T1071.001_malware": 10
+    "T1112": 500
   },
   "contract_failures": 0,
-  "notes": "Benchmark pack for Hades adversarial evaluation. All alerts pass dataset gate benchmark contract checks."
+  "notes": "Benchmark pack for Hades adversarial evaluation. Technique breakdown aggregates source-specific variants under canonical MITRE ATT&CK IDs. All alerts pass dataset gate benchmark contract checks."
 }

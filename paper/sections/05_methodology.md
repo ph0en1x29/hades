@@ -7,13 +7,13 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 | Exp | Name | Purpose | Models | Alerts |
 |-----|------|---------|--------|--------|
 | E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 11,147 |
-| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 854,280 |
+| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 1,337,640 |
 | E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
-| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 854,280 |
-| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 854,280 |
-| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 854,280 |
-| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 854,280 |
-| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 854,280 |
+| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 1,337,640 |
+| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 1,337,640 |
+| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 1,337,640 |
+| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 1,337,640 |
+| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 1,337,640 |
 
 ## 5.2 Models Under Evaluation
 
@@ -34,13 +34,13 @@ All models are served via vLLM with tensor parallelism appropriate to the availa
 
 ### 5.3.1 Construction
 
-Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data repository, covering 29 MITRE ATT&CK techniques across 9 tactics:
+Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data repository, covering 25 MITRE ATT&CK techniques across 9 tactics:
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|
-| TA0002 Execution | T1059.001 | PowerShell Script Block | 500 |
+| TA0002 Execution | T1059.001 | PowerShell Script Block | 502 |
 | TA0002 Execution | T1569.002 | Service Execution | 500 |
-| TA0003 Persistence | T1053.005 | Scheduled Task | 500 |
+| TA0003 Persistence | T1053.005 | Scheduled Task | 514 |
 | TA0003 Persistence | T1547.001 | Registry Run Keys | 500 |
 | TA0005 Defense Evasion | T1027 | Obfuscated Files | 500 |
 | TA0005 Defense Evasion | T1036.003 | Masquerading (Rename) | 500 |
@@ -48,9 +48,9 @@ Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data reposit
 | TA0006 Credential Access | T1003.001 | LSASS Credential Dumping | 500 |
 | TA0006 Credential Access | T1110.001 | RDP Brute Force | 23 |
 | TA0007 Discovery | T1087.001 | Local Account Discovery | 500 |
-| TA0008 Lateral Movement | T1021.002 | SMB Admin Shares | 2 |
-| TA0008 Lateral Movement | T1105 | Ingress Tool Transfer | 500 |
-| TA0011 Command & Control | T1071.001 | HTTP C2 Traffic | 94 |
+| TA0008 Lateral Movement | T1021.002 | SMB Admin Shares | 4 |
+| TA0011 Command & Control | T1105 | Ingress Tool Transfer | 500 |
+| TA0011 Command & Control | T1071.001 | HTTP C2 Traffic | 104 |
 
 ### 5.3.2 Dataset Adequacy
 
@@ -70,11 +70,12 @@ For each clean benchmark alert, we generate adversarial variants by injecting pa
 
 - **12 injection vectors** (HTTP User-Agent, Win Event Username, DNS Query, etc.)
 - **5 attack classes** (misclassification, confidence manipulation, reasoning corruption, attention hijacking, escalation suppression)
-- **9 encoding strategies** (plaintext, underscore, homoglyph, zero-width, synonym, leetspeak, base64-wrapped, markdown-comment, protocol-constrained)
+- **2 base encodings** for end-to-end E2/E4-E8 sweeps (plaintext, underscore)
+- **9 extended encoding/constraint strategies** for E3 normalization-survival tests (6 evasion encodings, 3 protocol-constrained variants)
 
 Plus 3 protocol-specific constraints (DNS 253-byte, SMB 14-char, TLS CN 64-char) that enforce realistic field length limits.
 
-This produces up to **540 variants per alert** and **854,280 total adversarial samples** for the full benchmark. Payloads are truncated to respect field length constraints per vector.
+The base end-to-end matrix produces **120 variants per alert** and **1,337,640 total adversarial samples** for the full benchmark. Extended E3 encoding tests are reported separately because they measure normalization survival rather than full triage runs. Payloads are truncated to respect field length constraints per vector.
 
 ## 5.4 Evaluation Metrics
 

@@ -43,7 +43,8 @@ def main():
 
     # Check if Qdrant is available
     try:
-        from qdrant_client import QdrantClient
+        import qdrant_client  # noqa: F401
+
         qdrant_available = True
     except ImportError:
         qdrant_available = False
@@ -56,8 +57,7 @@ def main():
 
     # Check if RAG data exists
     qdrant_path = ROOT / "data" / "qdrant"
-    rag_docs_path = ROOT / "data" / "mitre_attack" / "rag_documents"
-    
+
     if not qdrant_path.exists():
         skip("qdrant data", f"no data at {qdrant_path}")
         print("\n⏭️  RAG tests skipped: run 'python scripts/build_mitre_rag.py' to populate")
@@ -67,8 +67,8 @@ def main():
     # === Initialize VectorStore ===
     print("\n─── VectorStore Initialization ───")
 
-    from src.rag.store import VectorStore
     from src.rag.retriever import Retriever
+    from src.rag.store import VectorStore
 
     try:
         store = VectorStore({
@@ -77,13 +77,13 @@ def main():
             "retrieval_mode": "dense",  # Avoid sparse model requirement for smoke test
         })
         store.initialize()
-        
+
         if store.document_count == 0:
             skip("document_count", "store is empty")
             print("\n⏭️  RAG tests skipped: store has 0 documents")
             print("=" * 70)
             sys.exit(0)
-        
+
         ok(f"VectorStore initialized: {store.document_count} documents")
     except Exception as e:
         fail("VectorStore init", str(e))
@@ -100,13 +100,12 @@ def main():
     print("\n─── MITRE Technique Retrieval ───")
 
     known_techniques = ["T1003.001", "T1059.001", "T1021.002", "T1547.001"]
-    
+
     for tech_id in known_techniques:
         try:
             results = retriever.query_mitre(tech_id, top_k=3)
             if results:
                 top_score = results[0]["relevance_score"]
-                top_content = results[0]["content"][:100]
                 ok(f"{tech_id}: {len(results)} results (top score: {top_score:.3f})")
             else:
                 fail(f"{tech_id}", "no results returned")
@@ -122,8 +121,8 @@ def main():
         ("lateral movement SMB", "lateral"),
         ("persistence registry run keys", "persistence"),
     ]
-    
-    for query, expected_topic in queries:
+
+    for query, _expected_topic in queries:
         try:
             results = retriever.query(query, source_filter="mitre_attack", top_k=3)
             if results:
@@ -139,12 +138,12 @@ def main():
     try:
         mitre_results = retriever.query("attack technique", source_filter="mitre_attack", top_k=5)
         all_results = retriever.query("attack technique", source_filter=None, top_k=5)
-        
+
         if mitre_results:
             ok(f"source_filter='mitre_attack': {len(mitre_results)} results")
         else:
             skip("mitre_attack filter", "no MITRE documents in store")
-        
+
         if all_results:
             ok(f"source_filter=None: {len(all_results)} results")
         else:

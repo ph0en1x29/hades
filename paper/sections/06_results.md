@@ -11,7 +11,7 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 | Metric | Value |
 |---|---:|
 | Total alerts | **11,147** |
-| MITRE techniques | **29** |
+| MITRE techniques | **25** |
 | ATT&CK tactics | **9** |
 | Contract failures | **0** |
 | Parser types | Sysmon XML, Suricata JSON, Windows Security XML, PowerShell Logging |

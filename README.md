@@ -117,7 +117,7 @@ hades/
 │   ├── rag/              # Qdrant vector store + retriever
 │   ├── runtime/          # OpenAI-compatible vLLM client
 │   └── pipeline.py       # Full triage pipeline orchestrator
-├── tests/                # 16 test files
+├── tests/                # 19 Python test/validation files
 ├── docker-compose.yml    # Full stack (vLLM + Qdrant + Hades)
 └── Makefile              # Common commands
 ```
@@ -175,8 +175,8 @@ python -m pytest tests/ -v
 ### Project Stats
 
 - **70 Python files** / **13,474 LOC**
-- **16 test files** / **21-section reproducibility harness** / **25-check comprehensive validator**
-- **11,147 benchmark alerts** across **29 MITRE ATT&CK techniques** and **9 tactics**
+- **19 Python test/validation files** / **21-section reproducibility harness** / **25-check comprehensive validator**
+- **11,147 benchmark alerts** across **25 MITRE ATT&CK techniques** and **9 tactics**
 - **25 modules**, all import cleanly
 - **475MB** real Splunk Attack Data
 - **691** MITRE ATT&CK technique documents for RAG

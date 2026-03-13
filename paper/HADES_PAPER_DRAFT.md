@@ -6,7 +6,7 @@
 
 Large Language Models are increasingly deployed for automated alert triage in Security Operations Centers, processing thousands of SIEM alerts that human analysts cannot review at scale. We identify a fundamental vulnerability in this architecture: the SIEM data that LLMs analyze originates from the same adversaries they are designed to detect. Attackers can embed prompt injection payloads in network traffic fields — HTTP headers, authentication usernames, DNS queries, TLS certificate attributes — that SIEM systems faithfully log and feed to triage models.
 
-We present **Hades**, an evaluation framework and triage pipeline for measuring and defending against adversarial manipulation of LLM-based SOC systems. Using a benchmark of 11,147 rule-linked alerts from the Splunk Attack Data repository across 29 MITRE ATT&CK techniques in 9 tactics, we generate over 1.3 million adversarial variants through 12 validated injection vectors, 5 attack classes, and 9 encoding strategies. We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under three attacker knowledge levels.
+We present **Hades**, an evaluation framework and triage pipeline for measuring and defending against adversarial manipulation of LLM-based SOC systems. Using a benchmark of 11,147 rule-linked alerts from the Splunk Attack Data repository across 25 MITRE ATT&CK techniques in 9 tactics, we generate over 1.3 million base adversarial variants across 12 validated injection vectors and 5 attack classes, and separately evaluate extended encoding strategies for SIEM-normalization survival. We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under three attacker knowledge levels.
 
 Hades introduces a multi-agent triage pipeline with three novel components: (1) a **correlator agent** that detects multi-stage attack campaigns through IP clustering, technique chain matching against known kill chain patterns, and temporal burst detection; (2) a **behavioral invariant defense** that operates at the workflow level — detecting phantom IPs, fabricated references, suspicious confidence patterns, and severity manipulation in triage outputs, then auto-escalating suspected injections without relying on model-level defenses that adaptive attackers consistently bypass (Nasr et al., 2025); and (3) a **SOC-Bench adapter** that maps triage outputs to the ring-scored Fox/Tiger/Panda evaluation format for standardized benchmarking.
 
@@ -43,7 +43,7 @@ This paper makes the following contributions:
 
 1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Three vectors are validated against production systems [Neaves2025].
 
-2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under 5 attack classes, 9 encoding strategies, and 3 attacker knowledge levels, producing over 1.3 million adversarial alert variants from a benchmark of 11,147 rule-linked SIEM alerts across 29 MITRE ATT&CK techniques in 9 tactics.
+2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models under 5 attack classes and a 12-vector injection taxonomy, producing over 1.3 million base adversarial alert variants from a benchmark of 11,147 rule-linked SIEM alerts across 25 MITRE ATT&CK techniques in 9 tactics, and separately test extended encoding strategies for normalization survival.
 
 3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 5 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, and temporal downplay patterns. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them immune to prompt-level obfuscation. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives.
 
@@ -402,7 +402,7 @@ The benchmark builder (`build_benchmark_pack.py`) constructs validated alert set
 - Validates all alerts against the dataset gate
 - Produces JSONL output with manifest for reproducibility
 
-Current benchmark: 2,619 alerts across 8 techniques, 6 tactics, 0 contract failures.
+Current benchmark: 11,147 alerts across 25 canonical ATT&CK techniques, 9 tactics, 0 contract failures.
 
 ## 4.6 Model Serving
 
@@ -428,13 +428,13 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 | Exp | Name | Purpose | Models | Alerts |
 |-----|------|---------|--------|--------|
 | E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 11,147 |
-| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 854,280 |
+| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 1,337,640 |
 | E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
-| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 854,280 |
-| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 854,280 |
-| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 854,280 |
-| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 854,280 |
-| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 854,280 |
+| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 1,337,640 |
+| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 1,337,640 |
+| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 1,337,640 |
+| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 1,337,640 |
+| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 1,337,640 |
 
 ## 5.2 Models Under Evaluation
 
@@ -455,13 +455,13 @@ All models are served via vLLM with tensor parallelism appropriate to the availa
 
 ### 5.3.1 Construction
 
-Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data repository, covering 29 MITRE ATT&CK techniques across 9 tactics:
+Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data repository, covering 25 MITRE ATT&CK techniques across 9 tactics:
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|
-| TA0002 Execution | T1059.001 | PowerShell Script Block | 500 |
+| TA0002 Execution | T1059.001 | PowerShell Script Block | 502 |
 | TA0002 Execution | T1569.002 | Service Execution | 500 |
-| TA0003 Persistence | T1053.005 | Scheduled Task | 500 |
+| TA0003 Persistence | T1053.005 | Scheduled Task | 514 |
 | TA0003 Persistence | T1547.001 | Registry Run Keys | 500 |
 | TA0005 Defense Evasion | T1027 | Obfuscated Files | 500 |
 | TA0005 Defense Evasion | T1036.003 | Masquerading (Rename) | 500 |
@@ -469,9 +469,9 @@ Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data reposit
 | TA0006 Credential Access | T1003.001 | LSASS Credential Dumping | 500 |
 | TA0006 Credential Access | T1110.001 | RDP Brute Force | 23 |
 | TA0007 Discovery | T1087.001 | Local Account Discovery | 500 |
-| TA0008 Lateral Movement | T1021.002 | SMB Admin Shares | 2 |
-| TA0008 Lateral Movement | T1105 | Ingress Tool Transfer | 500 |
-| TA0011 Command & Control | T1071.001 | HTTP C2 Traffic | 94 |
+| TA0008 Lateral Movement | T1021.002 | SMB Admin Shares | 4 |
+| TA0011 Command & Control | T1105 | Ingress Tool Transfer | 500 |
+| TA0011 Command & Control | T1071.001 | HTTP C2 Traffic | 104 |
 
 ### 5.3.2 Dataset Adequacy
 
@@ -491,11 +491,12 @@ For each clean benchmark alert, we generate adversarial variants by injecting pa
 
 - **12 injection vectors** (HTTP User-Agent, Win Event Username, DNS Query, etc.)
 - **5 attack classes** (misclassification, confidence manipulation, reasoning corruption, attention hijacking, escalation suppression)
-- **9 encoding strategies** (plaintext, underscore, homoglyph, zero-width, synonym, leetspeak, base64-wrapped, markdown-comment, protocol-constrained)
+- **2 base encodings** for end-to-end E2/E4-E8 sweeps (plaintext, underscore)
+- **9 extended encoding/constraint strategies** for E3 normalization-survival tests (6 evasion encodings, 3 protocol-constrained variants)
 
 Plus 3 protocol-specific constraints (DNS 253-byte, SMB 14-char, TLS CN 64-char) that enforce realistic field length limits.
 
-This produces up to **540 variants per alert** and **854,280 total adversarial samples** for the full benchmark. Payloads are truncated to respect field length constraints per vector.
+The base end-to-end matrix produces **120 variants per alert** and **1,337,640 total adversarial samples** for the full benchmark. Extended E3 encoding tests are reported separately because they measure normalization survival rather than full triage runs. Payloads are truncated to respect field length constraints per vector.
 
 ## 5.4 Evaluation Metrics
 
@@ -607,7 +608,7 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 | Metric | Value |
 |---|---:|
 | Total alerts | **11,147** |
-| MITRE techniques | **29** |
+| MITRE techniques | **25** |
 | ATT&CK tactics | **9** |
 | Contract failures | **0** |
 | Parser types | Sysmon XML, Suricata JSON, Windows Security XML, PowerShell Logging |

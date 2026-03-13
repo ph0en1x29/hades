@@ -10,15 +10,14 @@ from __future__ import annotations
 import asyncio
 import sys
 import time
-from datetime import timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.agents.correlator import AlertStore, CorrelatorAgent, correlate_alerts
-from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 from src.ingestion.parsers.splunk_suricata import load_suricata_log
+from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 from src.ingestion.parsers.windows_security import load_windows_security_log
 
 passed = 0
@@ -60,15 +59,15 @@ def load_technique(tech_id: str, limit: int = 20):
         "T1562.001": "T1562.001/windows-sysmon.log",
         "T1071.001": "T1071.001/suricata_c2.log",
     }
-    
+
     filepath = technique_files.get(tech_id)
     if not filepath:
         return []
-    
+
     full_path = DATA_DIR / filepath
     if not full_path.exists():
         return []
-    
+
     if "sysmon" in filepath:
         return load_sysmon_log(str(full_path), mitre_technique=tech_id, limit=limit)
     elif "suricata" in filepath:
@@ -123,7 +122,6 @@ def main():
     corr_count = len(result.correlated_events)
     chain_count = len(result.attack_chains)
     burst_count = len(result.temporal_bursts)
-    session_count = len(result.session_groups)
 
     ok(f"correlated in {corr_time:.1f}ms: {corr_count} events, {chain_count} chains, {burst_count} bursts")
 
@@ -135,17 +133,17 @@ def main():
         for tech in techs:
             alerts = load_technique(tech, limit=10)
             chain_alerts.extend(alerts)
-        
+
         if len(chain_alerts) < 5:
             print(f"  ⏭️  {chain_name}: insufficient alerts ({len(chain_alerts)})")
             continue
 
         chain_store = AlertStore()
         chain_store.ingest(chain_alerts)
-        
+
         result = correlate_alerts(chain_alerts[0], chain_store, min_chain_coverage=0.3)
         detected_chains = [c.pattern_name for c in result.attack_chains]
-        
+
         ok(f"{chain_name}: {len(chain_alerts)} alerts, chains={detected_chains}")
 
     # === Test 4: Session Reconstruction Accuracy ===
@@ -165,7 +163,7 @@ def main():
     print("\n─── Correlator Agent Integration ───")
 
     agent = CorrelatorAgent(config={"time_window_minutes": 60}, store=store)
-    
+
     start = time.perf_counter()
     results = []
     for alert in all_alerts[:20]:  # First 20 alerts
@@ -188,10 +186,10 @@ def main():
     if burst_alerts:
         burst_store = AlertStore()
         burst_store.ingest(burst_alerts)
-        
+
         result = correlate_alerts(burst_alerts[0], burst_store, burst_threshold=5)
         bursts = result.temporal_bursts
-        
+
         if bursts:
             max_burst = max(b.alert_count for b in bursts)
             ok(f"detected {len(bursts)} temporal bursts (max size: {max_burst})")
@@ -208,15 +206,15 @@ def main():
     for size in batch_sizes:
         if len(all_alerts) < size:
             continue
-        
+
         test_store = AlertStore()
         test_store.ingest(all_alerts[:size])
-        
+
         start = time.perf_counter()
         for alert in all_alerts[:min(10, size)]:
             correlate_alerts(alert, test_store)
         elapsed = (time.perf_counter() - start) * 1000
-        
+
         per_alert = elapsed / min(10, size)
         ok(f"batch={size}: {per_alert:.1f}ms per correlation")
 
@@ -226,16 +224,17 @@ def main():
     # Take alerts from completely different techniques
     fp_alerts_1 = load_technique("T1003.001", limit=5)  # Credential access
     fp_alerts_2 = load_technique("T1071.001", limit=5)  # C2 network traffic
-    
+
     if fp_alerts_1 and fp_alerts_2:
         # These should have no IP overlap (different sources)
         fp_store = AlertStore()
         fp_store.ingest(fp_alerts_1 + fp_alerts_2)
-        
+
         result = correlate_alerts(fp_alerts_1[0], fp_store)
-        cross_correlations = [e for e in result.correlated_events 
-                             if e.alert_id in [a.alert_id for a in fp_alerts_2]]
-        
+        cross_correlations = [
+            e for e in result.correlated_events if e.alert_id in [a.alert_id for a in fp_alerts_2]
+        ]
+
         if not cross_correlations:
             ok("no false cross-technique correlations")
         else:

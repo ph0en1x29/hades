@@ -18,10 +18,10 @@ from pathlib import Path
 
 # Project imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
-from src.ingestion.parsers.splunk_suricata import load_suricata_log
-from src.ingestion.parsers.windows_security import load_windows_security_log
 from src.evaluation.dataset_gate import benchmark_contract_issues
+from src.ingestion.parsers.splunk_suricata import load_suricata_log
+from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
+from src.ingestion.parsers.windows_security import load_windows_security_log
 
 DATA_DIR = Path(__file__).parent.parent / "data" / "datasets" / "splunk_attack_data"
 OUTPUT_DIR = Path(__file__).parent.parent / "data" / "benchmark"
@@ -266,6 +266,11 @@ BENCHMARK_TECHNIQUES = {
 }
 
 
+def canonical_technique_id(technique_id: str) -> str:
+    """Collapse source-specific suffixes onto the ATT&CK technique ID."""
+    return technique_id.split("_")[0]
+
+
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -293,8 +298,9 @@ def main() -> None:
         parser = config["parser"]
         max_events = config["max_events"]
 
-        # Strip suffixes for MITRE technique ID (e.g., T1053.005_sec → T1053.005)
-        mitre_id = technique_id.split("_")[0]
+        # Aggregate source-specific variants (for example ``*_sec``) under the
+        # canonical ATT&CK technique ID used in the benchmark manifest.
+        mitre_id = canonical_technique_id(technique_id)
 
         if parser == "sysmon":
             alerts = load_sysmon_log(
@@ -333,7 +339,7 @@ def main() -> None:
         status = "✅" if valid_alerts else "❌"
         print(f"  {status} {technique_id:12} {config['name']:40} {len(valid_alerts):>5} alerts  ({config['tactic']})")
         if valid_alerts:
-            technique_stats[technique_id] = len(valid_alerts)
+            technique_stats[mitre_id] = technique_stats.get(mitre_id, 0) + len(valid_alerts)
             tactic_stats[config["tactic"]] += len(valid_alerts)
             all_alerts.extend(valid_alerts)
 
@@ -367,7 +373,8 @@ def main() -> None:
         "technique_breakdown": technique_stats,
         "contract_failures": contract_failures,
         "notes": "Benchmark pack for Hades adversarial evaluation. "
-                 "All alerts pass dataset gate benchmark contract checks.",
+        "Technique breakdown aggregates source-specific variants under canonical "
+        "MITRE ATT&CK IDs. All alerts pass dataset gate benchmark contract checks.",
     }
     manifest_file = OUTPUT_DIR / "hades_benchmark_v1_manifest.json"
     with manifest_file.open("w", encoding="utf-8") as f:
@@ -376,7 +383,10 @@ def main() -> None:
     # Summary
     print()
     print("=" * 70)
-    print(f"BENCHMARK PACK: {len(all_alerts)} alerts across {len(technique_stats)} techniques")
+    print(
+        f"BENCHMARK PACK: {len(all_alerts)} alerts across "
+        f"{len(technique_stats)} canonical ATT&CK techniques",
+    )
     print(f"Contract failures filtered: {contract_failures}")
     print(f"Output: {output_file}")
     print(f"Manifest: {manifest_file}")
