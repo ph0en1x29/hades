@@ -280,6 +280,9 @@ BENCHMARK_TECHNIQUES = {
         "rule_name": "Pass the Hash Authentication",
         "max_events": 500,
     },
+    # NOTE: BETH synthetic data validates parser coverage but is
+    # engineering_scaffold — excluded from benchmark_of_record pack.
+    # Parser coverage tested separately in validation suite.
 }
 
 
