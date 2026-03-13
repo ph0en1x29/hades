@@ -340,3 +340,103 @@ git diff --check
 
 - These fixes do not claim that the full adversarial evaluation pipeline is implemented end to end
 - They do make the current scaffolding internally consistent with the v1 proposal and remove the specific review contradictions identified on March 12, 2026
+
+## March 13, 2026 — Final Pre-Submission Validation Follow-Up
+
+### Summary
+
+This update resolved the last two submission blockers found during final review:
+
+1. the main `pytest` suite was red after `INV-6` was added
+2. the reproducibility package could report green for sections that were actually skipped or silently failing
+
+### Changes Made
+
+#### 1. Restored consistency between behavioral invariants and their tests
+
+Files:
+
+- `src/evaluation/behavioral_invariants.py`
+- `tests/test_behavioral_invariants.py`
+
+What changed:
+
+- Kept the new sixth invariant (`INV-6`) in the runtime path
+- Updated the invariant test to assert `6` checks instead of the old `5`
+- Made the standalone test runner exit non-zero on failure
+- Simplified the new invariant control flow to satisfy lint
+
+Why:
+
+- The repo cannot claim a clean validation state while `pytest` fails on the current `main`
+- The standalone test path must agree with the actual `pytest` contract
+
+#### 2. Made adversarial E2E validation honest about missing prerequisites
+
+Files:
+
+- `scripts/run_adversarial_e2e.py`
+- `scripts/reproduce_all.py`
+
+What changed:
+
+- `run_adversarial_e2e.py` now emits `SKIPPED:` and exits cleanly when the required Splunk Sysmon dataset is absent
+- The script description was narrowed from “true end-to-end” to a mock pre-GPU validation path
+- `reproduce_all.py` now reports the adversarial E2E section as skipped instead of passed when the dataset is unavailable
+- The reproducibility summary now reports `passed / total sections`, including skipped sections, instead of hiding skips from the denominator
+
+Why:
+
+- Final review should not depend on false-green results
+- Dataset-dependent checks are acceptable, but only when they are reported honestly
+
+#### 3. Realigned submission-facing stats with the current repo state
+
+Files:
+
+- `README.md`
+- `docs/ADVISOR_PRESENTATION.md`
+- `scripts/generate_beth_synthetic.py`
+- `tests/test_adversarial_defenses.py`
+
+What changed:
+
+- Updated the README and advisor presentation to match the current benchmark and reproducibility counts
+- Cleaned the new synthetic-data and defense-test scripts so the touched validation path is lint-clean
+
+Why:
+
+- The professor-facing documents should match the benchmark manifest and current validation harness, not older intermediate counts
+
+### Validation Commands Run
+
+```bash
+.venv/bin/ruff check src tests scripts/build_benchmark_pack.py scripts/generate_beth_synthetic.py scripts/reproduce_all.py scripts/run_adversarial_e2e.py
+.venv/bin/python -m mypy src
+.venv/bin/pytest -q
+.venv/bin/python tests/test_behavioral_invariants.py
+.venv/bin/python tests/test_fox_e2e.py
+.venv/bin/python scripts/validate_architecture.py
+.venv/bin/python scripts/run_comprehensive_validation.py
+.venv/bin/python scripts/reproduce_all.py
+.venv/bin/python scripts/run_adversarial_e2e.py
+git diff --check
+```
+
+### Validation Result
+
+- `ruff check ...` passed
+- `python -m mypy src` passed
+- `pytest -q` passed with `61 passed, 10 skipped`
+- `python tests/test_behavioral_invariants.py` passed with `10/10`
+- `python tests/test_fox_e2e.py` passed with `95.7/100`
+- `python scripts/validate_architecture.py` passed with `18/18`
+- `python scripts/run_comprehensive_validation.py` passed with `14/14` and `7 skipped`
+- `python scripts/reproduce_all.py` passed with `25/29 sections` and `4 skipped`
+- `python scripts/run_adversarial_e2e.py` now skips cleanly when the dataset is absent
+- `git diff --check` passed
+
+### Reviewer Notes
+
+- Remaining skips are dataset- or corpus-dependent and are now reported explicitly rather than counted as passes
+- This update does not add GPU-backed experiment results; it only makes the current pre-submission validation state accurate and reviewable

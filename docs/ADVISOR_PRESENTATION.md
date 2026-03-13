@@ -65,7 +65,7 @@ Indirect Prompt Injection (IPI) through SIEM log fields:
 
 ### What We've Built (Pre-GPU)
 
-✅ **Benchmark:** 12,147 alerts, 25 MITRE techniques, 9 tactics, 1.33M base adversarial variants
+✅ **Benchmark:** 12,147 alerts, 27 MITRE techniques, 9 tactics, 1.46M base adversarial variants
 ✅ **Parsers:** 5 format parsers (Sysmon, Suricata, Windows Security XML, BETH, CIC-IDS2018) — all tested
 ✅ **Adversarial framework:** 12 vectors, 5 attack classes, 9 encodings, injector + defense harnesses
 ✅ **E3 Results (no GPU needed):**
@@ -73,13 +73,13 @@ Indirect Prompt Injection (IPI) through SIEM log fields:
   - Evasion encodings: homoglyph/zero-width/leetspeak bypass keyword defenses but LLMs can still read them
   - Defense analysis: best layered defense achieves only 60% indicator removal on plaintext
 ✅ **Behavioral invariants:** 100% detection (C1/C3), 98% (C4), 0% false positives — key differentiator
-✅ **Fox ring scorer:** Validated — perfect score 100/100, adversarial score 9/100 (91-point drop)
+✅ **Fox ring scorer:** Validated — clean campaign score 95.7/100, attacked score 51.0/100 (44.7-point drop)
 ✅ **Full pipeline:** Classifier → Correlator → Playbook, end-to-end with campaign demo (95.7/100 Fox)
 ✅ **RAG pipeline:** 691 MITRE ATT&CK techniques ingested, Qdrant hybrid retrieval ready
 ✅ **Dataset gate:** Programmatic enforcement of benchmark provenance requirements
 ✅ **Statistical framework:** Bootstrap CI, paired bootstrap, McNemar, Fleiss' κ, Cohen's d, Bowker
-✅ **Paper:** 1,139 lines, ~11.3K words, 24 references, 10 sections
-✅ **Validation:** 25-check comprehensive validator, 21-section reproducibility suite, 19 Python test/validation files
+✅ **Paper:** 1,139 lines, ~12.0K words, 24 references, 10 sections
+✅ **Validation:** 25-check comprehensive validator, 29-section reproducibility suite, 19 Python test/validation files
 ✅ **Lab setup script:** One-command GPU deployment (`bash scripts/lab_setup.sh --model deepseek`)
 
 ---
@@ -105,7 +105,7 @@ Hades can be the **first system evaluated on SOC-Bench:**
 - Output schemas match Fox O1/O2/O3 JSON format
 - Ring scoring implemented and validated
 
-**Adversarial angle:** What happens to SOC-Bench Fox scores when log data contains IPI? Our E2 experiments measure exactly this — Fox score drops from 100→9 on adversarial inputs (mock model, pending real model runs).
+**Adversarial angle:** What happens to SOC-Bench Fox scores when log data contains IPI? Our pre-GPU simulation shows a 44.7-point drop (95.7→51.0) on adversarial campaign inputs; real model runs are still pending.
 
 ---
 
@@ -156,4 +156,4 @@ Our 4-model comparison can test this. If confirmed, this is a novel finding with
 ---
 
 *Repository: github.com/ph0en1x29/hades (private)*
-*Validation: 25-check comprehensive validator, 21-section reproducibility suite | Paper: 24 references, ~11.3K words | Benchmark: 12,147 alerts, 27 techniques*
+*Validation: 25-check comprehensive validator, 29-section reproducibility suite | Paper: 24 references, ~12.0K words | Benchmark: 12,147 alerts, 27 techniques*

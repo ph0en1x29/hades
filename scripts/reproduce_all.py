@@ -46,7 +46,7 @@ def _run_script(name: str, args: list[str] | None = None) -> tuple[str, str, flo
 
 
 def _run_test(name: str) -> tuple[str, str, float]:
-    """Run a test file."""
+    """Run a standalone test or validation script."""
     return _run_script(name)
 
 
@@ -112,10 +112,14 @@ def main():
     run_status, out, secs = _run_script("scripts/validate_architecture.py")
     # Extract pass count
     lines = out.strip().split("\n")
-    summary = [l for l in lines if "passed" in l.lower() or "PASS" in l or "FAIL" in l]
+    summary = [
+        line
+        for line in lines
+        if "passed" in line.lower() or "PASS" in line or "FAIL" in line
+    ]
     print(f"  {_icon(run_status)} validate_architecture.py ({secs:.1f}s)")
-    for s in summary[-3:]:
-        print(f"    {s.strip()}")
+    for line in summary[-3:]:
+        print(f"    {line.strip()}")
     results["sections"]["architecture_validation"] = {
         "status": run_status,
         "seconds": round(secs, 2),
@@ -158,10 +162,14 @@ def main():
     print("\n─── Section 7: Campaign Demo ───")
     run_status, out, secs = _run_script("scripts/run_campaign_demo.py")
     # Extract summary
-    campaign_lines = [l for l in out.split("\n") if "ALL GREEN" in l or "Chain" in l or "Campaign" in l]
+    campaign_lines = [
+        line
+        for line in out.split("\n")
+        if "ALL GREEN" in line or "Chain" in line or "Campaign" in line
+    ]
     print(f"  {_icon(run_status)} Campaign demo ({secs:.1f}s)")
-    for cl in campaign_lines[:5]:
-        print(f"    {cl.strip()}")
+    for campaign_line in campaign_lines[:5]:
+        print(f"    {campaign_line.strip()}")
     results["sections"]["campaign_demo"] = {
         "status": run_status, "seconds": round(secs, 2),
         "summary": campaign_lines,
@@ -178,10 +186,14 @@ def main():
     # === Section 9: Adversarial E2E Pipeline ===
     print("\n─── Section 9: Adversarial E2E Pipeline ───")
     run_status, out, secs = _run_script("scripts/run_adversarial_e2e.py")
-    adv_lines = [l for l in out.split("\n") if "%" in l or "GREEN" in l or "Fox" in l or "Delta" in l]
+    adv_lines = [
+        line
+        for line in out.split("\n")
+        if "%" in line or "GREEN" in line or "Fox" in line or "Delta" in line
+    ]
     print(f"  {_icon(run_status)} Adversarial E2E ({secs:.1f}s)")
-    for al in adv_lines[:8]:
-        print(f"    {al.strip()}")
+    for adv_line in adv_lines[:8]:
+        print(f"    {adv_line.strip()}")
     results["sections"]["adversarial_e2e"] = {
         "status": run_status, "seconds": round(secs, 2),
         "summary": adv_lines,
@@ -204,12 +216,16 @@ def main():
     }
 
     # === Section 12: Benchmark Build ===
-    print("\n─── Section 9: Benchmark Pack ───")
+    print("\n─── Section 12: Benchmark Pack ───")
     run_status, out, secs = _run_script("scripts/build_benchmark_pack.py")
-    bench_lines = [l for l in out.split("\n") if "alert" in l.lower() or "technique" in l.lower() or "tactic" in l.lower()]
+    bench_lines = [
+        line
+        for line in out.split("\n")
+        if "alert" in line.lower() or "technique" in line.lower() or "tactic" in line.lower()
+    ]
     print(f"  {_icon(run_status)} Benchmark build ({secs:.1f}s)")
-    for bl in bench_lines[:5]:
-        print(f"    {bl.strip()}")
+    for bench_line in bench_lines[:5]:
+        print(f"    {bench_line.strip()}")
     results["sections"]["benchmark_build"] = {
         "status": run_status, "seconds": round(secs, 2),
         "summary": bench_lines,
@@ -217,7 +233,7 @@ def main():
 
     # === Section 13: GPU Experiments (optional) ===
     if with_gpu:
-        print("\n─── Section 10: GPU Experiments ───")
+        print("\n─── Section 13: GPU Experiments ───")
         for exp in ["E1", "E2"]:
             run_status, out, secs = _run_script("scripts/run_experiment.py", [f"--experiment={exp}"])
             print(f"  {_icon(run_status)} Experiment {exp} ({secs:.1f}s)")
@@ -225,7 +241,7 @@ def main():
                 "status": run_status, "seconds": round(secs, 2),
             }
     else:
-        print("\n─── Section 10: GPU Experiments ───")
+        print("\n─── Section 13: GPU Experiments ───")
         print("  ⏭️  Skipped (run with --with-gpu)")
 
     # === Summary ===
@@ -234,7 +250,7 @@ def main():
     total = 0
     passed = 0
     skipped = 0
-    for name, data in sections.items():
+    for _name, data in sections.items():
         if isinstance(data, list):
             for item in data:
                 if item.get("status") != "skipped":
@@ -251,7 +267,8 @@ def main():
             if data["status"] == "pass":
                 passed += 1
 
-    print(f"  REPRODUCIBILITY SUMMARY: {passed}/{total} sections passed ({skipped} skipped)")
+    total_sections = total + skipped
+    print(f"  REPRODUCIBILITY SUMMARY: {passed}/{total_sections} sections passed ({skipped} skipped)")
     print("═" * 70)
 
     # Save reports
@@ -264,12 +281,12 @@ def main():
 
     # Generate markdown report
     md_lines = [
-        f"# HADES Reproducibility Report",
-        f"",
+        "# HADES Reproducibility Report",
+        "",
         f"**Generated:** {timestamp}",
         f"**GPU mode:** {'Enabled' if with_gpu else 'Disabled'}",
-        f"**Result:** {passed}/{total} sections passed ({skipped} skipped)",
-        f"",
+        f"**Result:** {passed}/{total_sections} sections passed ({skipped} skipped)",
+        "",
     ]
     for name, data in sections.items():
         md_lines.append(f"## {name.replace('_', ' ').title()}")

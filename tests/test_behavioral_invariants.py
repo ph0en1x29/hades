@@ -111,7 +111,7 @@ def test_full_pipeline_clean():
         "reasoning": "LSASS memory access from 10.0.1.15 matches credential dumping pattern.",
     }
     result = run_invariant_checks(alert, decision)
-    assert result.checks_run == 5
+    assert result.checks_run == 6
     assert result.violation_count == 0
     assert not result.injection_suspected
 
@@ -160,3 +160,4 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"  ❌ {test.__name__}: {e}")
     print(f"\n{passed}/{len(tests)} passed")
+    sys.exit(0 if passed == len(tests) else 1)

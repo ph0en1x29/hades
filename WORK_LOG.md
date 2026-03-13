@@ -6,3 +6,4 @@
 [2026-03-13 00:45] [Phoenix] Added comprehensive SOC-Bench adapter tests (17 tests) - Fox O1/O2/O3, JSON serialization, edge cases.
 [2026-03-13 00:55] [Phoenix] Added correlator stress tests with benchmark data (13 tests) - large batches, chain detection, performance benchmarks.
 [2026-03-13 00:55] [Phoenix] Added MITRE RAG smoke tests (skips gracefully when Qdrant unavailable).
+[2026-03-13 03:42] [Codex] Final pre-submission cleanup: fixed the INV-6 test regression, made standalone invariant tests fail correctly, changed adversarial E2E to skip honestly without raw Sysmon data, corrected reproducibility summary accounting, and aligned README/advisor stats with the 12,147-alert benchmark.

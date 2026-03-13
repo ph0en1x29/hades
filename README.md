@@ -136,7 +136,7 @@ python src/main.py --config configs/default.yaml
 ## Reviewer Quick Start
 
 ```bash
-# Reproducibility suite (21 sections, ~30s, no GPU needed)
+# Reproducibility suite (29 sections, no GPU needed; dataset-dependent sections may skip)
 python scripts/reproduce_all.py
 
 # Comprehensive validation (25 checks, ~24s, no GPU needed)
@@ -175,7 +175,7 @@ python -m pytest tests/ -v
 ### Project Stats
 
 - **70 Python files** / **13,474 LOC**
-- **19 Python test/validation files** / **21-section reproducibility harness** / **25-check comprehensive validator**
+- **19 Python test/validation files** / **29-section reproducibility harness** / **25-check comprehensive validator**
 - **12,147 benchmark alerts** across **27 MITRE ATT&CK techniques** and **9 tactics**
 - **25 modules**, all import cleanly
 - **475MB** real Splunk Attack Data

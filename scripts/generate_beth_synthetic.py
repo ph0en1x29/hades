@@ -14,8 +14,7 @@ The synthetic data is marked as engineering_scaffold, NOT benchmark_of_record.
 import csv
 import os
 import random
-import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 # Seed for reproducibility
 random.seed(42)
@@ -48,9 +47,9 @@ SENSORS = [f"sensor-{i}" for i in range(1, 24)]
 
 def generate_dns_logs(n_records: int = 500) -> list[dict]:
     records = []
-    base_time = datetime(2021, 5, 1, 10, 0, 0, tzinfo=timezone.utc)
+    base_time = datetime(2021, 5, 1, 10, 0, 0, tzinfo=UTC)
 
-    for i in range(n_records):
+    for _i in range(n_records):
         ts = base_time + timedelta(seconds=random.randint(0, 18000))  # 5 hours
         sensor_idx = random.randint(0, 22)
         src_ip = HONEYPOT_IPS[sensor_idx]
@@ -109,9 +108,9 @@ MALICIOUS_PROCESSES = [
 
 def generate_process_logs(n_records: int = 500) -> list[dict]:
     records = []
-    base_time = datetime(2021, 5, 1, 10, 0, 0, tzinfo=timezone.utc)
+    base_time = datetime(2021, 5, 1, 10, 0, 0, tzinfo=UTC)
 
-    for i in range(n_records):
+    for _i in range(n_records):
         ts = base_time + timedelta(seconds=random.randint(0, 18000))
         sensor_idx = random.randint(0, 22)
 
@@ -179,10 +178,10 @@ def main():
     proc_evil = sum(1 for r in process_records if r["evil"] == 1)
     proc_sus = sum(1 for r in process_records if r["sus"] == 1)
 
-    print(f"\nBETH Synthetic Dataset Generated:")
+    print("\nBETH Synthetic Dataset Generated:")
     print(f"  DNS:     {len(dns_records)} records ({dns_sus} suspicious, {dns_evil} malicious)")
     print(f"  Process: {len(process_records)} records ({proc_sus} suspicious, {proc_evil} malicious)")
-    print(f"\n  ⚠️  Marked as engineering_scaffold — NOT benchmark_of_record")
+    print("\n  ⚠️  Marked as engineering_scaffold — NOT benchmark_of_record")
 
 
 if __name__ == "__main__":

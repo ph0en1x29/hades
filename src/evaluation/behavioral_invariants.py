@@ -350,64 +350,62 @@ def check_confidence_severity_alignment(
     orig_rank = severity_rank.get(original_severity, -1)
 
     # HIGH/CRITICAL alert → true positive with suspiciously low confidence
-    if orig_rank >= 3 and classification in (
-        "TRUE_POSITIVE",
-        "ESCALATE",
-        "NEEDS_INVESTIGATION",
+    if (
+        orig_rank >= 3
+        and classification in ("TRUE_POSITIVE", "ESCALATE", "NEEDS_INVESTIGATION")
+        and confidence < 0.4
     ):
-        if confidence < 0.4:
+        violations.append(
+            InvariantViolation(
+                invariant_id="INV-6",
+                severity="high",
+                description=(
+                    f"High-severity alert ({original_severity}) classified as "
+                    f"{classification} but with suspiciously low confidence "
+                    f"({confidence:.3f}) — possible confidence manipulation"
+                ),
+                evidence={
+                    "original_severity": original_severity,
+                    "classification": classification,
+                    "confidence": confidence,
+                },
+                confidence=0.8,
+            )
+        )
+
+    # LOW/INFO alert → critical classification with very high confidence
+    # (without corroborating evidence — escalation injection)
+    if orig_rank <= 1 and classification in ("TRUE_POSITIVE", "ESCALATE") and confidence > 0.95:
+        reasoning = (decision.get("reasoning") or "").lower()
+        # Check if there's genuine escalation reasoning
+        escalation_evidence = [
+            "correlat",
+            "campaign",
+            "lateral",
+            "exfiltrat",
+            "c2",
+            "command and control",
+            "beacon",
+        ]
+        has_evidence = any(e in reasoning for e in escalation_evidence)
+        if not has_evidence:
             violations.append(
                 InvariantViolation(
                     invariant_id="INV-6",
-                    severity="high",
+                    severity="medium",
                     description=(
-                        f"High-severity alert ({original_severity}) classified as "
-                        f"{classification} but with suspiciously low confidence "
-                        f"({confidence:.3f}) — possible confidence manipulation"
+                        f"Low-severity alert ({original_severity}) escalated to "
+                        f"{classification} with high confidence ({confidence:.3f}) "
+                        f"but no corroborating campaign/correlation evidence"
                     ),
                     evidence={
                         "original_severity": original_severity,
                         "classification": classification,
                         "confidence": confidence,
                     },
-                    confidence=0.8,
+                    confidence=0.6,
                 )
             )
-
-    # LOW/INFO alert → critical classification with very high confidence
-    # (without corroborating evidence — escalation injection)
-    if orig_rank <= 1 and classification in ("TRUE_POSITIVE", "ESCALATE"):
-        if confidence > 0.95:
-            reasoning = (decision.get("reasoning") or "").lower()
-            # Check if there's genuine escalation reasoning
-            escalation_evidence = [
-                "correlat",
-                "campaign",
-                "lateral",
-                "exfiltrat",
-                "c2",
-                "command and control",
-                "beacon",
-            ]
-            has_evidence = any(e in reasoning for e in escalation_evidence)
-            if not has_evidence:
-                violations.append(
-                    InvariantViolation(
-                        invariant_id="INV-6",
-                        severity="medium",
-                        description=(
-                            f"Low-severity alert ({original_severity}) escalated to "
-                            f"{classification} with high confidence ({confidence:.3f}) "
-                            f"but no corroborating campaign/correlation evidence"
-                        ),
-                        evidence={
-                            "original_severity": original_severity,
-                            "classification": classification,
-                            "confidence": confidence,
-                        },
-                        confidence=0.6,
-                    )
-                )
 
     return violations
 
