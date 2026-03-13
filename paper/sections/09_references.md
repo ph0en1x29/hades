@@ -47,3 +47,9 @@
 [TeLintelo2026] Jona Te Lintelo et al. *Large Language Lobotomy: Jailbreaking Mixture-of-Experts via Expert Silencing (L³).* arXiv:2602.08741, February 2026. Training-free MoE attack; ASR 7.3%→70.4%.
 
 [Lai2025] Zhenglin Lai et al. *SAFEx: Analyzing Vulnerabilities of MoE-Based LLMs via Stable Safety-critical Expert Identification.* arXiv:2506.17368, October 2025. Safety concentrated in <12 experts in Qwen3-30B.
+
+[Datadog2026] Christoph Hamsen, Kylian Serrania, Christophe Tafani-Dereeper. *When an AI agent came knocking: Catching malicious contributions in Datadog's open source repos.* Datadog Engineering Blog, March 2026. https://www.datadoghq.com/blog/engineering/stopping-hackerbot-claw-with-bewaire/
+
+[Jiang2026] Tanqiu Jiang et al. *AgentLAB: Benchmarking LLM Agents against Long-Horizon Attacks.* arXiv:2602.16901, February 2026. First benchmark for long-horizon attacks including intent hijacking and memory poisoning.
+
+[Lee2025] Hwiwon Lee et al. *SEC-bench: Automated Benchmarking of LLM Agents on Real-World Software Security Tasks.* arXiv:2506.11791, June 2025. Multi-agent scaffold for security engineering evaluation.

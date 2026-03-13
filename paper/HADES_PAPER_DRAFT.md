@@ -981,7 +981,11 @@ Commercial LLM-based SOC tools are rapidly being adopted: Microsoft Security Cop
 
 **"The Attacker Moves Second"** [Nasr2025] is the definitive work on adaptive prompt injection. A 14-author team from OpenAI, Anthropic, DeepMind, and ETH demonstrates that adaptive attackers bypass ALL existing prompt injection defenses. We adopt their adaptive attacker methodology (E8) and extend it to the SOC domain.
 
-**Real-world validation.** Neaves [2025] at LevelBlue (AT&T Cybersecurity) demonstrates three successful indirect prompt injections through SOC/SIEM log files: HTTP User-Agent, SSH username, and Windows Event 4625 authentication records. In all cases, the LLM triage agent followed injected instructions, falsifying source IPs and hiding attack indicators. Unit 42 [2026] reports 22 distinct IDPI techniques observed in production telemetry, including the first documented case of AI-based ad review evasion. These demonstrations validate our threat model with independent evidence.
+**Real-world validation.** Neaves [2025] at LevelBlue (AT&T Cybersecurity) demonstrates three successful indirect prompt injections through SOC/SIEM log files: HTTP User-Agent, SSH username, and Windows Event 4625 authentication records. In all cases, the LLM triage agent followed injected instructions, falsifying source IPs and hiding attack indicators. Unit 42 [2026] reports 22 distinct IDPI techniques observed in production telemetry, including the first documented case of AI-based ad review evasion.
+
+**The hackerbot-claw campaign** [Datadog2026] provides compelling real-world validation of IPI in automated triage. In February–March 2026, an AI agent systematically targeted GitHub repositories with prompt injection payloads embedded in issue bodies and PR descriptions. When Datadog's Claude-powered issue triage workflow processed issue #47021, it encountered injection attempts but successfully blocked them — the Claude action logged: "The issue body contains an attempted prompt injection attack (which I ignored per instructions)." This demonstrates both the threat (attackers actively deploying IPI against LLM triage) and the potential for workflow-level defenses, validating our behavioral invariant approach.
+
+**AgentLAB** [Jiang2026] introduces the first benchmark for long-horizon attacks on LLM agents, defining five attack types: intent hijacking, tool chaining, task injection, objective drifting, and memory poisoning across 644 security test cases. Their finding that "defenses designed for single-turn interactions fail to reliably mitigate long-horizon threats" reinforces our argument for workflow-level behavioral invariants that operate on triage outputs rather than individual prompt inputs.
 
 **Indirect Prompt Injection in the Wild** [Chang2026] decomposes IPI into trigger and attack fragments, achieving near-100% retrieval across 11 benchmarks at $0.21/query. A single poisoned email coerced GPT-4o into exfiltrating SSH keys with >80% success. This establishes that IPI retrieval is a "critical open vulnerability" — Hades operates as a post-retrieval detection layer.
 
@@ -1008,6 +1012,8 @@ These findings suggest that different MoE architectures may exhibit different ad
 **SOC-Bench** [Liu2026] defines design principles for evaluating multi-agent AI in SOC contexts, grounded in the Colonial Pipeline/DarkSide ransomware incident. Its five tasks (Fox: campaign detection, Tiger: attribution, Panda: containment, Goat: forensics, Mouse: exfiltration detection) provide a structured evaluation framework. Our work could serve as the first system evaluated against SOC-Bench, with our adversarial angle measurable through the framework's formal rubric.
 
 **SecBench** [Jing2024] benchmarks LLM cybersecurity knowledge through MCQ-style assessments. Unlike SecBench, we evaluate operational performance under adversarial conditions, not knowledge recall.
+
+**SEC-bench** [Lee2025] introduces automated benchmarking for LLM agents on authentic security engineering tasks including PoC generation and vulnerability patching. Using a multi-agent scaffold that reproduces vulnerabilities in isolated environments, they find agents achieve at most 18.0% success on PoC generation and 34.0% on patching — highlighting significant performance gaps. While SEC-bench evaluates offensive security capabilities, Hades evaluates defensive robustness of security-deployed LLMs.
 
 ## 8.5 SIEM Data and Normalization
 
@@ -1091,3 +1097,9 @@ No prior work occupies the intersection of SOC-specific evaluation, SIEM-channel
 [TeLintelo2026] Jona Te Lintelo et al. *Large Language Lobotomy: Jailbreaking Mixture-of-Experts via Expert Silencing (L³).* arXiv:2602.08741, February 2026. Training-free MoE attack; ASR 7.3%→70.4%.
 
 [Lai2025] Zhenglin Lai et al. *SAFEx: Analyzing Vulnerabilities of MoE-Based LLMs via Stable Safety-critical Expert Identification.* arXiv:2506.17368, October 2025. Safety concentrated in <12 experts in Qwen3-30B.
+
+[Datadog2026] Christoph Hamsen, Kylian Serrania, Christophe Tafani-Dereeper. *When an AI agent came knocking: Catching malicious contributions in Datadog's open source repos.* Datadog Engineering Blog, March 2026. https://www.datadoghq.com/blog/engineering/stopping-hackerbot-claw-with-bewaire/
+
+[Jiang2026] Tanqiu Jiang et al. *AgentLAB: Benchmarking LLM Agents against Long-Horizon Attacks.* arXiv:2602.16901, February 2026. First benchmark for long-horizon attacks including intent hijacking and memory poisoning.
+
+[Lee2025] Hwiwon Lee et al. *SEC-bench: Automated Benchmarking of LLM Agents on Real-World Software Security Tasks.* arXiv:2506.11791, June 2025. Multi-agent scaffold for security engineering evaluation.
