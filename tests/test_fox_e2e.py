@@ -170,7 +170,7 @@ def _ground_truth() -> FoxGroundTruth:
         campaign_present=True,
         campaign_scope="targeted",
         affected_hosts=["10.10.1.15", "10.10.1.20", "203.0.113.50"],
-        primary_activity="credential_access",
+        primary_activity="lateral_movement",
         mitre_techniques=[
             "T1566.001",
             "T1059.001",

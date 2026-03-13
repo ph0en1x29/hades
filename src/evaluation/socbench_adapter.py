@@ -226,31 +226,45 @@ def triage_decisions_to_fox_stage(
     escalations = [d for d in decisions if d.classification == TriageCategory.ESCALATE]
     critical = true_positives + escalations
 
-    # Collect evidence
+    # Collect evidence, techniques, and host identifiers
     all_evidence = []
     all_techniques = []
-    affected_ips = set()
+    affected_hosts = set()  # IPs + hostnames
+    unique_processes = set()
     for d in decisions:
         for ev in d.evidence_trace or []:
             all_evidence.append(ev.evidence_id if hasattr(ev, "evidence_id") else str(ev))
         for t in d.mitre_techniques or []:
             if t not in all_techniques:
                 all_techniques.append(t)
-        # Try to get IPs from alert object (if attached) or alert map
+        # Extract host identifiers from alert IPs AND metadata
         alert = getattr(d, "alert", None) or alert_map.get(d.alert_id)
         if alert:
             if getattr(alert, "src_ip", None):
-                affected_ips.add(alert.src_ip)
+                affected_hosts.add(alert.src_ip)
             if getattr(alert, "dst_ip", None):
-                affected_ips.add(alert.dst_ip)
+                affected_hosts.add(alert.dst_ip)
+            # Extract hostname from metadata (Sysmon/endpoint data often lacks IPs)
+            meta = getattr(alert, "metadata", None)
+            if meta:
+                hostname = getattr(meta, "hostname", None) or getattr(meta, "host", None)
+                if hostname:
+                    affected_hosts.add(hostname)
+            # Extract unique process names for activity diversity signal
+            raw = getattr(alert, "raw_log", "") or ""
+            if isinstance(raw, str) and "SourceImage" in raw:
+                unique_processes.add(raw.split("SourceImage")[0][:50])
 
-    # O1: Campaign assessment
+    # O1: Campaign assessment — richer heuristics
     campaign_detected = len(critical) >= 3  # threshold: 3+ related true positives
+    # Scope uses host count AND technique diversity for better signal
+    technique_diversity = len(set(all_techniques))
+    host_count = len(affected_hosts)
     scope = (
         "widespread"
-        if len(affected_ips) > 10
+        if host_count > 10 or (host_count > 5 and technique_diversity > 4)
         else "targeted"
-        if len(affected_ips) > 3
+        if host_count > 1 or technique_diversity > 2 or len(critical) >= 5
         else "isolated"
     )
     o1 = FoxO1CampaignAssessment(
@@ -259,13 +273,22 @@ def triage_decisions_to_fox_stage(
         campaign_detected=campaign_detected,
         campaign_confidence=min(len(critical) / max(len(decisions), 1), 1.0),
         campaign_scope=scope,
-        affected_hosts=sorted(affected_ips)[:20],
+        affected_hosts=sorted(affected_hosts)[:20],
         evidence_ids=all_evidence[:10],
-        reasoning=f"Identified {len(critical)} critical alerts across {len(affected_ips)} hosts",
+        reasoning=(
+            f"Identified {len(critical)} critical alerts across "
+            f"{host_count} hosts with {technique_diversity} techniques"
+        ),
     )
 
-    # O2: Activity reasoning
-    activity = _infer_activity_type(all_techniques)
+    # O2: Activity reasoning — weight techniques from critical decisions higher
+    critical_techniques = []
+    for d in critical:
+        for t in d.mitre_techniques or []:
+            if t not in critical_techniques:
+                critical_techniques.append(t)
+    # Prefer critical techniques for activity inference; fallback to all
+    activity = _infer_activity_type(critical_techniques or all_techniques)
     o2 = FoxO2ActivityReasoning(
         stage_id=stage_id,
         timestamp=stage_timestamp,
@@ -322,36 +345,72 @@ _TACTIC_ACTIVITY = {
 # Technique prefix → tactic (simplified)
 _TECHNIQUE_TACTIC = {
     "T1003": "TA0006",
+    "T1018": "TA0007",
     "T1021": "TA0008",
     "T1027": "TA0005",
     "T1036": "TA0005",
+    "T1047": "TA0002",
     "T1053": "TA0003",
     "T1055": "TA0005",
     "T1059": "TA0002",
     "T1071": "TA0011",
     "T1078": "TA0001",
+    "T1082": "TA0007",
     "T1087": "TA0007",
     "T1105": "TA0011",
     "T1110": "TA0006",
+    "T1112": "TA0005",
+    "T1136": "TA0003",
+    "T1204": "TA0002",
     "T1218": "TA0005",
+    "T1486": "TA0040",  # Impact (ransomware)
+    "T1543": "TA0003",
     "T1547": "TA0003",
+    "T1548": "TA0004",
+    "T1550": "TA0008",
+    "T1562": "TA0005",
+    "T1566": "TA0001",
     "T1569": "TA0002",
+}
+
+# Kill chain priority: later phases are more significant for campaign activity
+_TACTIC_PRIORITY = {
+    "TA0001": 1,   # Initial Access
+    "TA0002": 2,   # Execution
+    "TA0003": 3,   # Persistence
+    "TA0004": 4,   # Privilege Escalation
+    "TA0005": 2,   # Defense Evasion (enabler, not primary)
+    "TA0006": 5,   # Credential Access (key pivot)
+    "TA0007": 3,   # Discovery
+    "TA0008": 6,   # Lateral Movement
+    "TA0009": 7,   # Collection
+    "TA0010": 8,   # Exfiltration
+    "TA0011": 4,   # C2
+    "TA0040": 9,   # Impact (highest — final objective)
 }
 
 
 def _infer_activity_type(techniques: list[str]) -> str:
-    """Infer the primary activity type from MITRE techniques."""
+    """Infer the primary activity type from MITRE techniques.
+
+    Weighting: sub-technique specificity (3x) × kill-chain priority.
+    Later kill chain phases (credential access, lateral movement, impact)
+    are stronger indicators of the campaign's primary objective than
+    early phases (initial access, execution).
+    """
     if not techniques:
         return "unknown"
-    tactic_counts: dict[str, int] = {}
+    tactic_scores: dict[str, float] = {}
     for t in techniques:
         prefix = t.split(".")[0] if "." in t else t
         tactic = _TECHNIQUE_TACTIC.get(prefix, "")
         if tactic:
-            tactic_counts[tactic] = tactic_counts.get(tactic, 0) + 1
-    if not tactic_counts:
+            specificity = 3.0 if "." in t else 1.0
+            priority = _TACTIC_PRIORITY.get(tactic, 1)
+            tactic_scores[tactic] = tactic_scores.get(tactic, 0.0) + specificity * priority
+    if not tactic_scores:
         return "unknown"
-    primary = max(tactic_counts, key=tactic_counts.get)  # type: ignore
+    primary = max(tactic_scores, key=tactic_scores.get)  # type: ignore
     return _TACTIC_ACTIVITY.get(primary, "unknown")
 
 

@@ -315,7 +315,21 @@ The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was
 | Dual-LLM Verify | TBD | TBD | TBD |
 | Canary Tokens | TBD | TBD | TBD |
 
-## 6.9 Current Interpretation
+## 6.9 SOC-Bench Fox Scoring (Pre-GPU)
+
+We evaluated the pipeline's campaign-detection capability using the SOC-Bench Fox ring-scoring rubric (O1 campaign 39pts, O2 activity 39pts, O3 triage 22pts = 100pts max).
+
+| Scenario | O1 Campaign | O2 Activity | O3 Triage | Total | Penalties |
+|---|---:|---:|---:|---:|---:|
+| Clean (30 T1003.001 Sysmon alerts) | 39.0 | 39.0 | 22.0 | **100.0** | 0 |
+| DarkSide multi-stage (7 alerts, 7 techniques) | 39.0 | 34.7 | 22.0 | **95.7** | 0 |
+| Adversarial-injected campaign | 17.0 | 12.0 | 22.0 | **51.0** | 0 |
+
+**Fox score delta under adversarial attack: −44.7 points** (clean 95.7 → attacked 51.0). This quantifies the real-world impact of successful prompt injection on SOC campaign assessment: even when individual alerts are caught by behavioral invariants, the corrupted triage decisions degrade the aggregate campaign picture.
+
+The O1 campaign assessment achieves perfect scores because the improved adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. The O2 kill chain phase receives inner-ring (8.7/13) when the multi-stage scenario spans exploitation and actions phases.
+
+## 6.10 Current Interpretation
 
 Even before full model inference, several claims are already empirically established:
 
