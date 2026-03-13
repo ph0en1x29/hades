@@ -325,6 +325,93 @@ def check_temporal_consistency(
     return violations
 
 
+def check_confidence_severity_alignment(
+    alert: dict[str, Any],
+    decision: dict[str, Any],
+) -> list[InvariantViolation]:
+    """
+    INV-6: Confidence must align with alert severity context.
+
+    A HIGH/CRITICAL severity alert classified as true positive but
+    with unusually low confidence suggests confidence manipulation.
+    Conversely, a LOW/INFO alert classified as critical with very
+    high confidence may indicate escalation injection.
+
+    This catches C2 (confidence manipulation) attacks that INV-3 misses
+    because INV-3 only checks extreme high confidence on benign verdicts.
+    """
+    violations = []
+
+    original_severity = (alert.get("severity") or "").upper()
+    classification = (decision.get("classification") or "").upper()
+    confidence = decision.get("confidence", 0)
+
+    severity_rank = {"INFO": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+    orig_rank = severity_rank.get(original_severity, -1)
+
+    # HIGH/CRITICAL alert → true positive with suspiciously low confidence
+    if orig_rank >= 3 and classification in (
+        "TRUE_POSITIVE",
+        "ESCALATE",
+        "NEEDS_INVESTIGATION",
+    ):
+        if confidence < 0.4:
+            violations.append(
+                InvariantViolation(
+                    invariant_id="INV-6",
+                    severity="high",
+                    description=(
+                        f"High-severity alert ({original_severity}) classified as "
+                        f"{classification} but with suspiciously low confidence "
+                        f"({confidence:.3f}) — possible confidence manipulation"
+                    ),
+                    evidence={
+                        "original_severity": original_severity,
+                        "classification": classification,
+                        "confidence": confidence,
+                    },
+                    confidence=0.8,
+                )
+            )
+
+    # LOW/INFO alert → critical classification with very high confidence
+    # (without corroborating evidence — escalation injection)
+    if orig_rank <= 1 and classification in ("TRUE_POSITIVE", "ESCALATE"):
+        if confidence > 0.95:
+            reasoning = (decision.get("reasoning") or "").lower()
+            # Check if there's genuine escalation reasoning
+            escalation_evidence = [
+                "correlat",
+                "campaign",
+                "lateral",
+                "exfiltrat",
+                "c2",
+                "command and control",
+                "beacon",
+            ]
+            has_evidence = any(e in reasoning for e in escalation_evidence)
+            if not has_evidence:
+                violations.append(
+                    InvariantViolation(
+                        invariant_id="INV-6",
+                        severity="medium",
+                        description=(
+                            f"Low-severity alert ({original_severity}) escalated to "
+                            f"{classification} with high confidence ({confidence:.3f}) "
+                            f"but no corroborating campaign/correlation evidence"
+                        ),
+                        evidence={
+                            "original_severity": original_severity,
+                            "classification": classification,
+                            "confidence": confidence,
+                        },
+                        confidence=0.6,
+                    )
+                )
+
+    return violations
+
+
 def run_invariant_checks(
     alert: dict[str, Any],
     decision: dict[str, Any],
@@ -359,6 +446,10 @@ def run_invariant_checks(
 
     with suppress(Exception):
         result.violations.extend(check_temporal_consistency(alert, decision))
+    result.checks_run += 1
+
+    with suppress(Exception):
+        result.violations.extend(check_confidence_severity_alignment(alert, decision))
     result.checks_run += 1
 
     # Flag as suspected injection using weighted scoring

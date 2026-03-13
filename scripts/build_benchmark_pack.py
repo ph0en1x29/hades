@@ -263,6 +263,23 @@ BENCHMARK_TECHNIQUES = {
         "rule_name": "Malware HTTP Communication",
         "max_events": 500,
     },
+    # --- Additional Lateral Movement (closing tactic gap) ---
+    "T1021.006": {
+        "tactic": "TA0008 Lateral Movement",
+        "name": "Windows Remote Management (WinRM LOLBAS)",
+        "parser": "sysmon",
+        "file": "T1021.006/windows-sysmon.log",
+        "rule_name": "WinRM Lateral Movement via Living-off-the-Land",
+        "max_events": 500,
+    },
+    "T1550.002": {
+        "tactic": "TA0008 Lateral Movement",
+        "name": "Pass the Hash (Mimikatz/Atomic)",
+        "parser": "sysmon",
+        "file": "T1550.002/windows-sysmon.log",
+        "rule_name": "Pass the Hash Authentication",
+        "max_events": 500,
+    },
 }
 
 

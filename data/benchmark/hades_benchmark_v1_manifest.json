@@ -2,12 +2,12 @@
   "version": "1.0",
   "created": "2026-03-12",
   "source": "splunk_attack_data",
-  "total_alerts": 11147,
-  "techniques": 25,
+  "total_alerts": 12147,
+  "techniques": 27,
   "tactics": {
     "TA0006 Credential Access": 1023,
     "TA0007 Discovery": 1500,
-    "TA0008 Lateral Movement": 4,
+    "TA0008 Lateral Movement": 1004,
     "TA0005 Defense Evasion": 3000,
     "TA0003 Persistence": 2014,
     "TA0011 Command and Control": 604,
@@ -40,7 +40,9 @@
     "T1136.001": 500,
     "T1082": 500,
     "T1018": 500,
-    "T1112": 500
+    "T1112": 500,
+    "T1021.006": 500,
+    "T1550.002": 500
   },
   "contract_failures": 0,
   "notes": "Benchmark pack for Hades adversarial evaluation. Technique breakdown aggregates source-specific variants under canonical MITRE ATT&CK IDs. All alerts pass dataset gate benchmark contract checks."
