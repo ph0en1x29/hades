@@ -96,10 +96,30 @@ Two stack decisions are intentionally conservative:
 
 ```text
 hades/
-├── configs/    # Prototype configs and optional tool contracts
-├── docs/       # Revised technical spec and review
-├── src/        # Public schemas, runtime scaffolding, and retrieval layer
-└── docker-compose.yml
+├── configs/              # Pipeline + evaluation configs (default, eval A-H, adversarial)
+├── data/
+│   ├── benchmark/        # Built benchmark JSONL + manifest
+│   ├── datasets/         # Raw Splunk Attack Data, CIC-IDS2018 (gitignored)
+│   ├── fixtures/         # Test fixtures, ground truth
+│   ├── manifests/        # Benchmark-of-record YAML
+│   └── mitre_attack/     # ATT&CK STIX + 691 RAG docs (gitignored)
+├── docs/                 # Technical spec, architecture, research docs
+├── paper/
+│   ├── sections/         # 10 paper sections (abstract → references)
+│   ├── figures/          # Architecture + attack flow diagrams
+│   └── HADES_PAPER_DRAFT.md  # Assembled draft
+├── scripts/              # Validation, demos, benchmark builder, lab setup
+├── src/
+│   ├── adversarial/      # Vectors, payloads, encodings, defenses, injector
+│   ├── agents/           # Classifier, correlator, playbook, triage prompt/parser
+│   ├── evaluation/       # Behavioral invariants, Fox scorer, SOC-Bench adapter, stats, dataset gate
+│   ├── ingestion/        # Parsers (Sysmon, Suricata, WinSec, CIC-IDS, BETH) + unified schema
+│   ├── rag/              # Qdrant vector store + retriever
+│   ├── runtime/          # OpenAI-compatible vLLM client
+│   └── pipeline.py       # Full triage pipeline orchestrator
+├── tests/                # 16 test files
+├── docker-compose.yml    # Full stack (vLLM + Qdrant + Hades)
+└── Makefile              # Common commands
 ```
 
 ## Quick Start
@@ -112,3 +132,52 @@ python src/main.py --config configs/default.yaml
 ```
 
 `src/main.py` now initializes the scoped v1 scaffold, but ingestion, benchmark execution, and analyst-facing workflow are still incomplete.
+
+## Reviewer Quick Start
+
+```bash
+# Reproducibility suite (21 sections, ~30s, no GPU needed)
+python scripts/reproduce_all.py
+
+# Comprehensive validation (25 checks, ~24s, no GPU needed)
+python scripts/run_comprehensive_validation.py
+
+# Architecture validation (18 checks)
+python scripts/validate_architecture.py
+
+# Full pipeline demo with real Sysmon data
+python scripts/run_full_pipeline_demo.py
+
+# Multi-stage attack campaign demo (DarkSide ransomware scenario)
+python scripts/run_campaign_demo.py
+
+# E3 payload survival analysis
+python scripts/run_e3_payload_survival.py
+
+# Run all tests
+python -m pytest tests/ -v
+```
+
+### Key Documents for Review
+
+| Document | Purpose |
+|----------|---------|
+| `docs/TECHNICAL_SPEC.md` | Full technical specification (v0.4) |
+| `docs/ADVISOR_PRESENTATION.md` | Slide-ready summary for advisor |
+| `docs/ADVISOR_FEEDBACK.md` | Dr. Liu's feedback and our response |
+| `docs/DATASET_ADEQUACY_STRATEGY.md` | How we address the dataset problem |
+| `docs/SOCBENCH_ALIGNMENT.md` | Alignment with SOC-Bench framework |
+| `docs/RELATED_WORK.md` | Comprehensive related work analysis |
+| `docs/PROPOSAL_REVIEW.md` | Self-review with 7 issues identified |
+| `docs/REVIEWER_CHANGELOG.md` | All review fixes documented |
+| `paper/HADES_PAPER_DRAFT.md` | Assembled paper draft (~11K words) |
+
+### Project Stats
+
+- **70 Python files** / **13,474 LOC**
+- **16 test files** / **21/21 reproducibility** / **25/25 validation**
+- **11,147 benchmark alerts** across **29 MITRE ATT&CK techniques** and **9 tactics**
+- **25 modules**, all import cleanly
+- **475MB** real Splunk Attack Data
+- **691** MITRE ATT&CK technique documents for RAG
+- GPU-dependent results clearly marked as `TBD` in paper Tables A-D
