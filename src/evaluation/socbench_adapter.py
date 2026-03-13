@@ -190,8 +190,8 @@ def triage_decisions_to_fox_stage(
         stage_timestamp = datetime.now(UTC).isoformat()
 
     # Classify decisions
-    true_positives = [d for d in decisions if d.category == TriageCategory.TRUE_POSITIVE]
-    escalations = [d for d in decisions if d.category == TriageCategory.ESCALATE]
+    true_positives = [d for d in decisions if d.classification == TriageCategory.TRUE_POSITIVE]
+    escalations = [d for d in decisions if d.classification == TriageCategory.ESCALATE]
     critical = true_positives + escalations
 
     # Collect evidence
@@ -199,7 +199,7 @@ def triage_decisions_to_fox_stage(
     all_techniques = []
     affected_ips = set()
     for d in decisions:
-        for ev in (d.evidence or []):
+        for ev in (d.evidence_trace or []):
             all_evidence.append(ev.evidence_id if hasattr(ev, 'evidence_id') else str(ev))
         for t in (d.mitre_techniques or []):
             if t not in all_techniques:
@@ -245,7 +245,7 @@ def triage_decisions_to_fox_stage(
         bundle_id=f"B-{stage_id}-{datetime.now(UTC).strftime('%H%M%S')}",
         alert_ids=[d.alert_id for d in decisions[:50] if hasattr(d, 'alert_id')],
         priority=priority,
-        triage_decision=decisions[0].category.value if decisions else "needs_investigation",
+        triage_decision=decisions[0].classification.value if decisions else "needs_investigation",
         recommended_actions=_generate_recommendations(all_techniques, critical),
         evidence_ids=all_evidence[:10],
     )
