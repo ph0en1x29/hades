@@ -6,9 +6,11 @@
 
 Large Language Models are increasingly deployed for automated alert triage in Security Operations Centers, processing thousands of SIEM alerts that human analysts cannot review at scale. We identify a fundamental vulnerability in this architecture: the SIEM data that LLMs analyze originates from the same adversaries they are designed to detect. Attackers can embed prompt injection payloads in network traffic fields — HTTP headers, authentication usernames, DNS queries, TLS certificate attributes — that SIEM systems faithfully log and feed to triage models.
 
-We present **Hades**, an evaluation framework for measuring the adversarial robustness of LLM-based SOC triage systems. Using a benchmark of 2,619 rule-linked alerts from the Splunk Attack Data repository across 8 MITRE ATT&CK techniques, we generate over 300,000 adversarial variants through 12 validated injection vectors, 5 attack classes, and multiple encoding strategies. We evaluate 4 frontier open-weight LLMs (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under three attacker knowledge levels.
+We present **Hades**, an evaluation framework and triage pipeline for measuring and defending against adversarial manipulation of LLM-based SOC systems. Using a benchmark of 4,619 rule-linked alerts from the Splunk Attack Data repository across 12 MITRE ATT&CK techniques in 7 tactics, we generate over 554,000 adversarial variants through 12 validated injection vectors, 5 attack classes, and 9 encoding strategies. We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under three attacker knowledge levels.
 
-Our experiments demonstrate that [attack success rates — to be filled after experiments]. We evaluate five defense mechanisms — input sanitization, structured prompts, adversarial fine-tuning, dual-LLM verification, and canary token detection — and find that [defense findings — to be filled]. Following the methodology of Nasr et al. (2025), we verify our defenses against adaptive attackers who are aware of and specifically target each defense mechanism.
+Hades introduces a multi-agent triage pipeline with three novel components: (1) a **correlator agent** that detects multi-stage attack campaigns through IP clustering, technique chain matching against known kill chain patterns, and temporal burst detection; (2) a **behavioral invariant defense** that operates at the workflow level — detecting phantom IPs, fabricated references, suspicious confidence patterns, and severity manipulation in triage outputs, then auto-escalating suspected injections without relying on model-level defenses that adaptive attackers consistently bypass (Nasr et al., 2025); and (3) a **SOC-Bench adapter** that maps triage outputs to the ring-scored Fox/Tiger/Panda evaluation format for standardized benchmarking.
+
+Our E3 experiments demonstrate that direct misclassification and confidence manipulation payloads survive 100% of SIEM normalization steps, while evasion encodings that defeat keyword-based defenses (homoglyphs, zero-width characters) remain interpretable by LLMs — creating a dual vulnerability. Behavioral invariant detection achieves 100% detection on direct misclassification (C1), 98% on attention hijacking (C4), and 100% on reasoning corruption (C3), with 0% false positives on clean triage outputs.
 
 Our threat model is validated by real-world demonstrations: Neaves (2025) successfully injected payloads through HTTP User-Agent headers, SSH usernames, and Windows Event Log fields in production SIEM environments, and Unit 42 (2026) reports 22 indirect prompt injection techniques observed in the wild. We release Hades as open-source tooling for the community to evaluate and improve the adversarial robustness of LLM-based security automation.
 
@@ -46,13 +48,17 @@ This paper makes the following contributions:
 
 1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Three vectors are validated against production systems [Neaves2025].
 
-2. **Systematic adversarial evaluation.** We evaluate 4 frontier LLMs (DeepSeek R1, GLM-5, Kimi K2.5, Qwen 3.5) under 5 attack classes, 4 encoding strategies, and 3 attacker knowledge levels, producing over 300,000 adversarial alert variants from a benchmark of 2,619 rule-linked SIEM alerts.
+2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under 5 attack classes, 9 encoding strategies, and 3 attacker knowledge levels, producing over 554,000 adversarial alert variants from a benchmark of 4,619 rule-linked SIEM alerts across 12 MITRE ATT&CK techniques.
 
-3. **Defense evaluation with adaptive attackers.** We test 5 defense mechanisms — input sanitization, structured prompt architecture, adversarial fine-tuning, dual-LLM verification, and canary token detection — following the methodology of Nasr et al. [2025] to verify that defenses survive adaptive attack escalation.
+3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 5 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, and temporal downplay patterns. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them immune to prompt-level obfuscation. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives.
 
-4. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
+4. **Multi-agent correlation pipeline.** We demonstrate that single-alert triage is insufficient — a correlator agent using IP clustering, technique chain matching, and temporal burst detection identifies multi-stage campaigns (DarkSide ransomware scenario: 100% campaign confidence) that individual alert classification misses, while a playbook agent generates NIST SP 800-61 response guidance with chain-aware severity escalation.
 
-5. **Open-source evaluation framework.** We release Hades, a modular pipeline for adversarial evaluation of LLM triage systems, with reproducible experiments and documented methodology.
+5. **Defense evaluation with adaptive attackers.** We test 5 defense mechanisms — input sanitization, structured prompt architecture, adversarial fine-tuning, dual-LLM verification, and canary token detection — following the methodology of Nasr et al. [2025] to verify that defenses survive adaptive attack escalation.
+
+6. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
+
+7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with 18/18 reproducibility validation passing and SOC-Bench [Cai2026] ring-scoring alignment.
 
 ## 1.4 Paper Organization
 
@@ -358,18 +364,57 @@ Three defense mechanisms are implemented:
 - **StructuredPromptDefense:** Recursive field wrapping with `[FIELD:path]` markers
 - **CanaryDefense:** Injects known canary strings into alert metadata
 
-## 4.5 Evaluation Layer
+## 4.5 Multi-Agent Pipeline
 
 ### 4.5.1 Triage Pipeline
 
 The triage pipeline (`pipeline.py`) processes alerts through:
 1. Optional defense preprocessing
 2. Prompt construction from alert fields
-3. LLM inference via vLLM
+3. LLM inference via vLLM (ClassifierAgent)
 4. Response parsing into structured `TriageDecision` objects
-5. Evidence trace construction for audit
+5. **Behavioral invariant checking** — auto-escalates if injection suspected
+6. Evidence trace and override record construction for audit
 
-### 4.5.2 Benchmark Builder
+### 4.5.2 Correlator Agent
+
+The correlator (`correlator.py`) detects multi-stage attack campaigns by running four parallel strategies against an in-memory alert store:
+
+1. **IP clustering** — groups alerts sharing source/destination IPs within a configurable time window (default ±15 min)
+2. **Technique chain detection** — maps observed MITRE techniques to tactics, then matches against 5 known attack patterns (ransomware, data exfiltration, credential theft, lateral movement, persistence establishment). A pattern is flagged when ≥40% of its expected tactic sequence is observed.
+3. **Session reconstruction** — groups alerts by `src_ip→dst_ip` pairs to identify persistent attacker sessions
+4. **Temporal burst detection** — detects spikes of ≥5 alerts from a single source within the time window
+
+Campaign assessment combines all strategies: a campaign is declared when any attack chain is detected, any temporal burst occurs, or ≥10 correlated events are found.
+
+### 4.5.3 Playbook Agent
+
+The playbook generator (`playbook.py`) produces NIST SP 800-61 incident response playbooks using a technique-specific knowledge base covering 7 MITRE techniques plus a generic fallback. Each KB entry defines:
+- **Containment** actions with priority and automation flags
+- **Eradication** steps with evidence collection guidance
+- **Recovery** procedures including credential rotation and re-imaging
+- **Post-incident** documentation and detection rule updates
+
+Severity is dynamically escalated when attack chains are detected: a medium-severity discovery alert becomes critical when it's part of a credential theft chain.
+
+### 4.5.4 Behavioral Invariant Defense
+
+The invariant layer (`behavioral_invariants.py`) is our primary defense against prompt injection — and crucially, it operates on triage **outputs**, not **inputs**. This makes it immune to input-level obfuscation that defeats sanitization and structured prompt defenses (Nasr et al., 2025).
+
+Five invariants are checked against every triage decision:
+- **INV-1:** Severity downgrade without supporting evidence (critical/high)
+- **INV-2:** Phantom IPs referenced in output but absent from source alert (critical)
+- **INV-3:** Unrealistically high confidence (>0.95) on benign classifications (high)
+- **INV-4:** Fabricated references (pentest claims, change requests) not in source (medium)
+- **INV-5:** Temporal downplay patterns ("all services nominal") (medium)
+
+When injection is suspected (weighted score ≥3), the pipeline auto-escalates the classification from the model's output to `ESCALATE` and records an `OverrideRecord` in the audit trail with the previous classification, the intervening actor (`system:behavioral_invariants`), and the triggering violations.
+
+### 4.5.5 SOC-Bench Adapter
+
+The SOC-Bench adapter (`socbench_adapter.py`) maps Hades `TriageDecision` outputs into the ring-scored Fox, Tiger, and Panda output formats defined by Cai et al. (2026). This enables direct evaluation against SOC-Bench ground truth when datasets become available.
+
+### 4.5.6 Benchmark Builder
 
 The benchmark builder (`build_benchmark_pack.py`) constructs validated alert sets:
 - Loads raw data from multiple Splunk Attack Data technique directories
@@ -896,35 +941,43 @@ Our results demonstrate that LLM-based triage systems face a fundamental tension
 
 **Practical recommendation.** Organizations deploying LLM triage should treat model outputs as *suggestions* requiring human verification for any alert the model recommends downgrading. The confidence threshold for automatic closure must account for the possibility that the confidence score itself has been manipulated (Attack Class C2).
 
-## 7.2 The Defense Paradox
+## 7.2 Behavioral Invariants: Output-Level Defense
+
+Our key insight is that effective SOC triage defenses must operate at the *workflow level*, not the *model level*. Nasr et al. [2025] demonstrated that 14 research teams could break ALL 12 proposed prompt injection defenses with >90% attack success rate using adaptive attacks. This result is devastating for any defense that operates on the model's input or internal processing — an adaptive attacker can always find a way to craft payloads that bypass sanitization, structured prompts, or canary tokens.
+
+Behavioral invariants sidestep this entirely by checking the model's output against ground-truth properties of the source alert. A triage decision that references IP addresses not present in the original alert (INV-2) is suspicious regardless of how the model arrived at it. A classification of BENIGN for an alert the SIEM flagged as HIGH severity, without documented rationale (INV-1), warrants escalation regardless of whether the decision was caused by prompt injection or model error.
+
+Our pre-GPU evaluation shows 100% detection on C1 (direct misclassification) and C3 (reasoning corruption), 98% on C4 (attention hijacking), and 0% false positives. The notable exception is C2 (confidence manipulation at 0% detection), where the attacker only inflates the confidence score without changing the classification label — the subtlest attack class. This motivates layered defenses: behavioral invariants catch the overt attacks, while output confidence calibration and dual-model verification target C2.
+
+## 7.3 The Input Defense Paradox
 
 Defenses face a fundamental asymmetry: sanitization must be aggressive enough to neutralize payloads without destroying the log content that makes triage useful. Overly aggressive sanitization (Level 3) effectively truncates the data the model needs to make accurate decisions, while minimal sanitization (Level 1) fails to catch semantically-varied payloads.
 
 Structured prompt architectures (D2) show promise because they add explicit data/instruction boundaries, but Nasr et al. [2025] demonstrate that adaptive attackers can learn to exploit boundary markers themselves. Our E8 results [to be filled] will quantify whether this theoretical concern manifests in practice.
 
-## 7.3 MoE Architecture Vulnerability
+## 7.4 MoE Architecture Vulnerability
 
 Different Mixture-of-Experts architectures may exhibit different vulnerability profiles because the expert routing decision determines which subset of model parameters processes the adversarial payload. If injection payloads consistently activate different experts than legitimate log content, models with more granular routing (e.g., K2.5 with 384 experts vs. Qwen 3.5 with 128) may show different susceptibility patterns. This hypothesis motivates our cross-architecture comparison.
 
-## 7.4 Cost of Autonomy
+## 7.5 Cost of Autonomy
 
 As SOC systems move toward autonomous response (blocking IPs, isolating hosts, triggering playbooks), the cost of adversarial manipulation scales dramatically. An attacker who can suppress triage escalation for their C2 traffic gains persistent access; an attacker who can trigger false containment actions against legitimate infrastructure achieves denial of service without launching a traditional attack. Our evaluation quantifies the misclassification risk that would underlie such autonomous decisions.
 
-## 7.5 Limitations
+## 7.6 Limitations
 
 **L1: File replay vs. live deployment.** We evaluate on file-replayed alerts, not live SIEM data. Real deployments may apply additional normalization, enrichment, or filtering that affects injection viability. Our E3 experiment partially addresses this by analyzing SIEM normalization behavior across five platforms.
 
-**L2: Single-alert triage.** Our evaluation processes alerts individually. Real SOC triage often involves correlation across multiple alerts, time windows, and data sources. Multi-alert injection attacks (where the payload is split across several related alerts) are out of scope.
+**L2: Correlation scope.** While Hades includes a correlator agent for multi-stage campaign detection, our adversarial evaluation currently targets single-alert triage decisions. Multi-alert injection attacks (where the payload is split across several related alerts to evade single-alert invariant checks) represent a promising future research direction.
 
 **L3: Prompt template sensitivity.** Injection success rates depend heavily on the specific prompt template used for triage. We use a single, representative template derived from published SOC automation patterns. Different prompt designs may be more or less vulnerable.
 
 **L4: Quantization effects.** All models are evaluated at INT4 quantization due to hardware constraints. Full-precision models may exhibit different vulnerability profiles, though existing research suggests that quantization has minimal impact on instruction-following behavior.
 
-**L5: Benchmark coverage.** Our benchmark covers 8 MITRE ATT&CK techniques across 6 tactics. This is sufficient for methodology validation but does not cover the full ATT&CK matrix. The benchmark builder supports easy extension as additional Splunk Attack Data is acquired.
+**L5: Benchmark coverage.** Our benchmark covers 12 MITRE ATT&CK techniques across 7 tactics. This is sufficient for methodology validation but does not cover the full ATT&CK matrix. The benchmark builder supports easy extension as additional Splunk Attack Data is acquired.
 
 **L6: No human study.** We do not evaluate whether human analysts would catch LLM triage errors introduced by adversarial injection. A user study measuring analyst detection of manipulated triage outputs would strengthen the practical impact assessment.
 
-## 7.6 Ethical Considerations
+## 7.7 Ethical Considerations
 
 This research demonstrates attack techniques against security systems. We mitigate dual-use risk through:
 - **Defensive focus.** All experiments aim to improve security system robustness, not enable attacks.
