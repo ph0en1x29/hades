@@ -3,6 +3,9 @@
 
 Validates parser consistency, adversarial injection coverage, defense
 behavior, and pipeline correctness across ALL benchmark techniques.
+
+This test suite works both as standalone (python tests/test_cross_technique.py)
+and with pytest if available.
 """
 
 from __future__ import annotations
@@ -12,7 +15,29 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-import pytest
+# Make pytest optional - tests work with or without it
+try:
+    import pytest
+    HAS_PYTEST = True
+except ImportError:
+    HAS_PYTEST = False
+    # Provide minimal pytest stubs for standalone execution
+    class _FakePytest:
+        @staticmethod
+        def mark(*args, **kwargs):
+            def decorator(func):
+                return func
+            return decorator
+        skipif = mark
+        class fixture:
+            def __init__(self, *args, **kwargs):
+                pass
+            def __call__(self, func):
+                return func
+        @staticmethod
+        def fail(msg):
+            raise AssertionError(msg)
+    pytest = _FakePytest()
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -58,14 +83,22 @@ TECHNIQUES = {
     "T1110.001": ("sysmon", "T1110.001/sysmon.log"),
     "T1021.002": ("winsec", "T1021.002/windows_security_xml.log"),
 }
-HAS_BENCHMARK_DATA = any(
-    (DATA_DIR / relative_path).exists() and (DATA_DIR / relative_path).stat().st_size > 0
-    for _, relative_path in TECHNIQUES.values()
-)
-pytestmark = pytest.mark.skipif(
-    not HAS_BENCHMARK_DATA,
-    reason="requires Splunk Attack Data dataset",
-)
+
+def _check_benchmark_data_available() -> bool:
+    """Check if benchmark data is available."""
+    return any(
+        (DATA_DIR / relative_path).exists() and (DATA_DIR / relative_path).stat().st_size > 0
+        for _, relative_path in TECHNIQUES.values()
+    )
+
+HAS_BENCHMARK_DATA = _check_benchmark_data_available()
+
+# pytest skip marker - only used when pytest is available
+if HAS_PYTEST:
+    pytestmark = pytest.mark.skipif(
+        not HAS_BENCHMARK_DATA,
+        reason="requires Splunk Attack Data dataset",
+    )
 
 
 def load_technique(tech_id: str, limit: int = 5) -> list:
@@ -84,7 +117,8 @@ def load_technique(tech_id: str, limit: int = 5) -> list:
 
 
 class TestResults:
-    __test__ = False
+    """Track test results for standalone execution."""
+    __test__ = False  # Tell pytest this isn't a test class
 
     def __init__(self):
         self.passed = 0
@@ -101,12 +135,14 @@ class TestResults:
         print(f"  ❌ {name}: {reason}")
 
 
-@pytest.fixture
-def results():
-    result = TestResults()
-    yield result
-    if result.errors:
-        pytest.fail("\n".join(result.errors))
+# For pytest: fixture that yields results
+if HAS_PYTEST:
+    @pytest.fixture
+    def results():
+        result = TestResults()
+        yield result
+        if result.errors:
+            pytest.fail("\n".join(result.errors))
 
 
 def test_all_parsers(results: TestResults):
@@ -398,9 +434,17 @@ def test_event_type_distribution(results: TestResults):
 
 
 def main():
+    """Run all tests in standalone mode."""
     print("=" * 70)
     print("  HADES — Cross-Technique Stress Tests")
     print("=" * 70)
+
+    if not HAS_BENCHMARK_DATA:
+        print(
+            f"\nSKIPPED: requires Splunk Attack Data dataset under {DATA_DIR}\n"
+            "for cross-technique validation."
+        )
+        sys.exit(0)
 
     results = TestResults()
 
@@ -429,10 +473,4 @@ def main():
 
 
 if __name__ == "__main__":
-    if not HAS_BENCHMARK_DATA:
-        print(
-            "SKIPPED: requires Splunk Attack Data dataset under "
-            f"{DATA_DIR} for cross-technique validation.",
-        )
-        sys.exit(0)
     main()
