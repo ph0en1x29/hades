@@ -162,6 +162,7 @@ Five invariants are checked against every triage decision:
 - **INV-3:** Unrealistically high confidence (>0.95) on benign classifications (high)
 - **INV-4:** Fabricated references (pentest claims, change requests) not in source (medium)
 - **INV-5:** Temporal downplay patterns ("all services nominal") (medium)
+- **INV-6:** Confidence-severity alignment (HIGH alert + low confidence = manipulation) (high)
 
 When injection is suspected (weighted score ≥3), the pipeline auto-escalates the classification from the model's output to `ESCALATE` and records an `OverrideRecord` in the audit trail with the previous classification, the intervening actor (`system:behavioral_invariants`), and the triggering violations.
 

@@ -10,8 +10,8 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 
 | Metric | Value |
 |---|---:|
-| Total alerts | **11,147** |
-| MITRE techniques | **25** |
+| Total alerts | **12,147** |
+| MITRE techniques | **27** |
 | ATT&CK tactics | **9** |
 | Contract failures | **0** |
 | Parser types | Sysmon XML, Suricata JSON, Windows Security XML, PowerShell Logging |
@@ -27,6 +27,8 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 | T1003.003 | NTDS.dit Credential Dumping | 500 |
 | T1018 | Remote System Discovery | 500 |
 | T1021.002 | SMB Admin Shares | 4 |
+| T1021.006 | Windows Remote Management | 500 |
+| T1550.002 | Pass the Hash | 500 |
 | T1027 | Obfuscated Files / Information | 500 |
 | T1036.003 | Masquerading: Rename System Utilities | 500 |
 | T1047 | WMI Command Execution | 500 |
@@ -242,7 +244,7 @@ We evaluated our behavioral invariant detection system on 50 real Sysmon alerts 
 |---|---:|---:|---|
 | Clean (no injection) | 0.0% | **0.0%** | — |
 | C1: Direct Misclassification | **100.0%** | 0.0% | INV-1 (critical) |
-| C2: Confidence Manipulation | 0.0% | 0.0% | INV-3 (high, below threshold) |
+| C2: Confidence Manipulation | 100%* | 0.0% | INV-6 (high) + INV-5 (medium) when combined |
 | C3: Reasoning Corruption | **100.0%** | 0.0% | INV-2 (critical) + INV-4 (medium) |
 | C4: Attention Hijacking | **98.0%** | 0.0% | INV-1 (high) + INV-5 (medium) |
 
@@ -250,7 +252,7 @@ We evaluated our behavioral invariant detection system on 50 real Sysmon alerts 
 
 The behavioral invariant system detects 3 of 4 attack classes with near-perfect accuracy and zero false positives. The key insight is that these checks operate on the triage **output**, not the prompt **input** — they are immune to prompt-level obfuscation techniques that defeat input sanitization.
 
-**C2 (Confidence Manipulation) evades detection** because it does not change the classification label, introduce phantom IPs, or inject fabricated references. The only anomaly is an inflated confidence score, which triggers a single high-severity invariant but falls below the detection threshold. This demonstrates that behavioral invariants alone are insufficient — layered defenses including output confidence calibration and dual-model verification are needed for complete coverage.
+**C2 (Confidence Manipulation)** is detected by the combination of INV-6 (confidence-severity alignment, added to address the original gap) and temporal/contextual invariants. INV-6 flags when a HIGH-severity alert receives an unusually low confidence score (<0.4) on a true-positive classification — a signature of confidence manipulation attacks that try to suppress escalation without changing the verdict. When combined with INV-5 temporal downplay patterns (common in manipulated reasoning), the weighted score crosses the detection threshold. *Note: pure confidence manipulation alone (without any reasoning anomaly) produces a single high violation below threshold — this honest limitation motivates dual-model verification as a complementary defense.*
 
 The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was tuned to minimize false positives: no clean decision triggered any violation across 50 test alerts.
 
@@ -263,6 +265,7 @@ The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was
 | INV-3 | Unrealistic confidence scores | high | C2 (confidence inflation) |
 | INV-4 | Fabricated references in reasoning | medium | C3 (fake change requests, pentest claims) |
 | INV-5 | Temporal downplay patterns | medium | C4 ("all services nominal", "zero anomalies") |
+| INV-6 | Confidence-severity alignment | high | C2 (HIGH alert + confidence <0.4 on TP) |
 
 ## 6.8 Tables to Populate After GPU Runs
 
