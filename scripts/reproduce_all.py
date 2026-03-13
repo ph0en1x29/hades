@@ -87,6 +87,11 @@ def main():
         "tests/test_parser_edge_cases.py",
         "tests/test_cross_technique.py",
         "tests/test_adversarial_stress.py",
+        "tests/test_statistical_tests.py",
+        "tests/test_adversarial_defenses.py",
+        "tests/test_socbench_adapter.py",
+        "tests/test_correlator_stress.py",
+        "tests/test_rag_smoke.py",
     ]
     test_results = []
     for tf in test_files:
@@ -170,7 +175,35 @@ def main():
         "status": run_status, "seconds": round(secs, 2),
     }
 
-    # === Section 9: Benchmark Build ===
+    # === Section 9: Adversarial E2E Pipeline ===
+    print("\n─── Section 9: Adversarial E2E Pipeline ───")
+    run_status, out, secs = _run_script("scripts/run_adversarial_e2e.py")
+    adv_lines = [l for l in out.split("\n") if "%" in l or "GREEN" in l or "Fox" in l or "Delta" in l]
+    print(f"  {_icon(run_status)} Adversarial E2E ({secs:.1f}s)")
+    for al in adv_lines[:8]:
+        print(f"    {al.strip()}")
+    results["sections"]["adversarial_e2e"] = {
+        "status": run_status, "seconds": round(secs, 2),
+        "summary": adv_lines,
+    }
+
+    # === Section 10: Statistical Tests ===
+    print("\n─── Section 10: Statistical Tests ───")
+    stat_status, out, secs = _run_test("tests/test_statistical_tests.py")
+    print(f"  {_icon(stat_status)} Statistical tests ({secs:.1f}s)")
+    results["sections"]["statistical_tests"] = {
+        "status": stat_status, "seconds": round(secs, 2),
+    }
+
+    # === Section 11: BETH Parser Validation ===
+    print("\n─── Section 11: BETH Parser Validation ───")
+    beth_status, out, secs = _run_script("scripts/generate_beth_synthetic.py")
+    print(f"  {_icon(beth_status)} BETH synthetic generation ({secs:.1f}s)")
+    results["sections"]["beth_validation"] = {
+        "status": beth_status, "seconds": round(secs, 2),
+    }
+
+    # === Section 12: Benchmark Build ===
     print("\n─── Section 9: Benchmark Pack ───")
     run_status, out, secs = _run_script("scripts/build_benchmark_pack.py")
     bench_lines = [l for l in out.split("\n") if "alert" in l.lower() or "technique" in l.lower() or "tactic" in l.lower()]
@@ -182,7 +215,7 @@ def main():
         "summary": bench_lines,
     }
 
-    # === Section 10: GPU Experiments (optional) ===
+    # === Section 13: GPU Experiments (optional) ===
     if with_gpu:
         print("\n─── Section 10: GPU Experiments ───")
         for exp in ["E1", "E2"]:
