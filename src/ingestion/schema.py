@@ -99,11 +99,23 @@ class UnifiedAlert:
         d["source"] = self.source.value
         d["severity"] = self.severity.value
         d["provenance"]["dataset_role"] = self.provenance.dataset_role.value
+        # Convert datetime objects to ISO strings for JSON serialization
+        for key, val in d.items():
+            if isinstance(val, datetime):
+                d[key] = val.isoformat()
+        if isinstance(d.get("ingested_at"), datetime):
+            d["ingested_at"] = d["ingested_at"].isoformat()
+        if isinstance(d.get("timestamp"), datetime):
+            d["timestamp"] = d["timestamp"].isoformat()
+        # Handle nested datetime in provenance
+        prov = d.get("provenance", {})
+        if isinstance(prov.get("collected_at"), datetime):
+            prov["collected_at"] = prov["collected_at"].isoformat()
         return d
 
     def to_json(self) -> str:
         """Serialize to JSON string."""
-        return json.dumps(self.to_dict())
+        return json.dumps(self.to_dict(), default=str)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:

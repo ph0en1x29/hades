@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 from src.ingestion.parsers.splunk_suricata import load_suricata_log
+from src.ingestion.parsers.windows_security import load_windows_security_log
 from src.evaluation.dataset_gate import benchmark_contract_issues
 
 DATA_DIR = Path(__file__).parent.parent / "data" / "datasets" / "splunk_attack_data"
@@ -164,6 +165,103 @@ BENCHMARK_TECHNIQUES = {
         "rule_name": "UAC Bypass Attempt",
         "max_events": 500,
     },
+    # --- Wave 3: Expanded tactics and parser diversity ---
+    "T1059.001": {
+        "tactic": "TA0002 Execution",
+        "name": "PowerShell Script Execution",
+        "parser": "sysmon",
+        "file": "T1059.001/windows-sysmon.log",
+        "rule_name": "Suspicious PowerShell Command",
+        "max_events": 500,
+    },
+    "T1566.001": {
+        "tactic": "TA0001 Initial Access",
+        "name": "Spearphishing Attachment",
+        "parser": "sysmon",
+        "file": "T1566.001/windows-sysmon-datasets2.log",
+        "rule_name": "Spearphishing Attachment Execution",
+        "max_events": 500,
+    },
+    "T1003.003": {
+        "tactic": "TA0006 Credential Access",
+        "name": "NTDS.dit Credential Dumping",
+        "parser": "sysmon",
+        "file": "T1003.003/windows-sysmon.log",
+        "rule_name": "NTDS.dit Access for Credential Extraction",
+        "max_events": 500,
+    },
+    "T1047": {
+        "tactic": "TA0002 Execution",
+        "name": "WMI Command Execution",
+        "parser": "sysmon",
+        "file": "T1047/windows-sysmon.log",
+        "rule_name": "WMI Process Execution",
+        "max_events": 500,
+    },
+    "T1136.001": {
+        "tactic": "TA0003 Persistence",
+        "name": "Create Local Account",
+        "parser": "sysmon",
+        "file": "T1136.001/windows-sysmon.log",
+        "rule_name": "New Local User Created",
+        "max_events": 500,
+    },
+    "T1082": {
+        "tactic": "TA0007 Discovery",
+        "name": "System Information Discovery",
+        "parser": "sysmon",
+        "file": "T1082/windows-sysmon.log",
+        "rule_name": "System Information Enumeration",
+        "max_events": 500,
+    },
+    "T1018": {
+        "tactic": "TA0007 Discovery",
+        "name": "Remote System Discovery",
+        "parser": "sysmon",
+        "file": "T1018/windows-sysmon.log",
+        "rule_name": "Remote System Network Discovery",
+        "max_events": 500,
+    },
+    "T1112": {
+        "tactic": "TA0005 Defense Evasion",
+        "name": "Modify Registry",
+        "parser": "sysmon",
+        "file": "T1112/windows-sysmon.log",
+        "rule_name": "Suspicious Registry Modification",
+        "max_events": 500,
+    },
+    "T1053.005_sec": {
+        "tactic": "TA0003 Persistence",
+        "name": "Scheduled Task (Security Event Log)",
+        "parser": "winsec",
+        "file": "T1053.005/4698_windows-security.log",
+        "rule_name": "Windows Security Event 4698 Scheduled Task",
+        "max_events": 500,
+    },
+    "T1021.002_sec": {
+        "tactic": "TA0008 Lateral Movement",
+        "name": "SMB Lateral Movement (Security Event Log)",
+        "parser": "winsec",
+        "file": "T1021.002/windows_security_xml.log",
+        "rule_name": "Impacket smbexec Process Creation",
+        "max_events": 500,
+    },
+    "T1059.001_ps": {
+        "tactic": "TA0002 Execution",
+        "name": "PowerShell Script Block Logging",
+        "parser": "winsec",
+        "file": "T1059.001/windows-powershell-xml.log",
+        "rule_name": "PowerShell Script Block Execution",
+        "max_events": 500,
+    },
+    "T1071.001_malware": {
+        "tactic": "TA0011 Command and Control",
+        "name": "Suricata Malware HTTP Traffic",
+        "parser": "suricata",
+        "file": "T1071.001/suricata_malware.log",
+        "rule_name": "Malware HTTP Communication",
+        "max_events": 500,
+    },
 }
 
 
@@ -192,17 +290,27 @@ def main() -> None:
         parser = config["parser"]
         max_events = config["max_events"]
 
+        # Strip suffixes for MITRE technique ID (e.g., T1053.005_sec → T1053.005)
+        mitre_id = technique_id.split("_")[0]
+
         if parser == "sysmon":
             alerts = load_sysmon_log(
                 filepath,
-                mitre_technique=technique_id,
+                mitre_technique=mitre_id,
                 rule_name=config["rule_name"],
                 limit=max_events,
             )
         elif parser == "suricata":
             alerts = load_suricata_log(
                 filepath,
-                mitre_technique=technique_id,
+                mitre_technique=mitre_id,
+                rule_name=config["rule_name"],
+                limit=max_events,
+            )
+        elif parser == "winsec":
+            alerts = load_windows_security_log(
+                filepath,
+                mitre_technique=mitre_id,
                 rule_name=config["rule_name"],
                 limit=max_events,
             )
