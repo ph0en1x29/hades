@@ -177,7 +177,7 @@ The benchmark builder (`build_benchmark_pack.py`) constructs validated alert set
 - Validates all alerts against the dataset gate
 - Produces JSONL output with manifest for reproducibility
 
-Current benchmark: 11,147 alerts across 25 canonical ATT&CK techniques, 9 tactics, 0 contract failures.
+Current benchmark: 12,147 alerts across 27 canonical ATT&CK techniques, 9 tactics, 0 contract failures.
 
 ## 4.6 Model Serving
 

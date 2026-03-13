@@ -34,7 +34,7 @@ All models are served via vLLM with tensor parallelism appropriate to the availa
 
 ### 5.3.1 Construction
 
-Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data repository, covering 25 MITRE ATT&CK techniques across 9 tactics:
+Our benchmark comprises 12,147 alerts parsed from the Splunk Attack Data repository, covering 27 MITRE ATT25 MITRE ATT&CK techniquesCK techniques across 9 tactics:
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|

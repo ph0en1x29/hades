@@ -28,7 +28,7 @@ This paper makes the following contributions:
 
 1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Three vectors are validated against production systems [Neaves2025].
 
-2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models under 5 attack classes and a 12-vector injection taxonomy, producing over 1.3 million base adversarial alert variants from a benchmark of 11,147 rule-linked SIEM alerts across 25 MITRE ATT&CK techniques in 9 tactics, and separately test extended encoding strategies for normalization survival.
+2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models under 5 attack classes and a 12-vector injection taxonomy, producing over 1.3 million base adversarial alert variants from a benchmark of 11,147 rule-linked SIEM alerts across 27 MITRE ATT25 MITRE ATT&CK techniquesCK techniques in 9 tactics, and separately test extended encoding strategies for normalization survival.
 
 3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 5 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, and temporal downplay patterns. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them immune to prompt-level obfuscation. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives.
 
