@@ -6,11 +6,11 @@
 
 Large Language Models are increasingly deployed for automated alert triage in Security Operations Centers, processing thousands of SIEM alerts that human analysts cannot review at scale. We identify a fundamental vulnerability in this architecture: the SIEM data that LLMs analyze originates from the same adversaries they are designed to detect. Attackers can embed prompt injection payloads in network traffic fields — HTTP headers, authentication usernames, DNS queries, TLS certificate attributes — that SIEM systems faithfully log and feed to triage models.
 
-We present **Hades**, an evaluation framework and triage pipeline for measuring and defending against adversarial manipulation of LLM-based SOC systems. Using a benchmark of 11,147 rule-linked alerts from the Splunk Attack Data repository across 27 MITRE ATT25 MITRE ATT&CK techniquesCK techniques in 9 tactics, we generate over 1.3 million base adversarial variants across 12 validated injection vectors and 5 attack classes, and separately evaluate extended encoding strategies for SIEM-normalization survival. We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under three attacker knowledge levels.
+We present **Hades**, an evaluation framework and triage pipeline for measuring and defending against adversarial manipulation of LLM-based SOC systems. Using a benchmark of 12,147 rule-linked alerts from the Splunk Attack Data repository across 27 MITRE ATT&CK techniques in 9 tactics, we generate over 1.4 million base adversarial variants across 12 validated injection vectors and 5 attack classes, and separately evaluate extended encoding strategies for SIEM-normalization survival. We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under three attacker knowledge levels.
 
 Hades introduces a multi-agent triage pipeline with three novel components: (1) a **correlator agent** that detects multi-stage attack campaigns through IP clustering, technique chain matching against known kill chain patterns, and temporal burst detection; (2) a **behavioral invariant defense** that operates at the workflow level — detecting phantom IPs, fabricated references, suspicious confidence patterns, and severity manipulation in triage outputs, then auto-escalating suspected injections without relying on model-level defenses that adaptive attackers consistently bypass (Nasr et al., 2025); and (3) a **SOC-Bench adapter** that maps triage outputs to the ring-scored Fox/Tiger/Panda evaluation format for standardized benchmarking.
 
-Our E3 experiments demonstrate that direct misclassification and confidence manipulation payloads survive 100% of SIEM normalization steps, while evasion encodings that defeat keyword-based defenses (homoglyphs, zero-width characters) remain interpretable by LLMs — creating a dual vulnerability. Behavioral invariant detection achieves 100% detection on direct misclassification (C1), 98% on attention hijacking (C4), and 100% on reasoning corruption (C3), with 0% false positives on clean triage outputs.
+Our E3 experiments demonstrate that direct misclassification and confidence manipulation payloads survive 100% of SIEM normalization steps, while evasion encodings that defeat keyword-based defenses (homoglyphs, zero-width characters) remain interpretable by LLMs — creating a dual vulnerability. Behavioral invariant detection achieves 100% detection on direct misclassification (C1), 98% on attention hijacking (C4), and 100% on reasoning corruption (C3), with 0% false positives on clean triage outputs. Under SOC-Bench Fox evaluation, adversarial injection degrades campaign assessment scores by 44.7 points (95.7→51.0/100), quantifying the operational impact of successful prompt injection on SOC decision-making.
 
 Our threat model is validated by real-world demonstrations: Neaves (2025) successfully injected payloads through HTTP User-Agent headers, SSH usernames, and Windows Event Log fields in production SIEM environments, and Unit 42 (2026) reports 22 indirect prompt injection techniques observed in the wild. We release Hades as open-source tooling for the community to evaluate and improve the adversarial robustness of LLM-based security automation.
 
@@ -48,9 +48,9 @@ This paper makes the following contributions:
 
 1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Three vectors are validated against production systems [Neaves2025].
 
-2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models under 5 attack classes and a 12-vector injection taxonomy, producing over 1.3 million base adversarial alert variants from a benchmark of 11,147 rule-linked SIEM alerts across 27 MITRE ATT25 MITRE ATT&CK techniquesCK techniques in 9 tactics, and separately test extended encoding strategies for normalization survival.
+2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models under 5 attack classes and a 12-vector injection taxonomy, producing over 1.4 million base adversarial alert variants from a benchmark of 12,147 rule-linked SIEM alerts across 27 MITRE ATT&CK techniques in 9 tactics, and separately test extended encoding strategies for normalization survival.
 
-3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 5 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, and temporal downplay patterns. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them immune to prompt-level obfuscation. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives.
+3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 6 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, temporal downplay patterns, and confidence-severity alignment violations. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them immune to prompt-level obfuscation. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives.
 
 4. **Multi-agent correlation pipeline.** We demonstrate that single-alert triage is insufficient — a correlator agent using IP clustering, technique chain matching, and temporal burst detection identifies multi-stage campaigns (DarkSide ransomware scenario: 100% campaign confidence) that individual alert classification misses, while a playbook agent generates NIST SP 800-61 response guidance with chain-aware severity escalation.
 
@@ -58,7 +58,7 @@ This paper makes the following contributions:
 
 6. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
 
-7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a 21-section reproducibility harness and SOC-Bench [Cai2026] ring-scoring alignment.
+7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a 29-section reproducibility harness and SOC-Bench [Cai2026] ring-scoring alignment.
 
 ## 1.4 Paper Organization
 
@@ -453,14 +453,14 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 
 | Exp | Name | Purpose | Models | Alerts |
 |-----|------|---------|--------|--------|
-| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 11,147 |
-| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 1,337,640 |
+| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 12,147 |
+| E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 1,457,640 |
 | E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
-| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 1,337,640 |
-| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 1,337,640 |
-| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 1,337,640 |
-| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 1,337,640 |
-| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 1,337,640 |
+| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 1,457,640 |
+| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 1,457,640 |
+| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 1,457,640 |
+| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 1,457,640 |
+| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 1,457,640 |
 
 ## 5.2 Models Under Evaluation
 
@@ -481,7 +481,7 @@ All models are served via vLLM with tensor parallelism appropriate to the availa
 
 ### 5.3.1 Construction
 
-Our benchmark comprises 12,147 alerts parsed from the Splunk Attack Data repository, covering 27 MITRE ATT25 MITRE ATT&CK techniquesCK techniques across 9 tactics:
+Our benchmark comprises 12,147 alerts parsed from the Splunk Attack Data repository, covering 27 MITRE ATT&CK techniques across 9 tactics:
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|
@@ -496,6 +496,8 @@ Our benchmark comprises 12,147 alerts parsed from the Splunk Attack Data reposit
 | TA0006 Credential Access | T1110.001 | RDP Brute Force | 23 |
 | TA0007 Discovery | T1087.001 | Local Account Discovery | 500 |
 | TA0008 Lateral Movement | T1021.002 | SMB Admin Shares | 4 |
+| TA0008 Lateral Movement | T1021.006 | Windows Remote Management | 500 |
+| TA0008 Lateral Movement | T1550.002 | Pass the Hash | 500 |
 | TA0011 Command & Control | T1105 | Ingress Tool Transfer | 500 |
 | TA0011 Command & Control | T1071.001 | HTTP C2 Traffic | 104 |
 
@@ -522,7 +524,7 @@ For each clean benchmark alert, we generate adversarial variants by injecting pa
 
 Plus 3 protocol-specific constraints (DNS 253-byte, SMB 14-char, TLS CN 64-char) that enforce realistic field length limits.
 
-The base end-to-end matrix produces **120 variants per alert** and **1,337,640 total adversarial samples** for the full benchmark. Extended E3 encoding tests are reported separately because they measure normalization survival rather than full triage runs. Payloads are truncated to respect field length constraints per vector.
+The base end-to-end matrix produces **120 variants per alert** and **1,457,640 total adversarial samples** for the full benchmark. Extended E3 encoding tests are reported separately because they measure normalization survival rather than full triage runs. Payloads are truncated to respect field length constraints per vector.
 
 ## 5.4 Evaluation Metrics
 
@@ -683,15 +685,15 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 
 | Tactic | Alerts | % |
 |---|---:|---:|
-| TA0001 Initial Access | 500 | 4.5% |
-| TA0002 Execution | 2,002 | 18.0% |
-| TA0003 Persistence | 2,014 | 18.1% |
-| TA0004 Privilege Escalation | 500 | 4.5% |
-| TA0005 Defense Evasion | 3,000 | 26.9% |
-| TA0006 Credential Access | 1,023 | 9.2% |
-| TA0007 Discovery | 1,500 | 13.5% |
-| TA0008 Lateral Movement | 4 | 0.0% |
-| TA0011 Command and Control | 604 | 5.4% |
+| TA0001 Initial Access | 500 | 4.1% |
+| TA0002 Execution | 2,002 | 16.5% |
+| TA0003 Persistence | 2,014 | 16.6% |
+| TA0004 Privilege Escalation | 500 | 4.1% |
+| TA0005 Defense Evasion | 3,000 | 24.7% |
+| TA0006 Credential Access | 1,023 | 8.4% |
+| TA0007 Discovery | 1,500 | 12.3% |
+| TA0008 Lateral Movement | 1,004 | 8.3% |
+| TA0011 Command and Control | 604 | 5.0% |
 
 ## 6.2 Adversarial Dataset Generation Results
 
@@ -708,8 +710,8 @@ The adversarial injector produced the following experiment space:
 | Protocol constraints | 3 |
 | Total encoding strategies | **11** |
 | Variants per alert (base) | **120** |
-| Benchmark alerts | 11,147 |
-| Total adversarial variants (base) | **1,337,640** |
+| Benchmark alerts | 12,147 |
+| Total adversarial variants (base) | **1,457,640** |
 
 ### 6.2.2 Injection Vector Capacity
 
@@ -962,7 +964,7 @@ The O1 campaign assessment achieves perfect scores because the improved adapter 
 Even before full model inference, several claims are already empirically established:
 
 1. **Dataset adequacy is solved for v1.** We now have a benchmark-of-record with rule associations, MITRE mappings, provenance chains, and enforced contract validation.
-2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,337,640 realistic adversarial samples today.
+2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,457,640 realistic adversarial samples today.
 3. **The highest-value injection vectors are operationally grounded.** HTTP User-Agent, Windows Event authentication fields, and SSH usernames are all both realistic and externally validated.
 4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.
 

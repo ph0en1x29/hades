@@ -55,15 +55,15 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 
 | Tactic | Alerts | % |
 |---|---:|---:|
-| TA0001 Initial Access | 500 | 4.5% |
-| TA0002 Execution | 2,002 | 18.0% |
-| TA0003 Persistence | 2,014 | 18.1% |
-| TA0004 Privilege Escalation | 500 | 4.5% |
-| TA0005 Defense Evasion | 3,000 | 26.9% |
-| TA0006 Credential Access | 1,023 | 9.2% |
-| TA0007 Discovery | 1,500 | 13.5% |
-| TA0008 Lateral Movement | 4 | 0.0% |
-| TA0011 Command and Control | 604 | 5.4% |
+| TA0001 Initial Access | 500 | 4.1% |
+| TA0002 Execution | 2,002 | 16.5% |
+| TA0003 Persistence | 2,014 | 16.6% |
+| TA0004 Privilege Escalation | 500 | 4.1% |
+| TA0005 Defense Evasion | 3,000 | 24.7% |
+| TA0006 Credential Access | 1,023 | 8.4% |
+| TA0007 Discovery | 1,500 | 12.3% |
+| TA0008 Lateral Movement | 1,004 | 8.3% |
+| TA0011 Command and Control | 604 | 5.0% |
 
 ## 6.2 Adversarial Dataset Generation Results
 
@@ -80,8 +80,8 @@ The adversarial injector produced the following experiment space:
 | Protocol constraints | 3 |
 | Total encoding strategies | **11** |
 | Variants per alert (base) | **120** |
-| Benchmark alerts | 11,147 |
-| Total adversarial variants (base) | **1,337,640** |
+| Benchmark alerts | 12,147 |
+| Total adversarial variants (base) | **1,457,640** |
 
 ### 6.2.2 Injection Vector Capacity
 
@@ -334,6 +334,6 @@ The O1 campaign assessment achieves perfect scores because the improved adapter 
 Even before full model inference, several claims are already empirically established:
 
 1. **Dataset adequacy is solved for v1.** We now have a benchmark-of-record with rule associations, MITRE mappings, provenance chains, and enforced contract validation.
-2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,337,640 realistic adversarial samples today.
+2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,457,640 realistic adversarial samples today.
 3. **The highest-value injection vectors are operationally grounded.** HTTP User-Agent, Windows Event authentication fields, and SSH usernames are all both realistic and externally validated.
 4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.

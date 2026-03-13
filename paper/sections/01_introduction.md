@@ -28,9 +28,9 @@ This paper makes the following contributions:
 
 1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Three vectors are validated against production systems [Neaves2025].
 
-2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models under 5 attack classes and a 12-vector injection taxonomy, producing over 1.3 million base adversarial alert variants from a benchmark of 11,147 rule-linked SIEM alerts across 27 MITRE ATT25 MITRE ATT&CK techniquesCK techniques in 9 tactics, and separately test extended encoding strategies for normalization survival.
+2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models under 5 attack classes and a 12-vector injection taxonomy, producing over 1.4 million base adversarial alert variants from a benchmark of 12,147 rule-linked SIEM alerts across 27 MITRE ATT&CK techniques in 9 tactics, and separately test extended encoding strategies for normalization survival.
 
-3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 5 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, and temporal downplay patterns. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them immune to prompt-level obfuscation. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives.
+3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 6 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, temporal downplay patterns, and confidence-severity alignment violations. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them immune to prompt-level obfuscation. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives.
 
 4. **Multi-agent correlation pipeline.** We demonstrate that single-alert triage is insufficient — a correlator agent using IP clustering, technique chain matching, and temporal burst detection identifies multi-stage campaigns (DarkSide ransomware scenario: 100% campaign confidence) that individual alert classification misses, while a playbook agent generates NIST SP 800-61 response guidance with chain-aware severity escalation.
 
@@ -38,7 +38,7 @@ This paper makes the following contributions:
 
 6. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
 
-7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a 21-section reproducibility harness and SOC-Bench [Cai2026] ring-scoring alignment.
+7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a 29-section reproducibility harness and SOC-Bench [Cai2026] ring-scoring alignment.
 
 ## 1.4 Paper Organization
 

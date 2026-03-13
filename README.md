@@ -176,7 +176,7 @@ python -m pytest tests/ -v
 
 - **70 Python files** / **13,474 LOC**
 - **19 Python test/validation files** / **21-section reproducibility harness** / **25-check comprehensive validator**
-- **11,147 benchmark alerts** across **27 MITRE ATT25 MITRE ATT&CK techniquesCK techniques** and **9 tactics**
+- **12,147 benchmark alerts** across **27 MITRE ATT&CK techniques** and **9 tactics**
 - **25 modules**, all import cleanly
 - **475MB** real Splunk Attack Data
 - **691** MITRE ATT&CK technique documents for RAG
