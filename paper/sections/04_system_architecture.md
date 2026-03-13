@@ -119,18 +119,57 @@ Three defense mechanisms are implemented:
 - **StructuredPromptDefense:** Recursive field wrapping with `[FIELD:path]` markers
 - **CanaryDefense:** Injects known canary strings into alert metadata
 
-## 4.5 Evaluation Layer
+## 4.5 Multi-Agent Pipeline
 
 ### 4.5.1 Triage Pipeline
 
 The triage pipeline (`pipeline.py`) processes alerts through:
 1. Optional defense preprocessing
 2. Prompt construction from alert fields
-3. LLM inference via vLLM
+3. LLM inference via vLLM (ClassifierAgent)
 4. Response parsing into structured `TriageDecision` objects
-5. Evidence trace construction for audit
+5. **Behavioral invariant checking** — auto-escalates if injection suspected
+6. Evidence trace and override record construction for audit
 
-### 4.5.2 Benchmark Builder
+### 4.5.2 Correlator Agent
+
+The correlator (`correlator.py`) detects multi-stage attack campaigns by running four parallel strategies against an in-memory alert store:
+
+1. **IP clustering** — groups alerts sharing source/destination IPs within a configurable time window (default ±15 min)
+2. **Technique chain detection** — maps observed MITRE techniques to tactics, then matches against 5 known attack patterns (ransomware, data exfiltration, credential theft, lateral movement, persistence establishment). A pattern is flagged when ≥40% of its expected tactic sequence is observed.
+3. **Session reconstruction** — groups alerts by `src_ip→dst_ip` pairs to identify persistent attacker sessions
+4. **Temporal burst detection** — detects spikes of ≥5 alerts from a single source within the time window
+
+Campaign assessment combines all strategies: a campaign is declared when any attack chain is detected, any temporal burst occurs, or ≥10 correlated events are found.
+
+### 4.5.3 Playbook Agent
+
+The playbook generator (`playbook.py`) produces NIST SP 800-61 incident response playbooks using a technique-specific knowledge base covering 7 MITRE techniques plus a generic fallback. Each KB entry defines:
+- **Containment** actions with priority and automation flags
+- **Eradication** steps with evidence collection guidance
+- **Recovery** procedures including credential rotation and re-imaging
+- **Post-incident** documentation and detection rule updates
+
+Severity is dynamically escalated when attack chains are detected: a medium-severity discovery alert becomes critical when it's part of a credential theft chain.
+
+### 4.5.4 Behavioral Invariant Defense
+
+The invariant layer (`behavioral_invariants.py`) is our primary defense against prompt injection — and crucially, it operates on triage **outputs**, not **inputs**. This makes it immune to input-level obfuscation that defeats sanitization and structured prompt defenses (Nasr et al., 2025).
+
+Five invariants are checked against every triage decision:
+- **INV-1:** Severity downgrade without supporting evidence (critical/high)
+- **INV-2:** Phantom IPs referenced in output but absent from source alert (critical)
+- **INV-3:** Unrealistically high confidence (>0.95) on benign classifications (high)
+- **INV-4:** Fabricated references (pentest claims, change requests) not in source (medium)
+- **INV-5:** Temporal downplay patterns ("all services nominal") (medium)
+
+When injection is suspected (weighted score ≥3), the pipeline auto-escalates the classification from the model's output to `ESCALATE` and records an `OverrideRecord` in the audit trail with the previous classification, the intervening actor (`system:behavioral_invariants`), and the triggering violations.
+
+### 4.5.5 SOC-Bench Adapter
+
+The SOC-Bench adapter (`socbench_adapter.py`) maps Hades `TriageDecision` outputs into the ring-scored Fox, Tiger, and Panda output formats defined by Cai et al. (2026). This enables direct evaluation against SOC-Bench ground truth when datasets become available.
+
+### 4.5.6 Benchmark Builder
 
 The benchmark builder (`build_benchmark_pack.py`) constructs validated alert sets:
 - Loads raw data from multiple Splunk Attack Data technique directories

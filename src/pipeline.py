@@ -1,4 +1,15 @@
-"""Prototype alert triage pipeline."""
+"""Multi-agent alert triage pipeline.
+
+Pipeline stages:
+  1. Classification — single-alert triage via LLM
+  2. Behavioral invariant check — output-level injection detection
+  3. Correlation — multi-alert campaign detection (optional)
+  4. Playbook generation — NIST SP 800-61 response (optional)
+
+The correlator and playbook agents are optional; when provided the
+pipeline produces richer decisions with campaign context and response
+guidance.
+"""
 
 from __future__ import annotations
 
@@ -21,6 +32,8 @@ from src.evaluation.schemas import (
 if TYPE_CHECKING:
     from src.agents import ClassifierAgent
     from src.agents.base import AgentResult
+    from src.agents.correlator import CorrelatorAgent
+    from src.agents.playbook import PlaybookAgent
     from src.ingestion.schema import UnifiedAlert
 
 
@@ -34,6 +47,9 @@ class PipelineRunResult:
     total_processing_ms: int = 0
     wall_clock_ms: int = 0
     output_path: str = ""
+    campaigns_detected: int = 0
+    playbooks_generated: int = 0
+    invariant_escalations: int = 0
     started_at: str = field(
         default_factory=lambda: datetime.now(UTC).isoformat()
     )
@@ -47,17 +63,24 @@ class PipelineRunResult:
 
 
 class TriagePipeline:
-    """Minimal async pipeline for classifying unified alerts."""
+    """Multi-agent async pipeline for classifying and correlating alerts."""
 
-    def __init__(self, classifier: ClassifierAgent) -> None:
+    def __init__(
+        self,
+        classifier: ClassifierAgent,
+        correlator: CorrelatorAgent | None = None,
+        playbook: PlaybookAgent | None = None,
+    ) -> None:
         self.classifier = classifier
+        self.correlator = correlator
+        self.playbook = playbook
 
     async def run(
         self,
         alerts: list[UnifiedAlert],
         output_path: str | Path,
     ) -> PipelineRunResult:
-        """Classify alerts, emit decisions, and write them to JSONL."""
+        """Classify alerts, correlate, generate playbooks, and write JSONL."""
         destination = Path(output_path)
         destination.parent.mkdir(parents=True, exist_ok=True)
 
@@ -65,6 +88,10 @@ class TriagePipeline:
             total_alerts=len(alerts),
             output_path=str(destination),
         )
+
+        # Pre-load all alerts into correlator for cross-alert lookups
+        if self.correlator is not None:
+            self.correlator.load_alerts(alerts)
 
         started = time.monotonic()
         with destination.open("w", encoding="utf-8") as handle:
@@ -76,6 +103,8 @@ class TriagePipeline:
                 run_result.classification_counts[classification] = (
                     run_result.classification_counts.get(classification, 0) + 1
                 )
+                if decision.override_record is not None:
+                    run_result.invariant_escalations += 1
                 handle.write(f"{decision.to_json()}\n")
 
         run_result.wall_clock_ms = int((time.monotonic() - started) * 1000)
@@ -167,6 +196,64 @@ class TriagePipeline:
                 new_classification=classification.value,
             )
 
+        # --- Stage 3: Correlation (optional) ---
+        correlated_events: list[dict[str, Any]] = []
+        campaign_context: dict[str, Any] = {}
+        if self.correlator is not None:
+            corr_result = await self.correlator.run(alert)
+            if corr_result.success:
+                correlated_events = corr_result.data.get("correlated_events", [])
+                campaign_context = {
+                    "campaign_detected": corr_result.data.get("campaign_detected", False),
+                    "campaign_confidence": corr_result.data.get("campaign_confidence", 0),
+                    "attack_chains": corr_result.data.get("attack_chains", []),
+                    "affected_hosts": corr_result.data.get("affected_hosts", []),
+                }
+                tool_invocations.append(
+                    ToolInvocation(
+                        tool_name="correlator",
+                        arguments={
+                            "alert_id": alert.alert_id,
+                            "events_found": corr_result.data.get("event_count", 0),
+                            "chains_found": corr_result.data.get("chain_count", 0),
+                        },
+                        status="campaign" if corr_result.data.get("campaign_detected") else "no_campaign",
+                        duration_ms=corr_result.latency_ms,
+                    )
+                )
+                if correlated_events:
+                    evidence_trace.append(
+                        EvidenceItem(
+                            source_type="correlation",
+                            source_ref=f"correlator:{alert.alert_id}",
+                            summary=(
+                                f"{len(correlated_events)} correlated events, "
+                                f"{corr_result.data.get('chain_count', 0)} attack chains"
+                            ),
+                            score=corr_result.data.get("campaign_confidence", 0),
+                        )
+                    )
+
+        # --- Stage 4: Playbook generation (optional) ---
+        playbook_data: dict[str, Any] = {}
+        if self.playbook is not None:
+            pb_context: dict[str, Any] = {
+                "classification": classification.value,
+                "confidence": confidence,
+                "campaign": campaign_context,
+            }
+            pb_result = await self.playbook.run(alert, context=pb_context)
+            if pb_result.success:
+                playbook_data = pb_result.data
+                tool_invocations.append(
+                    ToolInvocation(
+                        tool_name="playbook_generator",
+                        arguments={"alert_id": alert.alert_id},
+                        status="generated",
+                        duration_ms=pb_result.latency_ms,
+                    )
+                )
+
         return TriageDecision(
             alert_id=alert.alert_id,
             classification=classification,
@@ -174,7 +261,10 @@ class TriagePipeline:
             evidence_trace=evidence_trace,
             tool_invocations=tool_invocations,
             rationale_summary=rationale,
-            correlated_events=[],
+            correlated_events=[
+                ev.get("alert_id", "") if isinstance(ev, dict) else str(ev)
+                for ev in correlated_events
+            ],
             mitre_techniques=_coerce_string_list(
                 result.data.get("mitre_techniques"),
             ),

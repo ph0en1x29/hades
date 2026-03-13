@@ -134,6 +134,8 @@ def run_pipeline(
 ) -> None:
     """Start the alert triage pipeline."""
     from src.agents import ClassifierAgent
+    from src.agents.correlator import CorrelatorAgent
+    from src.agents.playbook import PlaybookAgent
     from src.pipeline import TriagePipeline
 
     if not input_path:
@@ -146,22 +148,35 @@ def run_pipeline(
     classifier_config["rag_enabled"] = bool(rag_config.get("enabled", False))
     classifier_config["rag"] = rag_config
     classifier = ClassifierAgent(classifier_config)
+
+    # Initialize optional agents
+    correlator_config = dict(orch_config.get("correlator", {}))
+    correlator = CorrelatorAgent(correlator_config) if correlator_config.get("enabled", True) else None
+
+    playbook_config = dict(orch_config.get("playbook", {}))
+    playbook = PlaybookAgent(playbook_config) if playbook_config.get("enabled", True) else None
+
     loaded_alerts = alerts if alerts is not None else load_alerts(input_path)
     output_path = build_decisions_output_path()
 
     logger.info(
-        "Running pipeline — alerts=%d, agent=%s, input=%s",
+        "Running pipeline — alerts=%d, agents=[classifier%s%s], input=%s",
         len(loaded_alerts),
-        classifier.name,
+        "+correlator" if correlator else "",
+        "+playbook" if playbook else "",
         input_path,
     )
 
-    pipeline = TriagePipeline(classifier)
+    pipeline = TriagePipeline(classifier, correlator=correlator, playbook=playbook)
     result = asyncio.run(pipeline.run(loaded_alerts, output_path))
 
     logger.info(
-        "Pipeline finished — decisions=%d, output=%s, wall_clock_ms=%d",
+        "Pipeline finished — decisions=%d, campaigns=%d, playbooks=%d, "
+        "escalations=%d, output=%s, wall_clock_ms=%d",
         len(result.decisions),
+        result.campaigns_detected,
+        result.playbooks_generated,
+        result.invariant_escalations,
         result.output_path,
         result.wall_clock_ms,
     )
