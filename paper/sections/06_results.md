@@ -10,11 +10,11 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 
 | Metric | Value |
 |---|---:|
-| Total alerts | **7,119** |
-| MITRE techniques | **17** |
-| ATT&CK tactics | **8** |
+| Total alerts | **11,147** |
+| MITRE techniques | **29** |
+| ATT&CK tactics | **9** |
 | Contract failures | **0** |
-| Parser types | Sysmon XML, Suricata JSON |
+| Parser types | Sysmon XML, Suricata JSON, Windows Security XML, PowerShell Logging |
 | Provenance coverage | **100%** |
 | Rule association coverage | **100%** |
 | MITRE mapping coverage | **100%** |
@@ -24,42 +24,44 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 | Technique | Name | Alerts |
 |---|---|---:|
 | T1003.001 | LSASS Credential Dumping | 500 |
-| T1110.001 | RDP Brute Force | 23 |
-| T1087.001 | Local Account Discovery | 500 |
-| T1021.002 | SMB Admin Shares | 2 |
+| T1003.003 | NTDS.dit Credential Dumping | 500 |
+| T1018 | Remote System Discovery | 500 |
+| T1021.002 | SMB Admin Shares | 4 |
 | T1027 | Obfuscated Files / Information | 500 |
 | T1036.003 | Masquerading: Rename System Utilities | 500 |
-| T1053.005 | Scheduled Task | 500 |
+| T1047 | WMI Command Execution | 500 |
+| T1053.005 | Scheduled Task | 514 |
 | T1055.001 | Process Injection (Cobalt Strike) | 500 |
-| T1071.001 | HTTP C2 Traffic | 94 |
+| T1059.001 | PowerShell Script Execution | 502 |
+| T1071.001 | HTTP C2 Traffic | 104 |
+| T1082 | System Information Discovery | 500 |
+| T1087.001 | Local Account Discovery | 500 |
 | T1105 | Ingress Tool Transfer | 500 |
+| T1110.001 | RDP Brute Force | 23 |
+| T1112 | Modify Registry | 500 |
+| T1136.001 | Create Local Account | 500 |
 | T1204.002 | User Execution: Malicious File | 500 |
 | T1218.011 | Rundll32 Signed Binary Proxy | 500 |
 | T1543.003 | Create/Modify Windows Service | 500 |
 | T1547.001 | Registry Run Keys | 500 |
 | T1548.002 | Bypass UAC | 500 |
 | T1562.001 | Impair Defenses: Disable Tools | 500 |
-| T1569.002 | Service Execution | 500 |
-| T1036.003 | Masquerading: Rename System Utilities | 500 |
-| T1053.005 | Scheduled Task | 500 |
-| T1071.001 | HTTP C2 Traffic | 94 |
-| T1105 | Ingress Tool Transfer | 500 |
-| T1218.011 | Rundll32 Signed Binary Proxy Execution | 500 |
-| T1547.001 | Registry Run Keys | 500 |
+| T1566.001 | Spearphishing Attachment | 500 |
 | T1569.002 | Service Execution | 500 |
 
 ### 6.1.3 Tactic Distribution
 
 | Tactic | Alerts | % |
 |---|---:|---:|
-| TA0002 Execution | 1,000 | 14.0% |
-| TA0003 Persistence | 1,500 | 21.1% |
-| TA0004 Privilege Escalation | 500 | 7.0% |
-| TA0005 Defense Evasion | 2,500 | 35.1% |
-| TA0006 Credential Access | 523 | 7.3% |
-| TA0007 Discovery | 500 | 7.0% |
-| TA0008 Lateral Movement | 2 | 0.0% |
-| TA0011 Command and Control | 594 | 8.3% |
+| TA0001 Initial Access | 500 | 4.5% |
+| TA0002 Execution | 2,002 | 18.0% |
+| TA0003 Persistence | 2,014 | 18.1% |
+| TA0004 Privilege Escalation | 500 | 4.5% |
+| TA0005 Defense Evasion | 3,000 | 26.9% |
+| TA0006 Credential Access | 1,023 | 9.2% |
+| TA0007 Discovery | 1,500 | 13.5% |
+| TA0008 Lateral Movement | 4 | 0.0% |
+| TA0011 Command and Control | 604 | 5.4% |
 
 ## 6.2 Adversarial Dataset Generation Results
 
@@ -76,8 +78,8 @@ The adversarial injector produced the following experiment space:
 | Protocol constraints | 3 |
 | Total encoding strategies | **11** |
 | Variants per alert (base) | **120** |
-| Benchmark alerts | 7,119 |
-| Total adversarial variants (base) | **854,280** |
+| Benchmark alerts | 11,147 |
+| Total adversarial variants (base) | **1,337,640** |
 
 ### 6.2.2 Injection Vector Capacity
 
@@ -315,6 +317,6 @@ The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was
 Even before full model inference, several claims are already empirically established:
 
 1. **Dataset adequacy is solved for v1.** We now have a benchmark-of-record with rule associations, MITRE mappings, provenance chains, and enforced contract validation.
-2. **The adversarial experiment space is concrete, not speculative.** We can generate 554,280 realistic adversarial samples today.
+2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,337,640 realistic adversarial samples today.
 3. **The highest-value injection vectors are operationally grounded.** HTTP User-Agent, Windows Event authentication fields, and SSH usernames are all both realistic and externally validated.
 4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.

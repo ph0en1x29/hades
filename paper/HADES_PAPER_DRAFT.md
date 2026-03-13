@@ -6,18 +6,13 @@
 
 Large Language Models are increasingly deployed for automated alert triage in Security Operations Centers, processing thousands of SIEM alerts that human analysts cannot review at scale. We identify a fundamental vulnerability in this architecture: the SIEM data that LLMs analyze originates from the same adversaries they are designed to detect. Attackers can embed prompt injection payloads in network traffic fields — HTTP headers, authentication usernames, DNS queries, TLS certificate attributes — that SIEM systems faithfully log and feed to triage models.
 
-We present **Hades**, an evaluation framework and triage pipeline for measuring and defending against adversarial manipulation of LLM-based SOC systems. Using a benchmark of 7,119 rule-linked alerts from the Splunk Attack Data repository across 17 MITRE ATT&CK techniques in 8 tactics, we generate over 854,000 adversarial variants through 12 validated injection vectors, 5 attack classes, and 9 encoding strategies. We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under three attacker knowledge levels.
+We present **Hades**, an evaluation framework and triage pipeline for measuring and defending against adversarial manipulation of LLM-based SOC systems. Using a benchmark of 11,147 rule-linked alerts from the Splunk Attack Data repository across 29 MITRE ATT&CK techniques in 9 tactics, we generate over 1.3 million adversarial variants through 12 validated injection vectors, 5 attack classes, and 9 encoding strategies. We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under three attacker knowledge levels.
 
 Hades introduces a multi-agent triage pipeline with three novel components: (1) a **correlator agent** that detects multi-stage attack campaigns through IP clustering, technique chain matching against known kill chain patterns, and temporal burst detection; (2) a **behavioral invariant defense** that operates at the workflow level — detecting phantom IPs, fabricated references, suspicious confidence patterns, and severity manipulation in triage outputs, then auto-escalating suspected injections without relying on model-level defenses that adaptive attackers consistently bypass (Nasr et al., 2025); and (3) a **SOC-Bench adapter** that maps triage outputs to the ring-scored Fox/Tiger/Panda evaluation format for standardized benchmarking.
 
 Our E3 experiments demonstrate that direct misclassification and confidence manipulation payloads survive 100% of SIEM normalization steps, while evasion encodings that defeat keyword-based defenses (homoglyphs, zero-width characters) remain interpretable by LLMs — creating a dual vulnerability. Behavioral invariant detection achieves 100% detection on direct misclassification (C1), 98% on attention hijacking (C4), and 100% on reasoning corruption (C3), with 0% false positives on clean triage outputs.
 
 Our threat model is validated by real-world demonstrations: Neaves (2025) successfully injected payloads through HTTP User-Agent headers, SSH usernames, and Windows Event Log fields in production SIEM environments, and Unit 42 (2026) reports 22 indirect prompt injection techniques observed in the wild. We release Hades as open-source tooling for the community to evaluate and improve the adversarial robustness of LLM-based security automation.
-
-
----
-
-
 # 1. Introduction
 
 Security Operations Centers (SOCs) process thousands of alerts daily, yet human analysts can effectively triage only 50–100 alerts per shift [MDPI2025]. This capacity gap has driven rapid adoption of Large Language Models (LLMs) for automated alert triage, where models classify incoming Security Information and Event Management (SIEM) alerts by severity, identify potential attack patterns, and recommend response actions [Wei2025]. Commercial platforms now embed LLM-based assistants directly into SIEM workflows, and research systems like CORTEX demonstrate that multi-agent LLM architectures can substantially reduce false positive rates across enterprise scenarios.
@@ -48,7 +43,7 @@ This paper makes the following contributions:
 
 1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Three vectors are validated against production systems [Neaves2025].
 
-2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under 5 attack classes, 9 encoding strategies, and 3 attacker knowledge levels, producing over 854,000 adversarial alert variants from a benchmark of 7,119 rule-linked SIEM alerts across 17 MITRE ATT&CK techniques in 8 tactics.
+2. **Systematic adversarial evaluation.** We evaluate 4 frontier open-weight MoE models (DeepSeek R1 671B, GLM-5 744B, Kimi K2.5 1T, Qwen 3.5 397B) under 5 attack classes, 9 encoding strategies, and 3 attacker knowledge levels, producing over 1.3 million adversarial alert variants from a benchmark of 11,147 rule-linked SIEM alerts across 29 MITRE ATT&CK techniques in 9 tactics.
 
 3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 5 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, and temporal downplay patterns. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them immune to prompt-level obfuscation. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives.
 
@@ -63,11 +58,6 @@ This paper makes the following contributions:
 ## 1.4 Paper Organization
 
 Section 2 provides background on SOC triage and LLM security. Section 3 defines our threat model, including the injection vector taxonomy and attacker knowledge assumptions. Section 4 describes the Hades system architecture. Section 5 details our experimental methodology. Section 6 presents results. Section 7 discusses implications, and Section 8 surveys related work.
-
-
----
-
-
 # 2. Background
 
 ## 2.1 SOC Triage Pipeline
@@ -120,11 +110,6 @@ Recent work establishes benchmarking standards for LLM security applications:
 - **SecBench** [Jing2024] benchmarks LLM cybersecurity knowledge through MCQ-style assessments.
 
 Our work differs from these in focus: we do not benchmark LLM *offensive* capabilities (CyBench) or *knowledge* (SecBench), but rather evaluate whether LLMs deployed *defensively* in SOCs can be attacked through their own data pipelines.
-
-
----
-
-
 # 3. Threat Model
 
 We define a threat model specific to LLM-based SOC triage systems, characterizing how adversaries can exploit the data pipeline between network traffic and triage decisions.
@@ -238,11 +223,6 @@ We define five attack classes based on the attacker's objective:
 - Live network deployment (we use file-replay of captured data)
 - Multi-agent coordination attacks (deferred to future work)
 - Social engineering of SOC analysts independent of the LLM
-
-
----
-
-
 # 4. Hades System Architecture
 
 Hades is a modular evaluation framework for measuring the adversarial robustness of LLM-based SOC triage systems. It implements a deterministic, file-replay pipeline that processes benchmark alerts through configurable triage agents and defense mechanisms.
@@ -439,11 +419,6 @@ The system is containerized via Docker Compose:
 - `qdrant`: Vector database for RAG retrieval
 - `hades`: Pipeline orchestration and evaluation
 - `evaluator`: Metrics computation and statistical analysis
-
-
----
-
-
 # 5. Experimental Methodology
 
 ## 5.1 Experiment Overview
@@ -452,7 +427,7 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 
 | Exp | Name | Purpose | Models | Alerts |
 |-----|------|---------|--------|--------|
-| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 7,119 |
+| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 11,147 |
 | E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 854,280 |
 | E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
 | E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 854,280 |
@@ -480,7 +455,7 @@ All models are served via vLLM with tensor parallelism appropriate to the availa
 
 ### 5.3.1 Construction
 
-Our benchmark comprises 7,119 alerts parsed from the Splunk Attack Data repository, covering 17 MITRE ATT&CK techniques across 8 tactics:
+Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data repository, covering 29 MITRE ATT&CK techniques across 9 tactics:
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|
@@ -619,11 +594,6 @@ All experiments use:
 - Version-pinned dependencies (pyproject.toml)
 
 The complete evaluation pipeline, including data acquisition scripts, parsers, injector, and analysis notebooks, is released as open source.
-
-
----
-
-
 # 6. Results
 
 > **Status:** Experimental infrastructure is complete; full model runs are pending Penn State lab GPU allocation. This section records validated pre-experiment results, benchmark construction outputs, and the exact result tables that will be populated once model inference begins.
@@ -636,11 +606,11 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 
 | Metric | Value |
 |---|---:|
-| Total alerts | **7,119** |
-| MITRE techniques | **17** |
-| ATT&CK tactics | **8** |
+| Total alerts | **11,147** |
+| MITRE techniques | **29** |
+| ATT&CK tactics | **9** |
 | Contract failures | **0** |
-| Parser types | Sysmon XML, Suricata JSON |
+| Parser types | Sysmon XML, Suricata JSON, Windows Security XML, PowerShell Logging |
 | Provenance coverage | **100%** |
 | Rule association coverage | **100%** |
 | MITRE mapping coverage | **100%** |
@@ -650,42 +620,44 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 | Technique | Name | Alerts |
 |---|---|---:|
 | T1003.001 | LSASS Credential Dumping | 500 |
-| T1110.001 | RDP Brute Force | 23 |
-| T1087.001 | Local Account Discovery | 500 |
-| T1021.002 | SMB Admin Shares | 2 |
+| T1003.003 | NTDS.dit Credential Dumping | 500 |
+| T1018 | Remote System Discovery | 500 |
+| T1021.002 | SMB Admin Shares | 4 |
 | T1027 | Obfuscated Files / Information | 500 |
 | T1036.003 | Masquerading: Rename System Utilities | 500 |
-| T1053.005 | Scheduled Task | 500 |
+| T1047 | WMI Command Execution | 500 |
+| T1053.005 | Scheduled Task | 514 |
 | T1055.001 | Process Injection (Cobalt Strike) | 500 |
-| T1071.001 | HTTP C2 Traffic | 94 |
+| T1059.001 | PowerShell Script Execution | 502 |
+| T1071.001 | HTTP C2 Traffic | 104 |
+| T1082 | System Information Discovery | 500 |
+| T1087.001 | Local Account Discovery | 500 |
 | T1105 | Ingress Tool Transfer | 500 |
+| T1110.001 | RDP Brute Force | 23 |
+| T1112 | Modify Registry | 500 |
+| T1136.001 | Create Local Account | 500 |
 | T1204.002 | User Execution: Malicious File | 500 |
 | T1218.011 | Rundll32 Signed Binary Proxy | 500 |
 | T1543.003 | Create/Modify Windows Service | 500 |
 | T1547.001 | Registry Run Keys | 500 |
 | T1548.002 | Bypass UAC | 500 |
 | T1562.001 | Impair Defenses: Disable Tools | 500 |
-| T1569.002 | Service Execution | 500 |
-| T1036.003 | Masquerading: Rename System Utilities | 500 |
-| T1053.005 | Scheduled Task | 500 |
-| T1071.001 | HTTP C2 Traffic | 94 |
-| T1105 | Ingress Tool Transfer | 500 |
-| T1218.011 | Rundll32 Signed Binary Proxy Execution | 500 |
-| T1547.001 | Registry Run Keys | 500 |
+| T1566.001 | Spearphishing Attachment | 500 |
 | T1569.002 | Service Execution | 500 |
 
 ### 6.1.3 Tactic Distribution
 
 | Tactic | Alerts | % |
 |---|---:|---:|
-| TA0002 Execution | 1,000 | 14.0% |
-| TA0003 Persistence | 1,500 | 21.1% |
-| TA0004 Privilege Escalation | 500 | 7.0% |
-| TA0005 Defense Evasion | 2,500 | 35.1% |
-| TA0006 Credential Access | 523 | 7.3% |
-| TA0007 Discovery | 500 | 7.0% |
-| TA0008 Lateral Movement | 2 | 0.0% |
-| TA0011 Command and Control | 594 | 8.3% |
+| TA0001 Initial Access | 500 | 4.5% |
+| TA0002 Execution | 2,002 | 18.0% |
+| TA0003 Persistence | 2,014 | 18.1% |
+| TA0004 Privilege Escalation | 500 | 4.5% |
+| TA0005 Defense Evasion | 3,000 | 26.9% |
+| TA0006 Credential Access | 1,023 | 9.2% |
+| TA0007 Discovery | 1,500 | 13.5% |
+| TA0008 Lateral Movement | 4 | 0.0% |
+| TA0011 Command and Control | 604 | 5.4% |
 
 ## 6.2 Adversarial Dataset Generation Results
 
@@ -702,8 +674,8 @@ The adversarial injector produced the following experiment space:
 | Protocol constraints | 3 |
 | Total encoding strategies | **11** |
 | Variants per alert (base) | **120** |
-| Benchmark alerts | 7,119 |
-| Total adversarial variants (base) | **854,280** |
+| Benchmark alerts | 11,147 |
+| Total adversarial variants (base) | **1,337,640** |
 
 ### 6.2.2 Injection Vector Capacity
 
@@ -941,14 +913,9 @@ The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was
 Even before full model inference, several claims are already empirically established:
 
 1. **Dataset adequacy is solved for v1.** We now have a benchmark-of-record with rule associations, MITRE mappings, provenance chains, and enforced contract validation.
-2. **The adversarial experiment space is concrete, not speculative.** We can generate 554,280 realistic adversarial samples today.
+2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,337,640 realistic adversarial samples today.
 3. **The highest-value injection vectors are operationally grounded.** HTTP User-Agent, Windows Event authentication fields, and SSH usernames are all both realistic and externally validated.
 4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.
-
-
----
-
-
 # 7. Discussion
 
 ## 7.1 Implications for SOC Deployment
@@ -1000,11 +967,6 @@ This research demonstrates attack techniques against security systems. We mitiga
 - **Existing knowledge.** The injection vectors we characterize are already documented in practitioner literature [Neaves2025, PaloAlto2026].
 - **Responsible disclosure.** We do not target specific commercial products or disclose vendor-specific vulnerabilities.
 - **Open-source tooling.** Releasing Hades enables the community to evaluate and improve their own systems.
-
-
----
-
-
 # 8. Related Work
 
 ## 8.1 LLM-Based Security Operations
@@ -1080,11 +1042,6 @@ Table 1 summarizes how our work fills gaps in the existing literature.
 **Our unique contributions:** (1) the first systematic adversarial evaluation of LLM triage systems through SIEM log field injection, (2) cross-architecture vulnerability comparison of 4 frontier MoE models, (3) defense evaluation following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements, and (5) SOC-Bench-compatible output schemas enabling direct comparison with future SOC AI systems.
 
 No prior work occupies the intersection of SOC-specific evaluation, SIEM-channel adversarial attack, and adaptive defense evaluation. AgentSentry [Zhang2026a] addresses adversarial robustness but not SOC workflows; CORTEX [Wei2025] addresses SOC triage but not adversarial robustness; SOC-Bench [Liu2026] defines evaluation structure but assumes benign inputs. Hades fills the gap where all three concerns converge.
-
-
----
-
-
 # References
 
 [Debenedetti2024] Edoardo Debenedetti, Jie Zhang, Mislav Balunović, Luca Beurer-Kellner, Marc Fischer, Florian Tramèr. *AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses in LLM Agents.* NeurIPS 2024. arXiv:2406.13352.
@@ -1134,6 +1091,3 @@ No prior work occupies the intersection of SOC-specific evaluation, SIEM-channel
 [TeLintelo2026] Jona Te Lintelo et al. *Large Language Lobotomy: Jailbreaking Mixture-of-Experts via Expert Silencing (L³).* arXiv:2602.08741, February 2026. Training-free MoE attack; ASR 7.3%→70.4%.
 
 [Lai2025] Zhenglin Lai et al. *SAFEx: Analyzing Vulnerabilities of MoE-Based LLMs via Stable Safety-critical Expert Identification.* arXiv:2506.17368, October 2025. Safety concentrated in <12 experts in Qwen3-30B.
-
-
----

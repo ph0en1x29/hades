@@ -6,7 +6,7 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 
 | Exp | Name | Purpose | Models | Alerts |
 |-----|------|---------|--------|--------|
-| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 7,119 |
+| E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 11,147 |
 | E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 854,280 |
 | E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
 | E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 854,280 |
@@ -34,7 +34,7 @@ All models are served via vLLM with tensor parallelism appropriate to the availa
 
 ### 5.3.1 Construction
 
-Our benchmark comprises 7,119 alerts parsed from the Splunk Attack Data repository, covering 17 MITRE ATT&CK techniques across 8 tactics:
+Our benchmark comprises 11,147 alerts parsed from the Splunk Attack Data repository, covering 29 MITRE ATT&CK techniques across 9 tactics:
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|
