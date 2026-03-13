@@ -85,10 +85,15 @@ def test_ioc_extraction():
 def test_playbook_agent():
     agent = PlaybookAgent(config={})
     alert = _alert("T1003.001")
-    result = asyncio.run(agent.run(alert, context={
-        "classification": "true_positive",
-        "mitre_techniques": ["T1003.001"],
-    }))
+    result = asyncio.run(
+        agent.run(
+            alert,
+            context={
+                "classification": "true_positive",
+                "mitre_techniques": ["T1003.001"],
+            },
+        )
+    )
     assert result.success
     assert result.data["title"] == "Credential Dumping Response"
 

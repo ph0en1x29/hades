@@ -6,8 +6,8 @@ from src.ingestion.parsers.splunk_attack_data import (
     load_splunk_attack_data_jsonl,
     parse_splunk_attack_data_record,
 )
-from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 from src.ingestion.parsers.splunk_suricata import load_suricata_log
+from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 from src.ingestion.parsers.windows_security import (
     load_windows_security_log,
     parse_windows_security_xml,

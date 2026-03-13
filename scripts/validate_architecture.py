@@ -370,7 +370,7 @@ def v17_mitre_corpus():
 def v18_benchmark_pack():
     pack_path = ROOT / "data" / "benchmark" / "hades_benchmark_v1.jsonl"
     manifest_path = ROOT / "data" / "benchmark" / "hades_benchmark_v1_manifest.json"
-    if not pack_path.exists():
+    if not pack_path.exists() or pack_path.stat().st_size == 0:
         return "SKIPPED — run scripts/build_benchmark_pack.py first"
     count = sum(1 for _ in pack_path.open("r"))
     assert count > 2000, f"Expected >2000 alerts, got {count}"

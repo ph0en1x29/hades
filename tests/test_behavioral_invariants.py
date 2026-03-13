@@ -2,14 +2,15 @@
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.evaluation.behavioral_invariants import (
-    run_invariant_checks,
-    check_severity_evidence_consistency,
-    check_ip_consistency,
     check_confidence_bound,
+    check_ip_consistency,
     check_reasoning_coherence,
+    check_severity_evidence_consistency,
+    run_invariant_checks,
 )
 
 

@@ -58,7 +58,7 @@ This paper makes the following contributions:
 
 6. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
 
-7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with 18/18 reproducibility validation passing and SOC-Bench [Cai2026] ring-scoring alignment.
+7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a 21-section reproducibility harness and SOC-Bench [Cai2026] ring-scoring alignment.
 
 ## 1.4 Paper Organization
 

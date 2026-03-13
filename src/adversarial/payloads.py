@@ -6,6 +6,7 @@ from enum import Enum
 
 class AttackClass(Enum):
     """Five classes of adversarial manipulation."""
+
     DIRECT_MISCLASSIFICATION = "direct_misclassification"
     CONFIDENCE_MANIPULATION = "confidence_manipulation"
     REASONING_CORRUPTION = "reasoning_corruption"
@@ -15,6 +16,7 @@ class AttackClass(Enum):
 
 class PayloadEncoding(Enum):
     """Encoding strategies for payload survival through SIEM normalization."""
+
     PLAIN_TEXT = "plain_text"
     BASE64_FRAGMENT = "base64_fragment"
     UNICODE_HOMOGLYPH = "unicode_homoglyph"
@@ -24,6 +26,7 @@ class PayloadEncoding(Enum):
 @dataclass
 class AdversarialPayload:
     """A single adversarial payload for injection into an alert field."""
+
     attack_class: AttackClass
     encoding: PayloadEncoding
     target_field: str
@@ -36,6 +39,7 @@ class AdversarialPayload:
 @dataclass
 class PayloadTemplate:
     """Template for generating payloads per attack class."""
+
     attack_class: AttackClass
     templates: list[str] = field(default_factory=list)
 
@@ -102,15 +106,17 @@ class PayloadGenerator:
             encoded = self._encode(template, encoding)
             injected = f"{original_value} {encoded}" if original_value else encoded
 
-            payloads.append(AdversarialPayload(
-                attack_class=attack_class,
-                encoding=encoding,
-                target_field=target_field,
-                payload_text=template,
-                expected_effect=attack_class.value,
-                original_field_value=original_value,
-                injected_field_value=injected,
-            ))
+            payloads.append(
+                AdversarialPayload(
+                    attack_class=attack_class,
+                    encoding=encoding,
+                    target_field=target_field,
+                    payload_text=template,
+                    expected_effect=attack_class.value,
+                    original_field_value=original_value,
+                    injected_field_value=injected,
+                )
+            )
 
         return payloads
 
@@ -137,6 +143,7 @@ class PayloadGenerator:
             return f"/* {text} */"
         elif encoding == PayloadEncoding.BASE64_FRAGMENT:
             import base64
+
             fragment = base64.b64encode(text[:20].encode()).decode()
             return f"{fragment} {text}"
         elif encoding == PayloadEncoding.UNICODE_HOMOGLYPH:

@@ -46,9 +46,11 @@ from src.evaluation.behavioral_invariants import run_invariant_checks
 from src.evaluation.statistical_tests import bootstrap_ci, mcnemar_test, cohens_d
 from src.agents.triage_prompt import format_alert_for_triage
 from src.agents.triage_parser import parse_triage_response
+from src.ingestion.parsers.splunk_attack_data import load_splunk_attack_data_jsonl
 
 DATA_DIR = ROOT / "data" / "datasets" / "splunk_attack_data"
 BENCHMARK_FILE = ROOT / "data" / "benchmark" / "hades_benchmark_v1.jsonl"
+PUBLIC_BENCHMARK_FIXTURE = ROOT / "data" / "benchmarks" / "public" / "splunk_attack_data_windows.jsonl"
 
 
 @dataclass
@@ -67,6 +69,15 @@ def record(section: str, test: str, status: str, detail: str, duration: float = 
     results.append(ValidationResult(section, test, status, detail, duration))
     icon = {"pass": "✅", "fail": "❌", "skip": "⏭️"}[status]
     print(f"  {icon} {test}: {detail}")
+
+
+def _load_validation_alerts(limit: int) -> tuple[list, str]:
+    sysmon_path = DATA_DIR / "T1003.001" / "windows-sysmon.log"
+    if sysmon_path.exists() and sysmon_path.stat().st_size > 0:
+        return load_sysmon_log(str(sysmon_path), mitre_technique="T1003.001", limit=limit), str(sysmon_path)
+    if PUBLIC_BENCHMARK_FIXTURE.exists() and PUBLIC_BENCHMARK_FIXTURE.stat().st_size > 0:
+        return load_splunk_attack_data_jsonl(PUBLIC_BENCHMARK_FIXTURE)[:limit], str(PUBLIC_BENCHMARK_FIXTURE)
+    return [], ""
 
 
 def main():
@@ -141,7 +152,7 @@ def main():
     # 2. Benchmark Construction
     # ════════════════════════════════════════════
     print("\n─── 2. Benchmark Construction ───")
-    if BENCHMARK_FILE.exists():
+    if BENCHMARK_FILE.exists() and BENCHMARK_FILE.stat().st_size > 0:
         t0 = time.time()
         with open(BENCHMARK_FILE) as f:
             bench_count = sum(1 for _ in f)
@@ -165,7 +176,7 @@ def main():
         record("benchmark", "contract_validation", "pass" if contract_fail == 0 else "fail",
                f"{contract_ok}/{contract_ok + contract_fail} pass (sample of 500)")
     else:
-        record("benchmark", "benchmark_file", "skip", "not built yet")
+        record("benchmark", "benchmark_file", "skip", "full benchmark pack not built yet")
 
     # ════════════════════════════════════════════
     # 3. Adversarial Injection Matrix
@@ -173,24 +184,24 @@ def main():
     print("\n─── 3. Adversarial Injection Matrix ───")
     all_classes = list(AttackClass)
     base_encodings = ["plaintext", "underscore"]
-    test_alerts = load_sysmon_log(
-        str(DATA_DIR / "T1003.001" / "windows-sysmon.log"),
-        mitre_technique="T1003.001", limit=10,
-    )
+    test_alerts, alert_source = _load_validation_alerts(limit=10)
 
     total_variants = 0
     variant_errors = 0
     t0 = time.time()
-    for alert in test_alerts:
-        try:
-            variants = generate_adversarial_variants(alert, INJECTION_VECTORS, all_classes, base_encodings)
-            total_variants += len(variants)
-        except Exception as e:
-            variant_errors += 1
-    dur = time.time() - t0
-    expected = len(test_alerts) * len(INJECTION_VECTORS) * len(all_classes) * len(base_encodings)
-    record("adversarial", "variant_generation", "pass" if variant_errors == 0 else "fail",
-           f"{total_variants} variants ({variant_errors} errors), expected ~{expected}, {dur:.2f}s", dur)
+    if not test_alerts:
+        record("adversarial", "variant_generation", "skip", "no benchmark alerts available")
+    else:
+        for alert in test_alerts:
+            try:
+                variants = generate_adversarial_variants(alert, INJECTION_VECTORS, all_classes, base_encodings)
+                total_variants += len(variants)
+            except Exception:
+                variant_errors += 1
+        dur = time.time() - t0
+        expected = len(test_alerts) * len(INJECTION_VECTORS) * len(all_classes) * len(base_encodings)
+        record("adversarial", "variant_generation", "pass" if variant_errors == 0 else "fail",
+               f"{total_variants} variants ({variant_errors} errors), expected ~{expected}, source={Path(alert_source).name}, {dur:.2f}s", dur)
 
     # ════════════════════════════════════════════
     # 4. Defense Evaluation
@@ -204,7 +215,6 @@ def main():
 
     if total_variants > 0 and test_alerts:
         variants = generate_adversarial_variants(test_alerts[0], INJECTION_VECTORS, all_classes, base_encodings)
-        defense_stats: dict[str, dict] = {}
         for def_name, defense in defenses:
             applied = 0
             detected = 0
@@ -220,9 +230,11 @@ def main():
                 except Exception:
                     errors += 1
             dur = time.time() - t0
-            defense_stats[def_name] = {"applied": applied, "detected": detected, "errors": errors}
             record("defenses", def_name, "pass" if errors == 0 else "fail",
                    f"{applied} applied, {detected} detected, {errors} errors, {dur:.2f}s", dur)
+    else:
+        for def_name, _ in defenses:
+            record("defenses", def_name, "skip", "no adversarial variants available")
 
     # ════════════════════════════════════════════
     # 5. Behavioral Invariant Detection
@@ -246,8 +258,11 @@ def main():
         if result.injection_suspected:
             fp_count += 1
     fp_rate = fp_count / fp_total if fp_total > 0 else 0
-    record("invariants", "false_positive_rate", "pass" if fp_rate == 0 else "fail",
-           f"{fp_count}/{fp_total} FP ({fp_rate*100:.1f}%)")
+    if fp_total == 0:
+        record("invariants", "false_positive_rate", "skip", "no benchmark alerts available")
+    else:
+        record("invariants", "false_positive_rate", "pass" if fp_rate == 0 else "fail",
+               f"{fp_count}/{fp_total} FP ({fp_rate*100:.1f}%)")
 
     # True positive test
     tp_count = 0
@@ -266,13 +281,17 @@ def main():
         if result.injection_suspected:
             tp_count += 1
     tp_rate = tp_count / tp_total if tp_total > 0 else 0
-    record("invariants", "detection_rate", "pass" if tp_rate >= 0.9 else "fail",
-           f"{tp_count}/{tp_total} detected ({tp_rate*100:.1f}%)")
+    if tp_total == 0:
+        record("invariants", "detection_rate", "skip", "no benchmark alerts available")
+    else:
+        record("invariants", "detection_rate", "pass" if tp_rate >= 0.9 else "fail",
+               f"{tp_count}/{tp_total} detected ({tp_rate*100:.1f}%)")
 
     # ════════════════════════════════════════════
     # 6. Full Pipeline
     # ════════════════════════════════════════════
     print("\n─── 6. Full Pipeline ───")
+    pipeline_result = None
     try:
         from src.agents.classifier import ClassifierAgent
         from src.agents.correlator import CorrelatorAgent
@@ -288,13 +307,16 @@ def main():
 
         import tempfile
         out_path = Path(tempfile.mktemp(suffix=".jsonl"))
-        t0 = time.time()
-        pipeline_result = asyncio.run(pipeline.run(test_alerts[:20], output_path=str(out_path)))
-        dur = time.time() - t0
-        out_path.unlink(missing_ok=True)
+        if not test_alerts:
+            record("pipeline", "full_pipeline", "skip", "no benchmark alerts available")
+        else:
+            t0 = time.time()
+            pipeline_result = asyncio.run(pipeline.run(test_alerts[:20], output_path=str(out_path)))
+            dur = time.time() - t0
+            out_path.unlink(missing_ok=True)
 
-        record("pipeline", "full_pipeline", "pass",
-               f"{len(pipeline_result.decisions)} decisions, {pipeline_result.campaigns_detected} campaigns, {dur:.2f}s", dur)
+            record("pipeline", "full_pipeline", "pass",
+                   f"{len(pipeline_result.decisions)} decisions, {pipeline_result.campaigns_detected} campaigns, {dur:.2f}s", dur)
     except Exception as e:
         record("pipeline", "full_pipeline", "fail", str(e))
 
@@ -316,10 +338,13 @@ def main():
             mitre_techniques=["T1003.001"],
             kill_chain_phase="actions_on_objectives",
         )
-        fox_stage = triage_decisions_to_fox_stage(pipeline_result.decisions, test_alerts[:20])
-        score = score_fox_stage(fox_stage, ground_truth)
-        record("socbench", "fox_score", "pass",
-               f"{score.total_final:.1f}/100 (O1:{score.o1_score.final_points:.1f}/39, O2:{score.o2_score.final_points:.1f}/39, O3:{score.o3_score.final_points:.1f}/22)")
+        if pipeline_result is None or not test_alerts:
+            record("socbench", "fox_score", "skip", "pipeline run not available")
+        else:
+            fox_stage = triage_decisions_to_fox_stage(pipeline_result.decisions, alerts=test_alerts[:20])
+            score = score_fox_stage(fox_stage, ground_truth)
+            record("socbench", "fox_score", "pass",
+                   f"{score.total_final:.1f}/100 (O1:{score.o1_score.final_points:.1f}/39, O2:{score.o2_score.final_points:.1f}/39, O3:{score.o3_score.final_points:.1f}/22)")
     except Exception as e:
         record("socbench", "fox_score", "fail", str(e))
 

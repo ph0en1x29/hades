@@ -50,9 +50,7 @@ class PipelineRunResult:
     campaigns_detected: int = 0
     playbooks_generated: int = 0
     invariant_escalations: int = 0
-    started_at: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    started_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     finished_at: str | None = None
 
     @property
@@ -116,9 +114,7 @@ class TriagePipeline:
         classification = _coerce_classification(result)
         confidence = _coerce_confidence(result.data.get("confidence"))
         rationale = (
-            result.data.get("reasoning")
-            or result.error
-            or "Classifier returned no reasoning."
+            result.data.get("reasoning") or result.error or "Classifier returned no reasoning."
         )
 
         evidence_trace = [
@@ -170,8 +166,7 @@ class TriagePipeline:
                     summary=(
                         "Behavioral invariant violations: "
                         + ", ".join(
-                            f"{v.invariant_id}[{v.severity}]"
-                            for v in invariant_result.violations
+                            f"{v.invariant_id}[{v.severity}]" for v in invariant_result.violations
                         )
                     ),
                     score=float(invariant_result.violation_count),
@@ -217,7 +212,9 @@ class TriagePipeline:
                             "events_found": corr_result.data.get("event_count", 0),
                             "chains_found": corr_result.data.get("chain_count", 0),
                         },
-                        status="campaign" if corr_result.data.get("campaign_detected") else "no_campaign",
+                        status="campaign"
+                        if corr_result.data.get("campaign_detected")
+                        else "no_campaign",
                         duration_ms=corr_result.latency_ms,
                     )
                 )
@@ -235,7 +232,6 @@ class TriagePipeline:
                     )
 
         # --- Stage 4: Playbook generation (optional) ---
-        playbook_data: dict[str, Any] = {}
         if self.playbook is not None:
             pb_context: dict[str, Any] = {
                 "classification": classification.value,
@@ -244,7 +240,6 @@ class TriagePipeline:
             }
             pb_result = await self.playbook.run(alert, context=pb_context)
             if pb_result.success:
-                playbook_data = pb_result.data
                 tool_invocations.append(
                     ToolInvocation(
                         tool_name="playbook_generator",

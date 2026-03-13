@@ -71,9 +71,7 @@ def parse_cicids2018_row(
         "dataset_name": dataset_name,
         "source_record_index": source_record_index,
         "flow_features": {
-            key: _coerce_value(value)
-            for key, value in row.items()
-            if key is not None
+            key: _coerce_value(value) for key, value in row.items() if key is not None
         },
     }
 

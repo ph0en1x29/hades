@@ -15,13 +15,13 @@ from __future__ import annotations
 
 import math
 import random
-from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
 class BootstrapResult:
     """Result of a bootstrap confidence interval calculation."""
+
     metric_name: str
     observed: float
     ci_lower: float
@@ -34,6 +34,7 @@ class BootstrapResult:
 @dataclass
 class McNemarResult:
     """Result of McNemar's test."""
+
     condition_a: str
     condition_b: str
     b: int  # A correct, B wrong
@@ -46,6 +47,7 @@ class McNemarResult:
 @dataclass
 class FleissKappaResult:
     """Result of Fleiss' kappa calculation."""
+
     kappa: float
     n_subjects: int
     n_raters: int
@@ -56,6 +58,7 @@ class FleissKappaResult:
 @dataclass
 class CohensD:
     """Effect size result."""
+
     d: float
     interpretation: str  # negligible/small/medium/large
 
@@ -63,6 +66,7 @@ class CohensD:
 @dataclass
 class BowkerResult:
     """Result of Bowker's test for symmetry."""
+
     chi_squared: float
     df: int
     p_value: float
@@ -87,8 +91,11 @@ def bootstrap_ci(
     """
     if not values:
         return BootstrapResult(
-            metric_name=metric_name, observed=0.0,
-            ci_lower=0.0, ci_upper=0.0, n_samples=0,
+            metric_name=metric_name,
+            observed=0.0,
+            ci_lower=0.0,
+            ci_upper=0.0,
+            n_samples=0,
         )
 
     rng = random.Random(seed)
@@ -133,7 +140,7 @@ def paired_bootstrap(
 
     rng = random.Random(seed)
     n = len(values_a)
-    diffs = [a - b for a, b in zip(values_a, values_b)]
+    diffs = [a - b for a, b in zip(values_a, values_b, strict=True)]
     observed_diff = sum(diffs) / n
 
     boot_diffs = []
@@ -173,8 +180,13 @@ def mcnemar_test(
 
     if total == 0:
         return McNemarResult(
-            condition_a=condition_a, condition_b=condition_b,
-            b=b, c=c, chi_squared=0.0, p_value=1.0, significant=False,
+            condition_a=condition_a,
+            condition_b=condition_b,
+            b=b,
+            c=c,
+            chi_squared=0.0,
+            p_value=1.0,
+            significant=False,
         )
 
     # McNemar's chi-squared with continuity correction
@@ -185,8 +197,12 @@ def mcnemar_test(
     p_value = _chi2_sf(chi_sq, df=1)
 
     return McNemarResult(
-        condition_a=condition_a, condition_b=condition_b,
-        b=b, c=c, chi_squared=chi_sq, p_value=p_value,
+        condition_a=condition_a,
+        condition_b=condition_b,
+        b=b,
+        c=c,
+        chi_squared=chi_sq,
+        p_value=p_value,
         significant=p_value < 0.05,
     )
 
@@ -202,16 +218,18 @@ def fleiss_kappa(
             category j to subject i.
     """
     if not ratings_matrix:
-        return FleissKappaResult(kappa=0.0, n_subjects=0, n_raters=0,
-                                 n_categories=0, interpretation="poor")
+        return FleissKappaResult(
+            kappa=0.0, n_subjects=0, n_raters=0, n_categories=0, interpretation="poor"
+        )
 
     N = len(ratings_matrix)  # subjects
     k = len(ratings_matrix[0])  # categories
     n = sum(ratings_matrix[0])  # raters per subject
 
     if n <= 1 or N == 0:
-        return FleissKappaResult(kappa=0.0, n_subjects=N, n_raters=n,
-                                 n_categories=k, interpretation="poor")
+        return FleissKappaResult(
+            kappa=0.0, n_subjects=N, n_raters=n, n_categories=k, interpretation="poor"
+        )
 
     # P_i for each subject
     P_i_values = []
@@ -238,8 +256,11 @@ def fleiss_kappa(
     interpretation = _interpret_kappa(kappa)
 
     return FleissKappaResult(
-        kappa=kappa, n_subjects=N, n_raters=n,
-        n_categories=k, interpretation=interpretation,
+        kappa=kappa,
+        n_subjects=N,
+        n_raters=n,
+        n_categories=k,
+        interpretation=interpretation,
     )
 
 
@@ -287,12 +308,15 @@ def bowker_test(
     p_value = _chi2_sf(chi_sq, df) if df > 0 else 1.0
 
     return BowkerResult(
-        chi_squared=chi_sq, df=df, p_value=p_value,
+        chi_squared=chi_sq,
+        df=df,
+        p_value=p_value,
         symmetric=p_value >= 0.05,
     )
 
 
 # ── Helpers ──────────────────────────────────────────────────────
+
 
 def _chi2_sf(x: float, df: int) -> float:
     """Survival function for chi-squared distribution (stdlib only).
@@ -309,7 +333,6 @@ def _chi2_sf(x: float, df: int) -> float:
         return 2 * (1 - _normal_cdf(z))
 
     # General case: use Wilson-Hilferty approximation
-    a = df / 2
     z = ((x / df) ** (1 / 3) - (1 - 2 / (9 * df))) / math.sqrt(2 / (9 * df))
     return 1 - _normal_cdf(z)
 

@@ -73,6 +73,7 @@ def test_full_pipeline_with_all_agents() -> None:
     pipeline = TriagePipeline(classifier, correlator=correlator, playbook=playbook)
 
     import tempfile
+
     with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False) as f:
         output = Path(f.name)
 
@@ -104,6 +105,7 @@ def test_pipeline_without_optional_agents() -> None:
     pipeline = TriagePipeline(classifier)
 
     import tempfile
+
     with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False) as f:
         output = Path(f.name)
 

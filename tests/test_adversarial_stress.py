@@ -21,13 +21,12 @@ from src.adversarial.defenses import (
     SanitizationDefense,
     StructuredPromptDefense,
 )
-from src.adversarial.encodings import EVASION_ENCODINGS, PROTOCOL_CONSTRAINTS
 from src.adversarial.injector import generate_adversarial_variants
 from src.adversarial.payloads import AttackClass
 from src.adversarial.vectors import INJECTION_VECTORS
 from src.evaluation.behavioral_invariants import run_invariant_checks
-from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 from src.ingestion.parsers.splunk_suricata import load_suricata_log
+from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 
 DATA_DIR = ROOT / "data" / "datasets" / "splunk_attack_data"
 
@@ -39,6 +38,10 @@ STRESS_TECHNIQUES = {
     "T1055.001": ("sysmon", "T1055.001/windows-sysmon.log", "Process Injection"),
     "T1548.002": ("sysmon", "T1548.002/windows-sysmon.log", "UAC Bypass"),
 }
+HAS_STRESS_DATA = any(
+    (DATA_DIR / relative_path).exists() and (DATA_DIR / relative_path).stat().st_size > 0
+    for _, relative_path, _ in STRESS_TECHNIQUES.values()
+)
 
 
 def load_one(tech_id: str) -> list:
@@ -60,8 +63,6 @@ def main():
     all_classes = list(AttackClass)
     all_vectors = INJECTION_VECTORS
     base_encodings = ["plaintext", "underscore"]
-    all_encodings = base_encodings + EVASION_ENCODINGS + PROTOCOL_CONSTRAINTS
-
     defenses = [
         ("sanitization", SanitizationDefense(level="moderate")),
         ("structured", StructuredPromptDefense()),
@@ -83,7 +84,7 @@ def main():
         print(f"\n─── {tech_id} ({desc}) ───")
         alerts = load_one(tech_id)
         if not alerts:
-            print(f"  ⏭️  No data")
+            print("  ⏭️  No data")
             continue
 
         alert = alerts[0]
@@ -97,11 +98,21 @@ def main():
             print(f"  Base variants: {len(variants)}")
 
             for v in variants:
-                variant_by_class[v.attack_class.value if hasattr(v.attack_class, 'value') else str(v.attack_class)] += 1
-                variant_by_vector[v.vector.name if hasattr(v.vector, 'name') else str(v.vector)] += 1
+                variant_by_class[
+                    v.attack_class.value
+                    if hasattr(v.attack_class, "value")
+                    else str(v.attack_class)
+                ] += 1
+                variant_by_vector[
+                    v.vector.name if hasattr(v.vector, "name") else str(v.vector)
+                ] += 1
 
                 # Defense tests
-                adv_dict = v.adversarial_alert if isinstance(v.adversarial_alert, dict) else v.adversarial_alert.to_dict()
+                adv_dict = (
+                    v.adversarial_alert
+                    if isinstance(v.adversarial_alert, dict)
+                    else v.adversarial_alert.to_dict()
+                )
                 for def_name, defense in defenses:
                     try:
                         modified, result = defense.apply(adv_dict)
@@ -141,8 +152,10 @@ def main():
     print(f"  Total variants generated:     {total_variants}")
     print(f"  Defense tests run:            {total_defense_tests}")
     print(f"  Invariant tests run:          {total_invariant_tests}")
-    print(f"  Invariant detection rate:     {invariant_detections}/{total_invariant_tests} "
-          f"({invariant_detections/max(total_invariant_tests,1)*100:.1f}%)")
+    print(
+        f"  Invariant detection rate:     {invariant_detections}/{total_invariant_tests} "
+        f"({invariant_detections / max(total_invariant_tests, 1) * 100:.1f}%)"
+    )
     print(f"  Time elapsed:                 {elapsed:.1f}s")
     print()
 
@@ -172,12 +185,19 @@ def main():
     # Assertions
     assert total_variants > 100, f"Too few variants: {total_variants}"
     assert total_defense_tests > 100, f"Too few defense tests: {total_defense_tests}"
-    assert invariant_detections / max(total_invariant_tests, 1) > 0.9, \
+    assert invariant_detections / max(total_invariant_tests, 1) > 0.9, (
         f"Invariant detection too low: {invariant_detections}/{total_invariant_tests}"
+    )
     assert len(errors) == 0, f"{len(errors)} errors occurred"
 
     print("\n  ✅ ALL STRESS TEST ASSERTIONS PASSED")
 
 
 if __name__ == "__main__":
+    if not HAS_STRESS_DATA:
+        print(
+            "SKIPPED: requires Splunk Attack Data dataset under "
+            f"{DATA_DIR} for adversarial stress validation.",
+        )
+        sys.exit(0)
     main()

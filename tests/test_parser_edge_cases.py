@@ -15,10 +15,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
-from src.ingestion.parsers.splunk_suricata import load_suricata_log
-from src.ingestion.parsers.cicids2018 import load_cicids2018_csv
 from src.ingestion.parsers.beth import load_beth_csv
+from src.ingestion.parsers.cicids2018 import load_cicids2018_csv
+from src.ingestion.parsers.splunk_suricata import load_suricata_log
+from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 from src.ingestion.schema import AlertSeverity
 
 passed = 0
@@ -38,6 +38,7 @@ def fail(name: str, reason: str):
 
 
 # === Sysmon parser tests ===
+
 
 def test_sysmon_empty_file():
     """Empty file should return empty list, not crash."""
@@ -84,7 +85,9 @@ def test_sysmon_alert_id_uniqueness():
         return
     alerts = load_sysmon_log(str(path), mitre_technique="T1003.001", limit=100)
     ids = [a.alert_id for a in alerts]
-    assert len(ids) == len(set(ids)), f"duplicate IDs found: {len(ids)} total, {len(set(ids))} unique"
+    assert len(ids) == len(set(ids)), (
+        f"duplicate IDs found: {len(ids)} total, {len(set(ids))} unique"
+    )
     ok("sysmon: 100 alert IDs all unique")
 
 
@@ -111,11 +114,12 @@ def test_sysmon_raw_log_is_json():
     alerts = load_sysmon_log(str(path), mitre_technique="T1003.001", limit=10)
     for a in alerts:
         parsed = json.loads(a.raw_log)
-        assert isinstance(parsed, dict), f"raw_log not a dict"
+        assert isinstance(parsed, dict), "raw_log not a dict"
     ok("sysmon: all raw_logs are valid JSON dicts")
 
 
 # === Suricata parser tests ===
+
 
 def test_suricata_c2_logs():
     """Suricata C2 logs should parse with HTTP metadata."""
@@ -142,6 +146,7 @@ def test_suricata_empty_file():
 
 # === CIC-IDS2018 parser tests ===
 
+
 def test_cicids_csv():
     """CIC-IDS CSV should parse if available."""
     csv_path = ROOT / "data" / "datasets" / "Thursday-01-03-2018_TrafficForML_CICFlowMeter.csv"
@@ -157,6 +162,7 @@ def test_cicids_csv():
 
 
 # === BETH parser tests ===
+
 
 def test_beth_fixtures():
     """BETH fixture CSVs should parse correctly."""
@@ -180,6 +186,7 @@ def test_beth_fixtures():
 
 # === Cross-parser consistency tests ===
 
+
 def test_alert_schema_consistency():
     """All parsers should produce alerts with the same field structure."""
     data_dir = ROOT / "data" / "datasets" / "splunk_attack_data"
@@ -189,9 +196,16 @@ def test_alert_schema_consistency():
 
     parsers_alerts = []
     if sysmon_path.exists() and sysmon_path.stat().st_size > 0:
-        parsers_alerts.append(("sysmon", load_sysmon_log(str(sysmon_path), mitre_technique="T1003.001", limit=1)))
+        parsers_alerts.append(
+            ("sysmon", load_sysmon_log(str(sysmon_path), mitre_technique="T1003.001", limit=1))
+        )
     if suricata_path.exists() and suricata_path.stat().st_size > 0:
-        parsers_alerts.append(("suricata", load_suricata_log(str(suricata_path), mitre_technique="T1071.001", limit=1)))
+        parsers_alerts.append(
+            (
+                "suricata",
+                load_suricata_log(str(suricata_path), mitre_technique="T1071.001", limit=1),
+            )
+        )
 
     required_fields = ["alert_id", "timestamp", "severity", "raw_log", "provenance", "benchmark"]
 
@@ -200,8 +214,9 @@ def test_alert_schema_consistency():
             continue
         a = alerts[0]
         for field in required_fields:
-            assert hasattr(a, field) and getattr(a, field) is not None, \
+            assert hasattr(a, field) and getattr(a, field) is not None, (
                 f"{parser_name}: missing or None field '{field}'"
+            )
 
     ok(f"schema consistency: {len(parsers_alerts)} parsers checked, all have required fields")
 

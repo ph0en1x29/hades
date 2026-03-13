@@ -11,8 +11,9 @@ Source: https://github.com/splunk/attack_data
 from __future__ import annotations
 
 import json
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from src.ingestion.schema import (
     AlertBenchmarkContext,
@@ -44,7 +45,7 @@ EVENT_TYPE_SEVERITY: dict[str, AlertSeverity] = {
 
 
 def parse_suricata_event(
-    record: dict,
+    record: dict[str, Any],
     *,
     mitre_technique: str,
     rule_name: str = "",
@@ -76,7 +77,7 @@ def parse_suricata_event(
     tls = record.get("tls", {})
 
     if alert_data:
-        signature_parts.append(alert_data.get("signature", f"Suricata Alert"))
+        signature_parts.append(alert_data.get("signature", "Suricata Alert"))
         severity_num = alert_data.get("severity", 2)
         severity = SURICATA_SEVERITY.get(severity_num, AlertSeverity.MEDIUM)
     elif http:
@@ -164,6 +165,8 @@ def load_suricata_log(
     """
     path = Path(path)
     alerts: list[UnifiedAlert] = []
+    if not path.exists() or path.stat().st_size == 0:
+        return alerts
 
     with path.open(encoding="utf-8", errors="replace") as f:
         for line in f:

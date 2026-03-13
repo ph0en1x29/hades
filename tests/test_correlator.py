@@ -21,6 +21,7 @@ BASE = "2026-03-12T14:00:00"
 
 def _alert(aid: str, src: str, dst: str, tech: str, minutes: int = 0) -> UnifiedAlert:
     from datetime import datetime
+
     ts = datetime.fromisoformat(BASE) + timedelta(minutes=minutes)
     return UnifiedAlert(
         alert_id=aid,
@@ -47,9 +48,9 @@ def test_ip_clustering():
 def test_attack_chain_detection():
     store = AlertStore()
     alerts = [
-        _alert("C1", "10.0.1.5", "10.0.1.1", "T1078", 0),      # Initial Access
+        _alert("C1", "10.0.1.5", "10.0.1.1", "T1078", 0),  # Initial Access
         _alert("C2", "10.0.1.5", "10.0.1.5", "T1003.001", 10),  # Credential Access
-        _alert("C3", "10.0.1.5", "10.0.2.10", "T1021.002", 20), # Lateral Movement
+        _alert("C3", "10.0.1.5", "10.0.2.10", "T1021.002", 20),  # Lateral Movement
         _alert("C4", "10.0.1.5", "10.0.1.1", "T1087.002", 25),  # Discovery
     ]
     store.ingest(alerts)
@@ -70,10 +71,7 @@ def test_session_reconstruction():
 
 def test_temporal_burst():
     store = AlertStore()
-    alerts = [
-        _alert(f"B{i}", "10.0.1.5", "10.0.2.10", "T1110.001", i)
-        for i in range(8)
-    ]
+    alerts = [_alert(f"B{i}", "10.0.1.5", "10.0.2.10", "T1110.001", i) for i in range(8)]
     store.ingest(alerts)
     result = correlate_alerts(alerts[0], store, burst_threshold=5)
     assert len(result.temporal_bursts) > 0, "Should detect temporal burst"

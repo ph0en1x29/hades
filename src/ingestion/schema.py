@@ -89,9 +89,7 @@ class UnifiedAlert:
     metadata: AlertMetadata = field(default_factory=AlertMetadata)
     benchmark: AlertBenchmarkContext = field(default_factory=AlertBenchmarkContext)
     provenance: AlertProvenance = field(default_factory=AlertProvenance)
-    ingested_at: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    ingested_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to plain dict (JSON-safe)."""
@@ -129,7 +127,9 @@ class UnifiedAlert:
             alert_id=data.get("alert_id", str(uuid4())),
             timestamp=data.get("timestamp"),
             source=AlertSource(data["source"]) if "source" in data else AlertSource.FILE_REPLAY,
-            severity=AlertSeverity(data["severity"]) if "severity" in data else AlertSeverity.MEDIUM,
+            severity=AlertSeverity(data["severity"])
+            if "severity" in data
+            else AlertSeverity.MEDIUM,
             signature=data.get("signature"),
             signature_id=data.get("signature_id"),
             event_type=data.get("event_type"),

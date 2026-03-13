@@ -12,20 +12,20 @@ Generates:
 
 from __future__ import annotations
 
-import asyncio
 import json
 import subprocess
 import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+SKIP_MARKER = "SKIPPED:"
 
-
-def _run_script(name: str, args: list[str] | None = None) -> tuple[bool, str, float]:
-    """Run a Python script and return (success, output, seconds)."""
+def _run_script(name: str, args: list[str] | None = None) -> tuple[str, str, float]:
+    """Run a Python script and return (status, output, seconds)."""
     cmd = [sys.executable, str(ROOT / name)] + (args or [])
     start = time.monotonic()
     try:
@@ -34,16 +34,24 @@ def _run_script(name: str, args: list[str] | None = None) -> tuple[bool, str, fl
         )
         elapsed = time.monotonic() - start
         output = result.stdout + result.stderr
-        return result.returncode == 0, output, elapsed
+        if result.returncode == 0 and any(
+            line.startswith(SKIP_MARKER) for line in output.splitlines()
+        ):
+            return "skipped", output, elapsed
+        return ("pass" if result.returncode == 0 else "fail"), output, elapsed
     except subprocess.TimeoutExpired:
-        return False, "TIMEOUT after 300s", time.monotonic() - start
+        return "fail", "TIMEOUT after 300s", time.monotonic() - start
     except Exception as e:
-        return False, str(e), time.monotonic() - start
+        return "fail", str(e), time.monotonic() - start
 
 
-def _run_test(name: str) -> tuple[bool, str, float]:
+def _run_test(name: str) -> tuple[str, str, float]:
     """Run a test file."""
     return _run_script(name)
+
+
+def _icon(status: str) -> str:
+    return {"pass": "✅", "fail": "❌", "skipped": "⏭️"}[status]
 
 
 def main():
@@ -86,100 +94,91 @@ def main():
             print(f"  ⏭️  {tf} (not found, skipping)")
             test_results.append({"file": tf, "status": "skipped"})
             continue
-        ok, out, secs = _run_test(tf)
-        status = "✅" if ok else "❌"
-        print(f"  {status} {tf} ({secs:.1f}s)")
+        status, out, secs = _run_test(tf)
+        print(f"  {_icon(status)} {tf} ({secs:.1f}s)")
         test_results.append({
-            "file": tf, "status": "pass" if ok else "fail",
-            "seconds": round(secs, 2), "output_tail": out[-200:] if not ok else "",
+            "file": tf, "status": status,
+            "seconds": round(secs, 2), "output_tail": out[-200:] if status == "fail" else "",
         })
     results["sections"]["unit_tests"] = test_results
 
     # === Section 2: Architecture Validation (18-point suite) ===
     print("\n─── Section 2: Architecture Validation ───")
-    ok, out, secs = _run_script("scripts/validate_architecture.py")
-    status = "✅" if ok else "❌"
+    run_status, out, secs = _run_script("scripts/validate_architecture.py")
     # Extract pass count
     lines = out.strip().split("\n")
     summary = [l for l in lines if "passed" in l.lower() or "PASS" in l or "FAIL" in l]
-    print(f"  {status} validate_architecture.py ({secs:.1f}s)")
+    print(f"  {_icon(run_status)} validate_architecture.py ({secs:.1f}s)")
     for s in summary[-3:]:
         print(f"    {s.strip()}")
     results["sections"]["architecture_validation"] = {
-        "status": "pass" if ok else "fail",
+        "status": run_status,
         "seconds": round(secs, 2),
         "summary": summary,
     }
 
     # === Section 3: E3 Payload Survival ===
     print("\n─── Section 3: E3 Payload Survival ───")
-    ok, out, secs = _run_script("scripts/run_e3_payload_survival.py")
-    status = "✅" if ok else "❌"
-    print(f"  {status} E3 payload survival ({secs:.1f}s)")
+    run_status, out, secs = _run_script("scripts/run_e3_payload_survival.py")
+    print(f"  {_icon(run_status)} E3 payload survival ({secs:.1f}s)")
     results["sections"]["e3_payload_survival"] = {
-        "status": "pass" if ok else "fail", "seconds": round(secs, 2),
+        "status": run_status, "seconds": round(secs, 2),
     }
 
     # === Section 4: E3 Extended Encodings ===
     print("\n─── Section 4: E3 Extended Encodings ───")
-    ok, out, secs = _run_script("scripts/run_e3_extended.py")
-    status = "✅" if ok else "❌"
-    print(f"  {status} E3 extended encodings ({secs:.1f}s)")
+    run_status, out, secs = _run_script("scripts/run_e3_extended.py")
+    print(f"  {_icon(run_status)} E3 extended encodings ({secs:.1f}s)")
     results["sections"]["e3_extended"] = {
-        "status": "pass" if ok else "fail", "seconds": round(secs, 2),
+        "status": run_status, "seconds": round(secs, 2),
     }
 
     # === Section 5: Invariant Evaluation ===
     print("\n─── Section 5: Invariant Evaluation ───")
-    ok, out, secs = _run_script("scripts/run_invariant_evaluation.py")
-    status = "✅" if ok else "❌"
-    print(f"  {status} Invariant evaluation ({secs:.1f}s)")
+    run_status, out, secs = _run_script("scripts/run_invariant_evaluation.py")
+    print(f"  {_icon(run_status)} Invariant evaluation ({secs:.1f}s)")
     results["sections"]["invariant_evaluation"] = {
-        "status": "pass" if ok else "fail", "seconds": round(secs, 2),
+        "status": run_status, "seconds": round(secs, 2),
     }
 
     # === Section 6: Defense Analysis ===
     print("\n─── Section 6: Defense Analysis ───")
-    ok, out, secs = _run_script("scripts/run_defense_analysis.py")
-    status = "✅" if ok else "❌"
-    print(f"  {status} Defense analysis ({secs:.1f}s)")
+    run_status, out, secs = _run_script("scripts/run_defense_analysis.py")
+    print(f"  {_icon(run_status)} Defense analysis ({secs:.1f}s)")
     results["sections"]["defense_analysis"] = {
-        "status": "pass" if ok else "fail", "seconds": round(secs, 2),
+        "status": run_status, "seconds": round(secs, 2),
     }
 
     # === Section 7: Campaign Demo ===
     print("\n─── Section 7: Campaign Demo ───")
-    ok, out, secs = _run_script("scripts/run_campaign_demo.py")
-    status = "✅" if ok else "❌"
+    run_status, out, secs = _run_script("scripts/run_campaign_demo.py")
     # Extract summary
     campaign_lines = [l for l in out.split("\n") if "ALL GREEN" in l or "Chain" in l or "Campaign" in l]
-    print(f"  {status} Campaign demo ({secs:.1f}s)")
+    print(f"  {_icon(run_status)} Campaign demo ({secs:.1f}s)")
     for cl in campaign_lines[:5]:
         print(f"    {cl.strip()}")
     results["sections"]["campaign_demo"] = {
-        "status": "pass" if ok else "fail", "seconds": round(secs, 2),
+        "status": run_status, "seconds": round(secs, 2),
         "summary": campaign_lines,
     }
 
     # === Section 8: E2E Demo ===
     print("\n─── Section 8: E2E Demo ───")
-    ok, out, secs = _run_script("scripts/run_e2e_demo.py")
-    status = "✅" if ok else "❌"
-    print(f"  {status} E2E demo ({secs:.1f}s)")
+    run_status, out, secs = _run_script("scripts/run_e2e_demo.py")
+    print(f"  {_icon(run_status)} E2E demo ({secs:.1f}s)")
     results["sections"]["e2e_demo"] = {
-        "status": "pass" if ok else "fail", "seconds": round(secs, 2),
+        "status": run_status, "seconds": round(secs, 2),
     }
 
     # === Section 9: Benchmark Build ===
     print("\n─── Section 9: Benchmark Pack ───")
-    ok, out, secs = _run_script("scripts/build_benchmark_pack.py")
-    status = "✅" if ok else "❌"
+    run_status, out, secs = _run_script("scripts/build_benchmark_pack.py")
     bench_lines = [l for l in out.split("\n") if "alert" in l.lower() or "technique" in l.lower() or "tactic" in l.lower()]
-    print(f"  {status} Benchmark build ({secs:.1f}s)")
+    print(f"  {_icon(run_status)} Benchmark build ({secs:.1f}s)")
     for bl in bench_lines[:5]:
         print(f"    {bl.strip()}")
     results["sections"]["benchmark_build"] = {
-        "status": "pass" if ok else "fail", "seconds": round(secs, 2),
+        "status": run_status, "seconds": round(secs, 2),
         "summary": bench_lines,
     }
 
@@ -187,11 +186,10 @@ def main():
     if with_gpu:
         print("\n─── Section 10: GPU Experiments ───")
         for exp in ["E1", "E2"]:
-            ok, out, secs = _run_script("scripts/run_experiment.py", [f"--experiment={exp}"])
-            status = "✅" if ok else "❌"
-            print(f"  {status} Experiment {exp} ({secs:.1f}s)")
+            run_status, out, secs = _run_script("scripts/run_experiment.py", [f"--experiment={exp}"])
+            print(f"  {_icon(run_status)} Experiment {exp} ({secs:.1f}s)")
             results["sections"][f"experiment_{exp}"] = {
-                "status": "pass" if ok else "fail", "seconds": round(secs, 2),
+                "status": run_status, "seconds": round(secs, 2),
             }
     else:
         print("\n─── Section 10: GPU Experiments ───")
@@ -202,6 +200,7 @@ def main():
     sections = results["sections"]
     total = 0
     passed = 0
+    skipped = 0
     for name, data in sections.items():
         if isinstance(data, list):
             for item in data:
@@ -209,12 +208,17 @@ def main():
                     total += 1
                     if item.get("status") == "pass":
                         passed += 1
+                else:
+                    skipped += 1
         elif isinstance(data, dict) and "status" in data:
-            total += 1
+            if data["status"] != "skipped":
+                total += 1
+            else:
+                skipped += 1
             if data["status"] == "pass":
                 passed += 1
 
-    print(f"  REPRODUCIBILITY SUMMARY: {passed}/{total} sections passed")
+    print(f"  REPRODUCIBILITY SUMMARY: {passed}/{total} sections passed ({skipped} skipped)")
     print("═" * 70)
 
     # Save reports
@@ -231,7 +235,7 @@ def main():
         f"",
         f"**Generated:** {timestamp}",
         f"**GPU mode:** {'Enabled' if with_gpu else 'Disabled'}",
-        f"**Result:** {passed}/{total} sections passed",
+        f"**Result:** {passed}/{total} sections passed ({skipped} skipped)",
         f"",
     ]
     for name, data in sections.items():
@@ -241,7 +245,7 @@ def main():
                 s = "✅" if item.get("status") == "pass" else "⏭️" if item.get("status") == "skipped" else "❌"
                 md_lines.append(f"- {s} {item['file']}")
         elif isinstance(data, dict):
-            s = "✅" if data.get("status") == "pass" else "❌"
+            s = "✅" if data.get("status") == "pass" else "⏭️" if data.get("status") == "skipped" else "❌"
             md_lines.append(f"- {s} {data.get('seconds', 0):.1f}s")
             for line in data.get("summary", []):
                 md_lines.append(f"  - {line.strip()}")

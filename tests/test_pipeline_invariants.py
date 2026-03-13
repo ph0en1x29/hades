@@ -73,7 +73,11 @@ def test_pipeline_leaves_clean_decision_unchanged():
         decision = await pipeline._classify_alert(_build_alert())
         assert decision.classification.value == "true_positive"
         assert decision.override_record is None
-        assert any(t.tool_name == "behavioral_invariants" and t.status == "clean" for t in decision.tool_invocations)
+        assert any(
+            t.tool_name == "behavioral_invariants" and t.status == "clean"
+            for t in decision.tool_invocations
+        )
+
     asyncio.run(_run())
 
 
@@ -86,8 +90,12 @@ def test_pipeline_escalates_injected_decision():
         assert decision.override_record.actor == "system:behavioral_invariants"
         assert decision.override_record.previous_classification == "false_positive"
         assert decision.override_record.new_classification == "escalate"
-        assert any(t.tool_name == "behavioral_invariants" and t.status == "flagged" for t in decision.tool_invocations)
+        assert any(
+            t.tool_name == "behavioral_invariants" and t.status == "flagged"
+            for t in decision.tool_invocations
+        )
         assert "[HADES SAFETY LAYER]" in decision.rationale_summary
+
     asyncio.run(_run())
 
 

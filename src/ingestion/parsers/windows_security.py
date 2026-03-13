@@ -12,9 +12,9 @@ Handles:
 
 from __future__ import annotations
 
-import re
+import json
 import xml.etree.ElementTree as ET
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.ingestion.schema import (
@@ -32,13 +32,13 @@ NS = {"ev": "http://schemas.microsoft.com/win/2004/08/events/event"}
 
 # Event ID → severity mapping
 EVENT_SEVERITY = {
-    4625: AlertSeverity.HIGH,       # Failed logon
-    4688: AlertSeverity.MEDIUM,     # Process creation
-    4698: AlertSeverity.HIGH,       # Scheduled task created
-    4672: AlertSeverity.MEDIUM,     # Special privileges assigned
-    4624: AlertSeverity.INFO,       # Successful logon
-    4720: AlertSeverity.HIGH,       # User account created
-    4732: AlertSeverity.HIGH,       # Member added to security group
+    4625: AlertSeverity.HIGH,  # Failed logon
+    4688: AlertSeverity.MEDIUM,  # Process creation
+    4698: AlertSeverity.HIGH,  # Scheduled task created
+    4672: AlertSeverity.MEDIUM,  # Special privileges assigned
+    4624: AlertSeverity.INFO,  # Successful logon
+    4720: AlertSeverity.HIGH,  # User account created
+    4732: AlertSeverity.HIGH,  # Member added to security group
 }
 
 # Event ID → signature description
@@ -123,12 +123,11 @@ def parse_windows_security_xml(
         "TimeCreated": timestamp_str,
     }
     raw_fields.update(event_data)
-    import json
     raw_log = json.dumps(raw_fields)
 
     return UnifiedAlert(
         alert_id=alert_id,
-        timestamp=timestamp,
+        timestamp=timestamp.isoformat(),
         source=AlertSource.FILE_REPLAY,
         severity=severity,
         signature=signature,
@@ -142,7 +141,7 @@ def parse_windows_security_xml(
         raw_log=raw_log,
         metadata=AlertMetadata(
             vendor="Microsoft",
-            device=computer,
+            device=computer or "",
             category=f"Windows Security Event {event_id}",
             message=event_data.get("CommandLine", event_data.get("TaskName", "")),
         ),
@@ -188,9 +187,8 @@ def load_windows_security_log(
     # Split on Event boundaries — handles both single-line and multi-line XML
     # Find all <Event ...>...</Event> blocks
     import re as _re
-    event_pattern = _re.compile(
-        r"<Event\s[^>]*>.*?</Event>", _re.DOTALL
-    )
+
+    event_pattern = _re.compile(r"<Event\s[^>]*>.*?</Event>", _re.DOTALL)
 
     for i, match in enumerate(event_pattern.finditer(content)):
         xml_text = match.group()

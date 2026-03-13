@@ -185,7 +185,6 @@ def parse_beth_dns_row(
             parser_version="beth_dns_v1",
             transform_version="1.0",
             label_provenance="beth_honeypot_labels",
-            collected_at=None,
         ),
     )
 
@@ -244,7 +243,6 @@ def parse_beth_process_row(
             parser_version="beth_process_v1",
             transform_version="1.0",
             label_provenance="beth_honeypot_labels",
-            collected_at=None,
         ),
     )
 
@@ -271,7 +269,7 @@ def load_beth_csv(
         if reader.fieldnames is None:
             return []
 
-        inferred_mode = mode or _detect_beth_mode(reader.fieldnames)
+        inferred_mode = mode or _detect_beth_mode(list(reader.fieldnames))
         for row_index, row in enumerate(reader, start=1):
             if inferred_mode == "dns":
                 alert = parse_beth_dns_row(

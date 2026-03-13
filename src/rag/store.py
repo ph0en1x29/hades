@@ -64,7 +64,9 @@ class VectorStore:
                 self._document_count,
             )
         except ImportError:
-            logger.error("qdrant-client[fastembed] not installed — run: pip install 'qdrant-client[fastembed]'")
+            logger.error(
+                "qdrant-client[fastembed] not installed — run: pip install 'qdrant-client[fastembed]'"
+            )
             raise
 
     def add_documents(

@@ -14,24 +14,28 @@ import copy
 import json
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING
 
-from src.adversarial.payloads import TEMPLATES_BY_CLASS, AttackClass, PayloadTemplate
+from src.adversarial.payloads import TEMPLATES_BY_CLASS, AttackClass
 from src.adversarial.vectors import INJECTION_VECTORS, InjectionVector
-from src.ingestion.schema import UnifiedAlert
+
+if TYPE_CHECKING:
+    from src.ingestion.schema import UnifiedAlert
 
 
 class EncodingStrategy(Enum):
     """How the payload is encoded within the log field."""
-    PLAINTEXT = "plaintext"           # Direct injection, no encoding
-    UNDERSCORE = "underscore"         # Spaces → underscores (Neaves2025 style)
-    URL_ENCODED = "url_encoded"       # %20-style encoding
+
+    PLAINTEXT = "plaintext"  # Direct injection, no encoding
+    UNDERSCORE = "underscore"  # Spaces → underscores (Neaves2025 style)
+    URL_ENCODED = "url_encoded"  # %20-style encoding
     BASE64_FRAGMENT = "base64_fragment"  # Partial base64 that looks like encoded data
 
 
 @dataclass
 class InjectionResult:
     """Result of injecting a payload into an alert."""
+
     original_alert: UnifiedAlert
     adversarial_alert: UnifiedAlert
     vector: InjectionVector
@@ -53,6 +57,7 @@ def encode_payload(text: str, strategy: EncodingStrategy) -> str:
     elif strategy == EncodingStrategy.BASE64_FRAGMENT:
         # Wrap in realistic-looking base64 context
         import base64
+
         encoded = base64.b64encode(text.encode()).decode()
         return f"data={encoded}"
     return text
@@ -187,26 +192,24 @@ def generate_adversarial_variants(
 
                 # Inject into alert
                 if is_suricata:
-                    adv_alert, field = inject_into_suricata_alert(
-                        alert, vector, truncated
-                    )
+                    adv_alert, field = inject_into_suricata_alert(alert, vector, truncated)
                 else:
-                    adv_alert, field = inject_into_sysmon_alert(
-                        alert, vector, truncated
-                    )
+                    adv_alert, field = inject_into_sysmon_alert(alert, vector, truncated)
 
                 # Estimate SIEM survival
                 survived = len(truncated) <= vector.max_payload_length
 
-                results.append(InjectionResult(
-                    original_alert=alert,
-                    adversarial_alert=adv_alert,
-                    vector=vector,
-                    attack_class=attack_class,
-                    encoding=encoding,
-                    payload_text=truncated,
-                    injection_field=field,
-                    payload_survived=survived,
-                ))
+                results.append(
+                    InjectionResult(
+                        original_alert=alert,
+                        adversarial_alert=adv_alert,
+                        vector=vector,
+                        attack_class=attack_class,
+                        encoding=encoding,
+                        payload_text=truncated,
+                        injection_field=field,
+                        payload_survived=survived,
+                    )
+                )
 
     return results

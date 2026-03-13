@@ -10,10 +10,6 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.evaluation.statistical_tests import (
-    BootstrapResult,
-    CohensD,
-    FleissKappaResult,
-    McNemarResult,
     bootstrap_ci,
     bowker_test,
     cohens_d,
@@ -66,6 +62,7 @@ def main():
 
     # Wide variance
     import random
+
     rng = random.Random(42)
     noisy = [rng.gauss(0.5, 0.3) for _ in range(50)]
     wide = bootstrap_ci(noisy, "wide_variance")
@@ -86,7 +83,9 @@ def main():
     diff = paired_bootstrap(a_vals, b_vals, "A_vs_B")
     assert diff.observed > 0.2  # A is ~30% better
     assert diff.ci_lower > 0  # Significant
-    ok(f"A>B: diff={diff.observed:.3f} [{diff.ci_lower:.3f}, {diff.ci_upper:.3f}] (sig: CI excludes 0)")
+    ok(
+        f"A>B: diff={diff.observed:.3f} [{diff.ci_lower:.3f}, {diff.ci_upper:.3f}] (sig: CI excludes 0)"
+    )
 
     # Similar conditions
     c_vals = [1.0] * 50 + [0.0] * 50
@@ -136,9 +135,18 @@ def main():
     ok(f"random agreement: κ={rk.kappa:.3f} ({rk.interpretation})")
 
     # Moderate agreement
-    mod_mat = [[4, 1, 0], [0, 4, 1], [4, 1, 0], [1, 0, 4],
-               [3, 2, 0], [0, 3, 2], [5, 0, 0], [0, 0, 5],
-               [4, 0, 1], [0, 5, 0]]
+    mod_mat = [
+        [4, 1, 0],
+        [0, 4, 1],
+        [4, 1, 0],
+        [1, 0, 4],
+        [3, 2, 0],
+        [0, 3, 2],
+        [5, 0, 0],
+        [0, 0, 5],
+        [4, 0, 1],
+        [0, 5, 0],
+    ]
     mk = fleiss_kappa(mod_mat)
     assert 0.3 < mk.kappa < 0.9
     ok(f"moderate agreement: κ={mk.kappa:.3f} ({mk.interpretation})")
@@ -197,17 +205,28 @@ def main():
     effect = cohens_d(clean_results, attack_results)
 
     # Discordant pairs for McNemar
-    both_correct = sum(1 for a, b in zip(clean_results, attack_results) if a == 1 and b == 1)
-    clean_only = sum(1 for a, b in zip(clean_results, attack_results) if a == 1 and b == 0)
-    attack_only = sum(1 for a, b in zip(clean_results, attack_results) if a == 0 and b == 1)
+    clean_only = sum(
+        1 for a, b in zip(clean_results, attack_results, strict=True) if a == 1 and b == 0
+    )
+    attack_only = sum(
+        1 for a, b in zip(clean_results, attack_results, strict=True) if a == 0 and b == 1
+    )
     mcn = mcnemar_test(clean_only, attack_only, "clean", "attacked")
 
-    print(f"  Clean accuracy:  {clean_ci.observed:.3f} [{clean_ci.ci_lower:.3f}, {clean_ci.ci_upper:.3f}]")
-    print(f"  Attack accuracy: {attack_ci.observed:.3f} [{attack_ci.ci_lower:.3f}, {attack_ci.ci_upper:.3f}]")
+    print(
+        f"  Clean accuracy:  {clean_ci.observed:.3f} [{clean_ci.ci_lower:.3f}, {clean_ci.ci_upper:.3f}]"
+    )
+    print(
+        f"  Attack accuracy: {attack_ci.observed:.3f} [{attack_ci.ci_lower:.3f}, {attack_ci.ci_upper:.3f}]"
+    )
     print(f"  ASR:             {asr.observed:.3f} [{asr.ci_lower:.3f}, {asr.ci_upper:.3f}]")
-    print(f"  Difference:      {comparison.observed:.3f} [{comparison.ci_lower:.3f}, {comparison.ci_upper:.3f}]")
+    print(
+        f"  Difference:      {comparison.observed:.3f} [{comparison.ci_lower:.3f}, {comparison.ci_upper:.3f}]"
+    )
     print(f"  Effect size:     d={effect.d:.3f} ({effect.interpretation})")
-    print(f"  McNemar:         χ²={mcn.chi_squared:.2f}, p={mcn.p_value:.6f} {'***' if mcn.significant else 'ns'}")
+    print(
+        f"  McNemar:         χ²={mcn.chi_squared:.2f}, p={mcn.p_value:.6f} {'***' if mcn.significant else 'ns'}"
+    )
 
     assert clean_ci.observed > 0.8
     assert attack_ci.observed < 0.5

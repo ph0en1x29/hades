@@ -39,7 +39,9 @@ from src.adversarial.injector import (
     generate_adversarial_variants,
 )
 from src.adversarial.payloads import TEMPLATES_BY_CLASS
+from src.ingestion.parsers.splunk_attack_data import load_splunk_attack_data_jsonl
 from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
+SKIP_MARKER = "SKIPPED:"
 
 
 # === SIEM Normalization Simulations ===
@@ -248,20 +250,33 @@ class E3Report:
     individual_results: list[dict[str, Any]] = field(default_factory=list)
 
 
-def run_e3(verbose: bool = False, max_alerts: int = 20) -> E3Report:
+def _load_sample_alerts(max_alerts: int):
+    log_path = ROOT / "data" / "datasets" / "splunk_attack_data" / "T1003.001" / "windows-sysmon.log"
+    if log_path.exists() and log_path.stat().st_size > 0:
+        return load_sysmon_log(str(log_path), mitre_technique="T1003.001", limit=max_alerts), log_path.name
+
+    fixture_path = ROOT / "data" / "benchmarks" / "public" / "splunk_attack_data_windows.jsonl"
+    if fixture_path.exists() and fixture_path.stat().st_size > 0:
+        return load_splunk_attack_data_jsonl(fixture_path)[:max_alerts], fixture_path.name
+
+    return [], log_path.name
+
+
+def run_e3(verbose: bool = False, max_alerts: int = 20) -> E3Report | None:
     """Run E3 payload survival experiment."""
     print("=" * 70)
     print("E3: PAYLOAD SURVIVAL THROUGH SIEM NORMALIZATION")
     print("=" * 70)
 
     # Load sample alerts for injection
-    log_path = ROOT / "data" / "datasets" / "splunk_attack_data" / "T1003.001" / "windows-sysmon.log"
-    if not log_path.exists():
-        print("ERROR: T1003.001 dataset not found. Run build_benchmark_pack.py first.")
-        sys.exit(1)
-
-    alerts = load_sysmon_log(str(log_path), mitre_technique="T1003.001", limit=max_alerts)
-    print(f"  Loaded {len(alerts)} sample alerts")
+    alerts, source_name = _load_sample_alerts(max_alerts)
+    if not alerts:
+        print(
+            f"{SKIP_MARKER} no benchmark alerts are available for E3 payload survival. "
+            "Provide Splunk Attack Data raw logs or the public benchmark fixture.",
+        )
+        return None
+    print(f"  Loaded {len(alerts)} sample alerts from {source_name}")
 
     # Generate adversarial variants
     all_results: list[SurvivalResult] = []
@@ -403,6 +418,8 @@ def main():
     args = parser.parse_args()
 
     report = run_e3(verbose=args.verbose, max_alerts=args.max_alerts)
+    if report is None:
+        return
 
     output_path = Path(args.output) if args.output else ROOT / "results" / f"E3_survival_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)

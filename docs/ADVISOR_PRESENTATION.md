@@ -79,7 +79,7 @@ Indirect Prompt Injection (IPI) through SIEM log fields:
 ✅ **Dataset gate:** Programmatic enforcement of benchmark provenance requirements
 ✅ **Statistical framework:** Bootstrap CI, paired bootstrap, McNemar, Fleiss' κ, Cohen's d, Bowker
 ✅ **Paper:** 1,139 lines, ~11.3K words, 24 references, 10 sections
-✅ **Validation:** 25/25 comprehensive checks, 21/21 reproducibility suite, 16 test files
+✅ **Validation:** 25-check comprehensive validator, 21-section reproducibility suite, 16 test files
 ✅ **Lab setup script:** One-command GPU deployment (`bash scripts/lab_setup.sh --model deepseek`)
 
 ---
@@ -156,4 +156,4 @@ Our 4-model comparison can test this. If confirmed, this is a novel finding with
 ---
 
 *Repository: github.com/ph0en1x29/hades (private)*
-*Validation: 25/25 comprehensive, 21/21 reproducibility | Paper: 24 references, ~11.3K words | Benchmark: 11,147 alerts, 29 techniques*
+*Validation: 25-check comprehensive validator, 21-section reproducibility suite | Paper: 24 references, ~11.3K words | Benchmark: 11,147 alerts, 29 techniques*

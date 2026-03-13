@@ -80,11 +80,7 @@ def load_alerts(input_path: str | Path) -> list[UnifiedAlert]:
         if _looks_like_splunk_attack_data_record(first_record):
             return load_splunk_attack_data_jsonl(path)
         with path.open("r", encoding="utf-8") as handle:
-            return [
-                UnifiedAlert.from_json(line)
-                for line in handle
-                if line.strip()
-            ]
+            return [UnifiedAlert.from_json(line) for line in handle if line.strip()]
 
     logger.error("Unsupported input type: %s", path.suffix or "<none>")
     sys.exit(1)
@@ -151,7 +147,9 @@ def run_pipeline(
 
     # Initialize optional agents
     correlator_config = dict(orch_config.get("correlator", {}))
-    correlator = CorrelatorAgent(correlator_config) if correlator_config.get("enabled", True) else None
+    correlator = (
+        CorrelatorAgent(correlator_config) if correlator_config.get("enabled", True) else None
+    )
 
     playbook_config = dict(orch_config.get("playbook", {}))
     playbook = PlaybookAgent(playbook_config) if playbook_config.get("enabled", True) else None

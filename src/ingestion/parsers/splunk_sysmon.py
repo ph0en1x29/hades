@@ -10,9 +10,12 @@ Source: https://github.com/splunk/attack_data
 
 from __future__ import annotations
 
+import json
 import xml.etree.ElementTree as ET
-from datetime import datetime, UTC
+from contextlib import suppress
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from src.ingestion.schema import (
     AlertBenchmarkContext,
@@ -23,8 +26,6 @@ from src.ingestion.schema import (
     DatasetRole,
     UnifiedAlert,
 )
-
-import json
 
 # Sysmon EventID → human-readable description
 SYSMON_EVENT_TYPES: dict[int, str] = {
@@ -54,18 +55,18 @@ SYSMON_EVENT_TYPES: dict[int, str] = {
 
 # Sysmon EventID → severity mapping for triage
 SYSMON_SEVERITY: dict[int, str] = {
-    1: "medium",    # Process creation — context dependent
-    3: "low",       # Network connection — very common
-    8: "high",      # Remote thread — common in injection
-    10: "high",     # Process access — credential dumping indicator
-    11: "low",      # File create — very common
-    22: "low",      # DNS query — very common
+    1: "medium",  # Process creation — context dependent
+    3: "low",  # Network connection — very common
+    8: "high",  # Remote thread — common in injection
+    10: "high",  # Process access — credential dumping indicator
+    11: "low",  # File create — very common
+    22: "low",  # DNS query — very common
 }
 
 NS = {"ev": "http://schemas.microsoft.com/win/2004/08/events/event"}
 
 
-def _parse_event_xml(event_str: str) -> dict | None:
+def _parse_event_xml(event_str: str) -> dict[str, Any] | None:
     """Parse a single <Event> XML string into a structured dict."""
     try:
         root = ET.fromstring(event_str)
@@ -107,7 +108,9 @@ def _parse_event_xml(event_str: str) -> dict | None:
     }
 
 
-def _extract_source_dest(event_data: dict[str, str], event_id: int) -> tuple[str, str, int | None, int | None]:
+def _extract_source_dest(
+    event_data: dict[str, str], event_id: int
+) -> tuple[str, str, int | None, int | None]:
     """Extract source/dest IPs and ports from Sysmon event data."""
     src_ip = event_data.get("SourceIp", "")
     dst_ip = event_data.get("DestinationIp", "")
@@ -115,15 +118,11 @@ def _extract_source_dest(event_data: dict[str, str], event_id: int) -> tuple[str
     dst_port = None
 
     if "SourcePort" in event_data:
-        try:
+        with suppress(ValueError, TypeError):
             src_port = int(event_data["SourcePort"])
-        except (ValueError, TypeError):
-            pass
     if "DestinationPort" in event_data:
-        try:
+        with suppress(ValueError, TypeError):
             dst_port = int(event_data["DestinationPort"])
-        except (ValueError, TypeError):
-            pass
 
     # For process events, use Computer as source
     if not src_ip and event_id in (1, 5, 8, 10):
@@ -158,7 +157,11 @@ def parse_sysmon_event(
 
     # Parse timestamp
     try:
-        ts = datetime.fromisoformat(parsed["timestamp"].rstrip("Z") + "+00:00") if parsed["timestamp"] else datetime.now(UTC)
+        ts = (
+            datetime.fromisoformat(parsed["timestamp"].rstrip("Z") + "+00:00")
+            if parsed["timestamp"]
+            else datetime.now(UTC)
+        )
     except (ValueError, TypeError):
         ts = datetime.now(UTC)
 
@@ -218,13 +221,15 @@ def load_sysmon_log(
     We split on '</Event>' boundaries and parse each.
     """
     path = Path(path)
+    if not path.exists() or path.stat().st_size == 0:
+        return []
     content = path.read_text(encoding="utf-8", errors="replace")
 
     # Split on event boundaries
     raw_events = content.split("</Event>")
     alerts: list[UnifiedAlert] = []
 
-    for i, raw in enumerate(raw_events):
+    for raw in raw_events:
         raw = raw.strip()
         if not raw or "<Event" not in raw:
             continue

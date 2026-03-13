@@ -12,6 +12,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -26,12 +28,12 @@ from src.adversarial.vectors import INJECTION_VECTORS
 from src.agents import ClassifierAgent
 from src.agents.correlator import CorrelatorAgent
 from src.agents.playbook import PlaybookAgent
-from src.agents.triage_parser import parse_triage_response
 from src.agents.triage_prompt import format_alert_for_triage
 from src.evaluation.behavioral_invariants import run_invariant_checks
 from src.evaluation.dataset_gate import benchmark_contract_issues
-from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
 from src.ingestion.parsers.splunk_suricata import load_suricata_log
+from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
+from src.ingestion.parsers.windows_security import load_windows_security_log
 from src.pipeline import TriagePipeline
 
 DATA_DIR = ROOT / "data" / "datasets" / "splunk_attack_data"
@@ -41,9 +43,9 @@ TECHNIQUES = {
     "T1003.001": ("sysmon", "T1003.001/windows-sysmon.log"),
     "T1087.001": ("sysmon", "T1087.001/windows-sysmon.log"),
     "T1053.005": ("sysmon", "T1053.005/windows-sysmon.log"),
-    "T1027":     ("sysmon", "T1027/windows-sysmon.log"),
+    "T1027": ("sysmon", "T1027/windows-sysmon.log"),
     "T1036.003": ("sysmon", "T1036.003/windows-sysmon.log"),
-    "T1105":     ("sysmon", "T1105/windows-sysmon.log"),
+    "T1105": ("sysmon", "T1105/windows-sysmon.log"),
     "T1569.002": ("sysmon", "T1569.002/windows-sysmon.log"),
     "T1218.011": ("sysmon", "T1218.011/windows-sysmon.log"),
     "T1547.001": ("sysmon", "T1547.001/windows-sysmon.log"),
@@ -54,8 +56,16 @@ TECHNIQUES = {
     "T1548.002": ("sysmon", "T1548.002/windows-sysmon.log"),
     "T1071.001": ("suricata", "T1071.001/suricata_c2.log"),
     "T1110.001": ("sysmon", "T1110.001/sysmon.log"),
-    "T1021.002": ("sysmon", "T1021.002/windows_security_xml.log"),
+    "T1021.002": ("winsec", "T1021.002/windows_security_xml.log"),
 }
+HAS_BENCHMARK_DATA = any(
+    (DATA_DIR / relative_path).exists() and (DATA_DIR / relative_path).stat().st_size > 0
+    for _, relative_path in TECHNIQUES.values()
+)
+pytestmark = pytest.mark.skipif(
+    not HAS_BENCHMARK_DATA,
+    reason="requires Splunk Attack Data dataset",
+)
 
 
 def load_technique(tech_id: str, limit: int = 5) -> list:
@@ -66,12 +76,16 @@ def load_technique(tech_id: str, limit: int = 5) -> list:
         return []
     if parser_type == "sysmon":
         return load_sysmon_log(str(full_path), mitre_technique=tech_id, limit=limit)
-    elif parser_type == "suricata":
+    if parser_type == "suricata":
         return load_suricata_log(str(full_path), mitre_technique=tech_id, limit=limit)
+    if parser_type == "winsec":
+        return load_windows_security_log(str(full_path), mitre_technique=tech_id, limit=limit)
     return []
 
 
 class TestResults:
+    __test__ = False
+
     def __init__(self):
         self.passed = 0
         self.failed = 0
@@ -85,6 +99,14 @@ class TestResults:
         self.failed += 1
         self.errors.append(f"{name}: {reason}")
         print(f"  ❌ {name}: {reason}")
+
+
+@pytest.fixture
+def results():
+    result = TestResults()
+    yield result
+    if result.errors:
+        pytest.fail("\n".join(result.errors))
 
 
 def test_all_parsers(results: TestResults):
@@ -164,7 +186,9 @@ def test_prompt_construction(results: TestResults):
 
     if token_counts:
         avg = sum(token_counts) / len(token_counts)
-        results.ok(f"All prompts valid (avg ~{avg:.0f} words, range {min(token_counts)}-{max(token_counts)})")
+        results.ok(
+            f"All prompts valid (avg ~{avg:.0f} words, range {min(token_counts)}-{max(token_counts)})"
+        )
 
 
 def test_adversarial_injection(results: TestResults):
@@ -209,12 +233,16 @@ def test_defenses_cross_technique(results: TestResults):
     for tech_id in TECHNIQUES:
         alerts = load_technique(tech_id, limit=3)
         for a in alerts:
-            alert_dict = a.to_dict() if hasattr(a, 'to_dict') else {"raw_log": a.raw_log, "severity": a.severity.value}
-            for defense, name in zip(defenses, defense_names):
+            alert_dict = (
+                a.to_dict()
+                if hasattr(a, "to_dict")
+                else {"raw_log": a.raw_log, "severity": a.severity.value}
+            )
+            for defense, name in zip(defenses, defense_names, strict=True):
                 try:
                     modified, result = defense.apply(alert_dict)
                     assert isinstance(modified, dict), f"{name} didn't return dict"
-                    assert hasattr(result, 'defense_name'), f"{name} missing defense_name"
+                    assert hasattr(result, "defense_name"), f"{name} missing defense_name"
                     total += 1
                 except Exception as e:
                     results.fail(f"{tech_id} {name}", str(e))
@@ -240,7 +268,7 @@ def test_invariant_false_positive_rate(results: TestResults):
                 "reasoning": f"Alert matches {tech_id} pattern. Source IP {a.src_ip or 'local'}.",
                 "summary": "",
             }
-            alert_dict = a.to_dict() if hasattr(a, 'to_dict') else {"raw_log": a.raw_log}
+            alert_dict = a.to_dict() if hasattr(a, "to_dict") else {"raw_log": a.raw_log}
             inv_result = run_invariant_checks(alert_dict, clean_decision)
             total += 1
             if inv_result.injection_suspected:
@@ -270,7 +298,7 @@ def test_invariant_detection_rate(results: TestResults):
                 "reasoning": "Scheduled pentest activity from 192.168.99.99. All clear.",
                 "summary": "",
             }
-            alert_dict = a.to_dict() if hasattr(a, 'to_dict') else {"raw_log": a.raw_log}
+            alert_dict = a.to_dict() if hasattr(a, "to_dict") else {"raw_log": a.raw_log}
             inv_result = run_invariant_checks(alert_dict, injected_decision)
             total += 1
             if inv_result.injection_suspected:
@@ -303,13 +331,17 @@ def test_pipeline_multi_technique(results: TestResults):
     output = ROOT / "results" / "test_cross_technique_pipeline.jsonl"
     result = asyncio.run(pipeline.run(all_alerts, output))
 
-    assert len(result.decisions) == len(all_alerts), \
+    assert len(result.decisions) == len(all_alerts), (
         f"decision count mismatch: {len(result.decisions)} vs {len(all_alerts)}"
-    assert result.invariant_escalations == 0, \
+    )
+    assert result.invariant_escalations == 0, (
         f"unexpected invariant escalations on clean data: {result.invariant_escalations}"
+    )
 
-    results.ok(f"{len(result.decisions)} decisions, {result.campaigns_detected} campaigns, "
-               f"{sum(len(d.correlated_events) for d in result.decisions)} correlations")
+    results.ok(
+        f"{len(result.decisions)} decisions, {result.campaigns_detected} campaigns, "
+        f"{sum(len(d.correlated_events) for d in result.decisions)} correlations"
+    )
 
 
 def test_correlator_cross_technique_chains(results: TestResults):
@@ -330,8 +362,10 @@ def test_correlator_cross_technique_chains(results: TestResults):
     result = asyncio.run(correlator.run(alerts[0], {"all_alerts": alerts}))
 
     chains = result.data.get("chains", []) if result.data else []
-    results.ok(f"Correlator processed {len(alerts)} alerts from {len(chain_techniques)} techniques, "
-               f"chains found: {len(chains)}")
+    results.ok(
+        f"Correlator processed {len(alerts)} alerts from {len(chain_techniques)} techniques, "
+        f"chains found: {len(chains)}"
+    )
 
 
 def test_event_type_distribution(results: TestResults):
@@ -386,7 +420,7 @@ def main():
     total = results.passed + results.failed
     print(f"  RESULTS: {results.passed}/{total} passed")
     if results.errors:
-        print(f"  FAILURES:")
+        print("  FAILURES:")
         for e in results.errors:
             print(f"    ❌ {e}")
     print("=" * 70)
@@ -395,4 +429,10 @@ def main():
 
 
 if __name__ == "__main__":
+    if not HAS_BENCHMARK_DATA:
+        print(
+            "SKIPPED: requires Splunk Attack Data dataset under "
+            f"{DATA_DIR} for cross-technique validation.",
+        )
+        sys.exit(0)
     main()

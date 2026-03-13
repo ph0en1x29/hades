@@ -1,9 +1,9 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.ingestion.parsers import load_beth_csv
-
 
 FIXTURES = Path(__file__).resolve().parents[1] / "data" / "fixtures"
 

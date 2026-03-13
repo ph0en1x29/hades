@@ -7,8 +7,10 @@ and includes explicit data/instruction boundary markers for defense evaluation.
 
 from __future__ import annotations
 
-import json
-from src.ingestion.schema import UnifiedAlert
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from src.ingestion.schema import UnifiedAlert
 
 # The system instruction defines the triage task
 SYSTEM_INSTRUCTION = """You are a Security Operations Center (SOC) Tier 1 triage analyst AI assistant.
@@ -109,7 +111,11 @@ def format_alert_for_triage(
 
     template = STRUCTURED_TEMPLATE if use_structured else PLAIN_TEMPLATE
 
-    mitre_str = ", ".join(alert.benchmark.mitre_techniques) if alert.benchmark.mitre_techniques else "Unknown"
+    mitre_str = (
+        ", ".join(alert.benchmark.mitre_techniques)
+        if alert.benchmark.mitre_techniques
+        else "Unknown"
+    )
 
     user_message = template.format(
         alert_id=alert.alert_id,
@@ -132,7 +138,7 @@ def format_alert_for_triage(
 
 def format_batch_for_triage(
     alerts: list[UnifiedAlert],
-    **kwargs,
+    **kwargs: Any,
 ) -> list[tuple[str, str]]:
     """Format multiple alerts for batch triage.
 

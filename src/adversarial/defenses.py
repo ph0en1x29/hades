@@ -13,6 +13,7 @@ from typing import Any
 @dataclass
 class DefenseResult:
     """Result of applying a defense mechanism to an alert."""
+
     defense_name: str
     alert_modified: bool
     fields_sanitized: list[str] = field(default_factory=list)
@@ -23,6 +24,7 @@ class DefenseResult:
 
 class Defense(ABC):
     """Base class for defense mechanisms."""
+
     name: str
 
     @abstractmethod
@@ -52,10 +54,20 @@ class SanitizationDefense(Defense):
 
     # Fields that originate from network traffic (attacker-controllable)
     UNTRUSTED_FIELDS = [
-        "http.user_agent", "http.referer", "http.x_forwarded_for",
-        "dns.query", "source.hostname", "snmp.community",
-        "email.subject", "email.from", "tls.server.cn", "tls.server.san",
-        "ssh.banner", "ldap.bind_dn", "url.full", "url.path",
+        "http.user_agent",
+        "http.referer",
+        "http.x_forwarded_for",
+        "dns.query",
+        "source.hostname",
+        "snmp.community",
+        "email.subject",
+        "email.from",
+        "tls.server.cn",
+        "tls.server.san",
+        "ssh.banner",
+        "ldap.bind_dn",
+        "url.full",
+        "url.path",
     ]
 
     def __init__(self, level: str = "moderate") -> None:

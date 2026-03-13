@@ -113,9 +113,8 @@ class ClassifierAgent(BaseAgent):
 
             if context and "correlated_events" in context:
                 correlated = context["correlated_events"][:5]
-                user_prompt += (
-                    f"\n\nCorrelated events ({len(correlated)}):\n"
-                    + "\n".join(str(event) for event in correlated)
+                user_prompt += f"\n\nCorrelated events ({len(correlated)}):\n" + "\n".join(
+                    str(event) for event in correlated
                 )
 
             rag_items = []
@@ -138,9 +137,8 @@ class ClassifierAgent(BaseAgent):
                             break
 
             if rag_items:
-                user_prompt += (
-                    "\n\nRetrieved threat intelligence:\n"
-                    + "\n".join(str(item.get("content", ""))[:300] for item in rag_items)
+                user_prompt += "\n\nRetrieved threat intelligence:\n" + "\n".join(
+                    str(item.get("content", ""))[:300] for item in rag_items
                 )
 
             model_name = str(
@@ -180,7 +178,8 @@ class ClassifierAgent(BaseAgent):
                     "evidence": parsed.evidence,
                     "llm_severity": parsed.severity,
                     "llm_classification": parsed.classification,
-                    "prompt_tokens": completion.prompt_tokens or estimate_prompt_tokens(system_prompt, user_prompt),
+                    "prompt_tokens": completion.prompt_tokens
+                    or estimate_prompt_tokens(system_prompt, user_prompt),
                     "completion_tokens": completion.completion_tokens,
                     "total_tokens": completion.total_tokens,
                     "finish_reason": completion.finish_reason,

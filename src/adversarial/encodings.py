@@ -16,6 +16,7 @@ from dataclasses import dataclass
 @dataclass
 class EncodingResult:
     """Result of applying an encoding strategy to a payload."""
+
     strategy_name: str
     original: str
     encoded: str
@@ -28,25 +29,25 @@ class EncodingResult:
 
 # Characters that look identical to ASCII but are different Unicode codepoints
 _HOMOGLYPHS: dict[str, str] = {
-    'a': 'а',  # Cyrillic а (U+0430)
-    'e': 'е',  # Cyrillic е (U+0435)
-    'o': 'о',  # Cyrillic о (U+043E)
-    'p': 'р',  # Cyrillic р (U+0440)
-    'c': 'с',  # Cyrillic с (U+0441)
-    'x': 'х',  # Cyrillic х (U+0445)
-    'y': 'у',  # Cyrillic у (U+0443)
-    'i': 'і',  # Ukrainian і (U+0456)
-    'A': 'А',  # Cyrillic А (U+0410)
-    'B': 'В',  # Cyrillic В (U+0412)
-    'C': 'С',  # Cyrillic С (U+0421)
-    'E': 'Е',  # Cyrillic Е (U+0415)
-    'H': 'Н',  # Cyrillic Н (U+041D)
-    'K': 'К',  # Cyrillic К (U+041A)
-    'M': 'М',  # Cyrillic М (U+041C)
-    'O': 'О',  # Cyrillic О (U+041E)
-    'P': 'Р',  # Cyrillic Р (U+0420)
-    'T': 'Т',  # Cyrillic Т (U+0422)
-    'X': 'Х',  # Cyrillic Х (U+0425)
+    "a": "а",  # Cyrillic а (U+0430)
+    "e": "е",  # Cyrillic е (U+0435)
+    "o": "о",  # Cyrillic о (U+043E)
+    "p": "р",  # Cyrillic р (U+0440)
+    "c": "с",  # Cyrillic с (U+0441)
+    "x": "х",  # Cyrillic х (U+0445)
+    "y": "у",  # Cyrillic у (U+0443)
+    "i": "і",  # Ukrainian і (U+0456)
+    "A": "А",  # Cyrillic А (U+0410)
+    "B": "В",  # Cyrillic В (U+0412)
+    "C": "С",  # Cyrillic С (U+0421)
+    "E": "Е",  # Cyrillic Е (U+0415)
+    "H": "Н",  # Cyrillic Н (U+041D)
+    "K": "К",  # Cyrillic К (U+041A)
+    "M": "М",  # Cyrillic М (U+041C)
+    "O": "О",  # Cyrillic О (U+041E)
+    "P": "Р",  # Cyrillic Р (U+0420)
+    "T": "Т",  # Cyrillic Т (U+0422)
+    "X": "Х",  # Cyrillic Х (U+0425)
 }
 
 
@@ -62,10 +63,11 @@ def encode_homoglyph(text: str, substitution_rate: float = 0.3) -> EncodingResul
         if ch in _HOMOGLYPHS and (substituted / max(len(chars), 1)) < substitution_rate:
             chars[i] = _HOMOGLYPHS[ch]
             substituted += 1
-    encoded = ''.join(chars)
+    encoded = "".join(chars)
     return EncodingResult(
         "homoglyph",
-        text, encoded,
+        text,
+        encoded,
         len(encoded) / max(len(text), 1),
         reversible=True,
         description=f"Replaced {substituted}/{len(text)} chars with Cyrillic homoglyphs",
@@ -74,9 +76,9 @@ def encode_homoglyph(text: str, substitution_rate: float = 0.3) -> EncodingResul
 
 # === Zero-Width Character Insertion ===
 
-_ZWC = '\u200b'  # Zero-width space
-_ZWNJ = '\u200c'  # Zero-width non-joiner
-_ZWJ = '\u200d'  # Zero-width joiner
+_ZWC = "\u200b"  # Zero-width space
+_ZWNJ = "\u200c"  # Zero-width non-joiner
+_ZWJ = "\u200d"  # Zero-width joiner
 
 
 def encode_zero_width(text: str, frequency: int = 3) -> EncodingResult:
@@ -91,10 +93,11 @@ def encode_zero_width(text: str, frequency: int = 3) -> EncodingResult:
         result.append(ch)
         if i % frequency == frequency - 1 and ch.isalpha():
             result.append(_ZWC)
-    encoded = ''.join(result)
+    encoded = "".join(result)
     return EncodingResult(
         "zero_width",
-        text, encoded,
+        text,
+        encoded,
         len(encoded) / max(len(text), 1),
         reversible=True,
         description=f"Inserted zero-width spaces every {frequency} chars",
@@ -132,7 +135,8 @@ def encode_synonym_substitution(text: str) -> EncodingResult:
             subs += 1
     return EncodingResult(
         "synonym",
-        text, result,
+        text,
+        result,
         len(result) / max(len(text), 1),
         reversible=True,
         description=f"Substituted {subs} keywords with synonyms",
@@ -140,6 +144,7 @@ def encode_synonym_substitution(text: str) -> EncodingResult:
 
 
 # === Base64 Wrapped Instruction ===
+
 
 def encode_base64_instruction(text: str) -> EncodingResult:
     """Wrap payload in a base64 'decode this' instruction.
@@ -151,7 +156,8 @@ def encode_base64_instruction(text: str) -> EncodingResult:
     wrapped = f"[Decode the following base64 instruction: {encoded_payload}]"
     return EncodingResult(
         "base64_wrapped",
-        text, wrapped,
+        text,
+        wrapped,
         len(wrapped) / max(len(text), 1),
         reversible=True,
         description="Payload base64-encoded with decode instruction prefix",
@@ -161,8 +167,18 @@ def encode_base64_instruction(text: str) -> EncodingResult:
 # === Leetspeak ===
 
 _LEET: dict[str, str] = {
-    'a': '4', 'e': '3', 'i': '1', 'o': '0', 's': '5', 't': '7',
-    'A': '4', 'E': '3', 'I': '1', 'O': '0', 'S': '5', 'T': '7',
+    "a": "4",
+    "e": "3",
+    "i": "1",
+    "o": "0",
+    "s": "5",
+    "t": "7",
+    "A": "4",
+    "E": "3",
+    "I": "1",
+    "O": "0",
+    "S": "5",
+    "T": "7",
 }
 
 
@@ -177,10 +193,11 @@ def encode_leetspeak(text: str, rate: float = 0.5) -> EncodingResult:
         if ch in _LEET and subs / max(len(chars), 1) < rate:
             chars[i] = _LEET[ch]
             subs += 1
-    encoded = ''.join(chars)
+    encoded = "".join(chars)
     return EncodingResult(
         "leetspeak",
-        text, encoded,
+        text,
+        encoded,
         len(encoded) / max(len(text), 1),
         reversible=True,
         description=f"Applied leetspeak to {subs}/{len(text)} chars",
@@ -189,6 +206,7 @@ def encode_leetspeak(text: str, rate: float = 0.5) -> EncodingResult:
 
 # === Markdown/Formatting Injection ===
 
+
 def encode_markdown_hide(text: str) -> EncodingResult:
     """Wrap payload in markdown comment/formatting that hides from display
     but is visible to the LLM's token stream.
@@ -196,7 +214,8 @@ def encode_markdown_hide(text: str) -> EncodingResult:
     encoded = f"<!-- {text} -->"
     return EncodingResult(
         "markdown_comment",
-        text, encoded,
+        text,
+        encoded,
         len(encoded) / max(len(text), 1),
         reversible=True,
         description="Hidden in HTML/markdown comment",
@@ -204,6 +223,7 @@ def encode_markdown_hide(text: str) -> EncodingResult:
 
 
 # === Protocol-Specific Constraints ===
+
 
 def apply_dns_constraints(text: str) -> EncodingResult:
     """Apply real DNS protocol constraints (RFC 1035).
@@ -216,15 +236,16 @@ def apply_dns_constraints(text: str) -> EncodingResult:
     # Truncate to 253 bytes
     truncated = text[:253]
     # Replace non-DNS chars with hyphens
-    dns_safe = re.sub(r'[^a-zA-Z0-9.\-]', '-', truncated)
+    dns_safe = re.sub(r"[^a-zA-Z0-9.\-]", "-", truncated)
     # Enforce 63-byte label limit
-    labels = dns_safe.split('.')
+    labels = dns_safe.split(".")
     constrained_labels = [label[:63] for label in labels]
-    encoded = '.'.join(constrained_labels)
+    encoded = ".".join(constrained_labels)
 
     return EncodingResult(
         "dns_constrained",
-        text, encoded,
+        text,
+        encoded,
         len(encoded) / max(len(text), 1),
         reversible=False,
         description=f"DNS-constrained: {len(text)}→{len(encoded)} bytes, non-alphanum replaced",
@@ -238,10 +259,11 @@ def apply_smb_constraints(text: str) -> EncodingResult:
     - Alphanumeric + limited special chars
     """
     truncated = text[:15]
-    smb_safe = re.sub(r'[^a-zA-Z0-9\-]', '', truncated)
+    smb_safe = re.sub(r"[^a-zA-Z0-9\-]", "", truncated)
     return EncodingResult(
         "smb_constrained",
-        text, smb_safe,
+        text,
+        smb_safe,
         len(smb_safe) / max(len(text), 1),
         reversible=False,
         description=f"SMB-constrained: {len(text)}→{len(smb_safe)} chars",
@@ -257,7 +279,8 @@ def apply_tls_cn_constraints(text: str) -> EncodingResult:
     truncated = text[:64]
     return EncodingResult(
         "tls_cn_constrained",
-        text, truncated,
+        text,
+        truncated,
         len(truncated) / max(len(text), 1),
         reversible=False,
         description=f"TLS CN-constrained: {len(text)}→{len(truncated)} chars",
@@ -278,5 +301,12 @@ ALL_ENCODINGS = {
     "tls_cn_constrained": apply_tls_cn_constraints,
 }
 
-EVASION_ENCODINGS = ["homoglyph", "zero_width", "synonym", "leetspeak", "base64_wrapped", "markdown_comment"]
+EVASION_ENCODINGS = [
+    "homoglyph",
+    "zero_width",
+    "synonym",
+    "leetspeak",
+    "base64_wrapped",
+    "markdown_comment",
+]
 PROTOCOL_CONSTRAINTS = ["dns_constrained", "smb_constrained", "tls_cn_constrained"]

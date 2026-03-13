@@ -6,6 +6,7 @@ from dataclasses import dataclass
 @dataclass
 class InjectionVector:
     """A SIEM log field that originates from attacker-controlled network data."""
+
     name: str
     log_field: str
     network_source: str
@@ -105,7 +106,7 @@ INJECTION_VECTORS = [
         realism="high",
         max_payload_length=240,
         notes="Validated by [Neaves2025]: 120+ chars in username + 120+ in domain. "
-              "MSRC declined to service. Combined username+domain = ~240 char payload.",
+        "MSRC declined to service. Combined username+domain = ~240 char payload.",
     ),
     InjectionVector(
         name="SSH Username",

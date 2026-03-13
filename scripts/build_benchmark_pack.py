@@ -25,6 +25,7 @@ from src.evaluation.dataset_gate import benchmark_contract_issues
 
 DATA_DIR = Path(__file__).parent.parent / "data" / "datasets" / "splunk_attack_data"
 OUTPUT_DIR = Path(__file__).parent.parent / "data" / "benchmark"
+SKIP_MARKER = "SKIPPED:"
 
 # Benchmark configuration: technique → {parser, file, rule_name, tactic, max_events}
 BENCHMARK_TECHNIQUES = {
@@ -55,7 +56,7 @@ BENCHMARK_TECHNIQUES = {
     "T1021.002": {
         "tactic": "TA0008 Lateral Movement",
         "name": "SMB Admin Shares (impacket smbexec)",
-        "parser": "sysmon",
+        "parser": "winsec",
         "file": "T1021.002/windows_security_xml.log",
         "rule_name": "Impacket Lateral Movement smbexec",
         "max_events": 500,
@@ -272,6 +273,7 @@ def main() -> None:
     technique_stats: dict[str, int] = {}
     tactic_stats: Counter[str] = Counter()
     contract_failures = 0
+    available_sources = 0
 
     print("=" * 70)
     print("HADES BENCHMARK PACK BUILDER")
@@ -287,6 +289,7 @@ def main() -> None:
             print(f"  ⏭  {technique_id} — empty file: {filepath}")
             continue
 
+        available_sources += 1
         parser = config["parser"]
         max_events = config["max_events"]
 
@@ -327,16 +330,29 @@ def main() -> None:
             else:
                 valid_alerts.append(alert)
 
-        technique_stats[technique_id] = len(valid_alerts)
-        tactic_stats[config["tactic"]] += len(valid_alerts)
-        all_alerts.extend(valid_alerts)
-
         status = "✅" if valid_alerts else "❌"
         print(f"  {status} {technique_id:12} {config['name']:40} {len(valid_alerts):>5} alerts  ({config['tactic']})")
+        if valid_alerts:
+            technique_stats[technique_id] = len(valid_alerts)
+            tactic_stats[config["tactic"]] += len(valid_alerts)
+            all_alerts.extend(valid_alerts)
+
+    if available_sources == 0:
+        print()
+        print(
+            f"{SKIP_MARKER} Splunk Attack Data source logs are not available under "
+            f"{DATA_DIR}. Existing benchmark artifacts were left unchanged.",
+        )
+        raise SystemExit(0)
+
+    if not all_alerts:
+        print()
+        print("ERROR: benchmark sources were present but no valid alerts were produced.")
+        raise SystemExit(1)
 
     # Write benchmark pack
     output_file = OUTPUT_DIR / "hades_benchmark_v1.jsonl"
-    with output_file.open("w") as f:
+    with output_file.open("w", encoding="utf-8") as f:
         for alert in all_alerts:
             f.write(alert.to_json() + "\n")
 
@@ -354,7 +370,7 @@ def main() -> None:
                  "All alerts pass dataset gate benchmark contract checks.",
     }
     manifest_file = OUTPUT_DIR / "hades_benchmark_v1_manifest.json"
-    with manifest_file.open("w") as f:
+    with manifest_file.open("w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
     # Summary

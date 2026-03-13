@@ -37,8 +37,8 @@ from src.evaluation.socbench_adapter import (
     FoxStageOutput,
 )
 
-
 # === Ring Scoring ===
+
 
 class Ring:
     BULLSEYE = 3
@@ -50,6 +50,7 @@ class Ring:
 @dataclass
 class ScoredItem:
     """A single scored comparison between prediction and ground truth."""
+
     dimension: str  # what was scored (e.g., "campaign_detected", "technique_T1003")
     ring: int  # 0-3
     ring_label: str  # "bullseye", "inner", "outer", "miss"
@@ -61,6 +62,7 @@ class ScoredItem:
 @dataclass
 class PenaltyItem:
     """A penalty applied during scoring."""
+
     penalty_type: str  # "wrong_assertion", "no_evidence", "contradiction", "stage_leakage", "spam"
     points: float  # negative
     description: str
@@ -69,6 +71,7 @@ class PenaltyItem:
 @dataclass
 class OutcomeScore:
     """Score for a single Fox outcome (O1, O2, or O3)."""
+
     outcome: str  # "O1", "O2", "O3"
     max_points: float
     raw_points: float
@@ -81,6 +84,7 @@ class OutcomeScore:
 @dataclass
 class FoxStageScore:
     """Complete score for a Fox stage."""
+
     stage_id: str
     o1_score: OutcomeScore
     o2_score: OutcomeScore
@@ -96,9 +100,11 @@ class FoxStageScore:
 
 # === Ground Truth Schema ===
 
+
 @dataclass
 class FoxGroundTruth:
     """Ground truth for scoring a Fox stage."""
+
     stage_id: str
     # O1 ground truth
     campaign_present: bool
@@ -115,6 +121,7 @@ class FoxGroundTruth:
 
 
 # === Scoring Functions ===
+
 
 def _ring_label(ring: int) -> str:
     return {3: "bullseye", 2: "inner", 1: "outer", 0: "miss"}[ring]
@@ -145,8 +152,16 @@ def score_o1_campaign(
     else:
         ring = Ring.MISS
     pts = _score_ring(ring, 13.0)
-    items.append(ScoredItem("campaign_detected", ring, _ring_label(ring), 13.0, pts,
-                            f"predicted={prediction.campaign_detected}, truth={ground_truth.campaign_present}"))
+    items.append(
+        ScoredItem(
+            "campaign_detected",
+            ring,
+            _ring_label(ring),
+            13.0,
+            pts,
+            f"predicted={prediction.campaign_detected}, truth={ground_truth.campaign_present}",
+        )
+    )
 
     # 2. Campaign scope (13 pts)
     if prediction.campaign_scope == ground_truth.campaign_scope:
@@ -156,8 +171,16 @@ def score_o1_campaign(
     else:
         ring = Ring.MISS
     pts = _score_ring(ring, 13.0)
-    items.append(ScoredItem("campaign_scope", ring, _ring_label(ring), 13.0, pts,
-                            f"predicted={prediction.campaign_scope}, truth={ground_truth.campaign_scope}"))
+    items.append(
+        ScoredItem(
+            "campaign_scope",
+            ring,
+            _ring_label(ring),
+            13.0,
+            pts,
+            f"predicted={prediction.campaign_scope}, truth={ground_truth.campaign_scope}",
+        )
+    )
 
     # 3. Affected hosts coverage (13 pts)
     if ground_truth.affected_hosts:
@@ -181,12 +204,19 @@ def score_o1_campaign(
         penalties.append(PenaltyItem("no_evidence", -1.0, "O1: no evidence_ids provided"))
 
     if prediction.campaign_confidence > 0.9 and not ground_truth.campaign_present:
-        penalties.append(PenaltyItem("wrong_assertion", -1.0,
-                                     f"High confidence ({prediction.campaign_confidence:.2f}) on false campaign"))
+        penalties.append(
+            PenaltyItem(
+                "wrong_assertion",
+                -1.0,
+                f"High confidence ({prediction.campaign_confidence:.2f}) on false campaign",
+            )
+        )
 
     raw = sum(i.earned_points for i in items)
     pen = sum(p.points for p in penalties)
-    return OutcomeScore("O1", 39.0, round(raw, 2), round(pen, 2), round(max(raw + pen, 0), 2), items, penalties)
+    return OutcomeScore(
+        "O1", 39.0, round(raw, 2), round(pen, 2), round(max(raw + pen, 0), 2), items, penalties
+    )
 
 
 def score_o2_activity(
@@ -211,8 +241,16 @@ def score_o2_activity(
     else:
         ring = Ring.MISS
     pts = _score_ring(ring, 13.0)
-    items.append(ScoredItem("activity_type", ring, _ring_label(ring), 13.0, pts,
-                            f"predicted={prediction.activity_type}, truth={ground_truth.primary_activity}"))
+    items.append(
+        ScoredItem(
+            "activity_type",
+            ring,
+            _ring_label(ring),
+            13.0,
+            pts,
+            f"predicted={prediction.activity_type}, truth={ground_truth.primary_activity}",
+        )
+    )
 
     # 2. MITRE technique accuracy (13 pts) — ring based on overlap
     if ground_truth.mitre_techniques:
@@ -221,8 +259,8 @@ def score_o2_activity(
         # Check exact technique match
         exact_overlap = pred_set & truth_set
         # Check tactic-level match (T1003 matches T1003.001)
-        pred_parents = {t.split('.')[0] for t in pred_set}
-        truth_parents = {t.split('.')[0] for t in truth_set}
+        pred_parents = {t.split(".")[0] for t in pred_set}
+        truth_parents = {t.split(".")[0] for t in truth_set}
         parent_overlap = pred_parents & truth_parents
 
         if exact_overlap == truth_set and len(pred_set - truth_set) <= 1:
@@ -255,12 +293,19 @@ def score_o2_activity(
     # Check for technique spam
     if len(prediction.mitre_techniques) > len(ground_truth.mitre_techniques) * 3 + 5:
         excess = len(prediction.mitre_techniques) - (len(ground_truth.mitre_techniques) * 3 + 5)
-        penalties.append(PenaltyItem("spam", -0.5 * excess,
-                                     f"Over-submission: {len(prediction.mitre_techniques)} techniques"))
+        penalties.append(
+            PenaltyItem(
+                "spam",
+                -0.5 * excess,
+                f"Over-submission: {len(prediction.mitre_techniques)} techniques",
+            )
+        )
 
     raw = sum(i.earned_points for i in items)
     pen = sum(p.points for p in penalties)
-    return OutcomeScore("O2", 39.0, round(raw, 2), round(pen, 2), round(max(raw + pen, 0), 2), items, penalties)
+    return OutcomeScore(
+        "O2", 39.0, round(raw, 2), round(pen, 2), round(max(raw + pen, 0), 2), items, penalties
+    )
 
 
 def score_o3_triage(
@@ -300,8 +345,14 @@ def score_o3_triage(
 
     # 2. Priority assessment (7 pts)
     priority_order = ["informational", "low", "medium", "high", "critical"]
-    pred_idx = priority_order.index(prediction.priority) if prediction.priority in priority_order else 2
-    truth_idx = priority_order.index(ground_truth.expected_priority) if ground_truth.expected_priority in priority_order else 2
+    pred_idx = (
+        priority_order.index(prediction.priority) if prediction.priority in priority_order else 2
+    )
+    truth_idx = (
+        priority_order.index(ground_truth.expected_priority)
+        if ground_truth.expected_priority in priority_order
+        else 2
+    )
 
     diff = abs(pred_idx - truth_idx)
     if diff == 0:
@@ -313,17 +364,40 @@ def score_o3_triage(
     else:
         ring = Ring.MISS
     pts = _score_ring(ring, 7.0)
-    items.append(ScoredItem("priority", ring, _ring_label(ring), 7.0, pts,
-                            f"predicted={prediction.priority}, truth={ground_truth.expected_priority}"))
+    items.append(
+        ScoredItem(
+            "priority",
+            ring,
+            _ring_label(ring),
+            7.0,
+            pts,
+            f"predicted={prediction.priority}, truth={ground_truth.expected_priority}",
+        )
+    )
 
     # 3. Actionability (7 pts) — scored on recommendation quality
     if prediction.recommended_actions:
         # At least 1 specific, actionable recommendation = inner
         # Generic "continue monitoring" only = outer
-        specific = [a for a in prediction.recommended_actions
-                    if any(kw in a.lower() for kw in ["block", "isolate", "rotate", "restrict",
-                                                       "disable", "enable", "review", "audit",
-                                                       "escalate", "investigate"])]
+        specific = [
+            a
+            for a in prediction.recommended_actions
+            if any(
+                kw in a.lower()
+                for kw in [
+                    "block",
+                    "isolate",
+                    "rotate",
+                    "restrict",
+                    "disable",
+                    "enable",
+                    "review",
+                    "audit",
+                    "escalate",
+                    "investigate",
+                ]
+            )
+        ]
         if len(specific) >= 2:
             ring = Ring.BULLSEYE
         elif len(specific) >= 1:
@@ -343,7 +417,9 @@ def score_o3_triage(
 
     raw = sum(i.earned_points for i in items)
     pen = sum(p.points for p in penalties)
-    return OutcomeScore("O3", 22.0, round(raw, 2), round(pen, 2), round(max(raw + pen, 0), 2), items, penalties)
+    return OutcomeScore(
+        "O3", 22.0, round(raw, 2), round(pen, 2), round(max(raw + pen, 0), 2), items, penalties
+    )
 
 
 def score_fox_stage(
@@ -410,8 +486,15 @@ def _activity_related(a: str, b: str) -> bool:
     return (a, b) in _RELATED_ACTIVITIES
 
 
-_PHASE_ORDER = ["reconnaissance", "weaponization", "delivery", "exploitation",
-                 "installation", "c2", "actions"]
+_PHASE_ORDER = [
+    "reconnaissance",
+    "weaponization",
+    "delivery",
+    "exploitation",
+    "installation",
+    "c2",
+    "actions",
+]
 
 
 def _phase_adjacent(a: str, b: str) -> bool:
@@ -422,6 +505,7 @@ def _phase_adjacent(a: str, b: str) -> bool:
 
 
 # === Convenience: Score from JSON ===
+
 
 def score_fox_from_json(
     prediction_json: dict[str, Any],
@@ -464,7 +548,9 @@ def print_fox_score(score: FoxStageScore) -> str:
         lines.append(f"  {outcome.outcome} Details:")
         for item in outcome.items:
             icon = {"bullseye": "🎯", "inner": "🟡", "outer": "🟠", "miss": "❌"}[item.ring_label]
-            lines.append(f"    {icon} {item.dimension}: {item.earned_points:.1f}/{item.max_points:.1f} ({item.ring_label})")
+            lines.append(
+                f"    {icon} {item.dimension}: {item.earned_points:.1f}/{item.max_points:.1f} ({item.ring_label})"
+            )
             if item.reasoning:
                 lines.append(f"       {item.reasoning}")
         for pen in outcome.penalty_items:

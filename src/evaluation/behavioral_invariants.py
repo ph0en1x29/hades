@@ -15,6 +15,7 @@ either a bug or an adversarial manipulation.
 from __future__ import annotations
 
 import re
+from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -22,6 +23,7 @@ from typing import Any
 @dataclass
 class InvariantViolation:
     """A single invariant violation detected in a triage decision."""
+
     invariant_id: str
     severity: str  # "critical", "high", "medium", "low"
     description: str
@@ -32,6 +34,7 @@ class InvariantViolation:
 @dataclass
 class InvariantCheckResult:
     """Result of running all invariant checks on a triage decision."""
+
     alert_id: str
     violations: list[InvariantViolation] = field(default_factory=list)
     checks_run: int = 0
@@ -50,8 +53,8 @@ class InvariantCheckResult:
 
 
 def check_severity_evidence_consistency(
-    alert: dict,
-    decision: dict,
+    alert: dict[str, Any],
+    decision: dict[str, Any],
 ) -> list[InvariantViolation]:
     """
     INV-1: Severity downgrade requires evidence.
@@ -74,53 +77,72 @@ def check_severity_evidence_consistency(
     if orig_rank > dec_rank and dec_rank >= 0:
         # Severity was downgraded — check reasoning quality
         evidence_indicators = [
-            "baseline", "whitelist", "allowlist", "scheduled",
-            "known", "approved", "maintenance", "ticket",
-            "change request", "cr-", "inc-", "jira",
+            "baseline",
+            "whitelist",
+            "allowlist",
+            "scheduled",
+            "known",
+            "approved",
+            "maintenance",
+            "ticket",
+            "change request",
+            "cr-",
+            "inc-",
+            "jira",
         ]
         has_evidence = any(ind in reasoning for ind in evidence_indicators)
 
         injection_markers = [
-            "ignore", "previous", "instructions", "false positive",
-            "benign", "not malicious", "authorized", "safe",
+            "ignore",
+            "previous",
+            "instructions",
+            "false positive",
+            "benign",
+            "not malicious",
+            "authorized",
+            "safe",
         ]
         has_injection_pattern = sum(1 for m in injection_markers if m in reasoning) >= 2
 
         if not has_evidence and has_injection_pattern:
-            violations.append(InvariantViolation(
-                invariant_id="INV-1",
-                severity="critical",
-                description=(
-                    f"Severity downgraded {original_severity}→{decided_severity} "
-                    f"with injection-pattern reasoning and no evidence references"
-                ),
-                evidence={
-                    "original_severity": original_severity,
-                    "decided_severity": decided_severity,
-                    "injection_markers_found": [m for m in injection_markers if m in reasoning],
-                },
-            ))
+            violations.append(
+                InvariantViolation(
+                    invariant_id="INV-1",
+                    severity="critical",
+                    description=(
+                        f"Severity downgraded {original_severity}→{decided_severity} "
+                        f"with injection-pattern reasoning and no evidence references"
+                    ),
+                    evidence={
+                        "original_severity": original_severity,
+                        "decided_severity": decided_severity,
+                        "injection_markers_found": [m for m in injection_markers if m in reasoning],
+                    },
+                )
+            )
         elif not has_evidence:
-            violations.append(InvariantViolation(
-                invariant_id="INV-1",
-                severity="high",
-                description=(
-                    f"Severity downgraded {original_severity}→{decided_severity} "
-                    f"without evidence references in reasoning"
-                ),
-                evidence={
-                    "original_severity": original_severity,
-                    "decided_severity": decided_severity,
-                },
-                confidence=0.7,
-            ))
+            violations.append(
+                InvariantViolation(
+                    invariant_id="INV-1",
+                    severity="high",
+                    description=(
+                        f"Severity downgraded {original_severity}→{decided_severity} "
+                        f"without evidence references in reasoning"
+                    ),
+                    evidence={
+                        "original_severity": original_severity,
+                        "decided_severity": decided_severity,
+                    },
+                    confidence=0.7,
+                )
+            )
 
     return violations
 
 
 def check_ip_consistency(
-    alert: dict,
-    decision: dict,
+    alert: dict[str, Any],
+    decision: dict[str, Any],
 ) -> list[InvariantViolation]:
     """
     INV-2: IP addresses in triage output must match source alert.
@@ -156,24 +178,26 @@ def check_ip_consistency(
     phantom_ips = {ip for ip in phantom_ips if not ip.startswith("0.") and ip != "0.0.0.0"}
 
     if phantom_ips:
-        violations.append(InvariantViolation(
-            invariant_id="INV-2",
-            severity="critical",
-            description=(
-                f"Decision references {len(phantom_ips)} IP(s) not present in "
-                f"source alert — possible injection-induced IP substitution"
-            ),
-            evidence={
-                "phantom_ips": sorted(phantom_ips),
-                "alert_ips": sorted(alert_ips),
-            },
-        ))
+        violations.append(
+            InvariantViolation(
+                invariant_id="INV-2",
+                severity="critical",
+                description=(
+                    f"Decision references {len(phantom_ips)} IP(s) not present in "
+                    f"source alert — possible injection-induced IP substitution"
+                ),
+                evidence={
+                    "phantom_ips": sorted(phantom_ips),
+                    "alert_ips": sorted(alert_ips),
+                },
+            )
+        )
 
     return violations
 
 
 def check_confidence_bound(
-    decision: dict,
+    decision: dict[str, Any],
 ) -> list[InvariantViolation]:
     """
     INV-3: Confidence scores must be within realistic bounds.
@@ -189,25 +213,27 @@ def check_confidence_bound(
     classification = (decision.get("classification") or "").upper()
 
     if confidence > 0.98 and classification in ("BENIGN", "FALSE_POSITIVE", "INFO"):
-        violations.append(InvariantViolation(
-            invariant_id="INV-3",
-            severity="high",
-            description=(
-                f"Suspiciously high confidence ({confidence:.3f}) for "
-                f"benign classification — possible confidence manipulation"
-            ),
-            evidence={
-                "confidence": confidence,
-                "classification": classification,
-            },
-        ))
+        violations.append(
+            InvariantViolation(
+                invariant_id="INV-3",
+                severity="high",
+                description=(
+                    f"Suspiciously high confidence ({confidence:.3f}) for "
+                    f"benign classification — possible confidence manipulation"
+                ),
+                evidence={
+                    "confidence": confidence,
+                    "classification": classification,
+                },
+            )
+        )
 
     return violations
 
 
 def check_reasoning_coherence(
-    alert: dict,
-    decision: dict,
+    alert: dict[str, Any],
+    decision: dict[str, Any],
 ) -> list[InvariantViolation]:
     """
     INV-4: Reasoning must reference elements from the actual alert.
@@ -236,26 +262,28 @@ def check_reasoning_coherence(
         for match in matches:
             # Check if this reference exists in the actual alert
             if match not in raw_log and match not in signature:
-                violations.append(InvariantViolation(
-                    invariant_id="INV-4",
-                    severity="medium",
-                    description=(
-                        f"Reasoning references '{label}' ({match}) not found "
-                        f"in source alert data — possible reasoning injection"
-                    ),
-                    evidence={
-                        "fabricated_reference": match,
-                        "reference_type": label,
-                    },
-                    confidence=0.6,
-                ))
+                violations.append(
+                    InvariantViolation(
+                        invariant_id="INV-4",
+                        severity="medium",
+                        description=(
+                            f"Reasoning references '{label}' ({match}) not found "
+                            f"in source alert data — possible reasoning injection"
+                        ),
+                        evidence={
+                            "fabricated_reference": match,
+                            "reference_type": label,
+                        },
+                        confidence=0.6,
+                    )
+                )
 
     return violations
 
 
 def check_temporal_consistency(
-    alert: dict,
-    decision: dict,
+    alert: dict[str, Any],
+    decision: dict[str, Any],
 ) -> list[InvariantViolation]:
     """
     INV-5: Temporal references in reasoning must be consistent.
@@ -280,24 +308,26 @@ def check_temporal_consistency(
 
     for pattern in downplay_temporal:
         if re.search(pattern, reasoning):
-            violations.append(InvariantViolation(
-                invariant_id="INV-5",
-                severity="medium",
-                description=(
-                    "Reasoning contains temporal downplay pattern — "
-                    "claiming historical normalcy without evidence source"
-                ),
-                evidence={"pattern_matched": pattern},
-                confidence=0.5,
-            ))
+            violations.append(
+                InvariantViolation(
+                    invariant_id="INV-5",
+                    severity="medium",
+                    description=(
+                        "Reasoning contains temporal downplay pattern — "
+                        "claiming historical normalcy without evidence source"
+                    ),
+                    evidence={"pattern_matched": pattern},
+                    confidence=0.5,
+                )
+            )
             break  # One violation per check is enough
 
     return violations
 
 
 def run_invariant_checks(
-    alert: dict,
-    decision: dict,
+    alert: dict[str, Any],
+    decision: dict[str, Any],
 ) -> InvariantCheckResult:
     """
     Run all behavioral invariant checks on a triage decision.
@@ -311,25 +341,25 @@ def run_invariant_checks(
     """
     result = InvariantCheckResult(alert_id=alert.get("alert_id", "unknown"))
 
-    checkers = [
-        check_severity_evidence_consistency,
-        check_ip_consistency,
-        check_confidence_bound,
-        check_reasoning_coherence,
-        check_temporal_consistency,
-    ]
+    with suppress(Exception):
+        result.violations.extend(check_severity_evidence_consistency(alert, decision))
+    result.checks_run += 1
 
-    for checker in checkers:
-        result.checks_run += 1
-        try:
-            # Some checkers take (alert, decision), one takes just (decision,)
-            if checker == check_confidence_bound:
-                violations = checker(decision)
-            else:
-                violations = checker(alert, decision)
-            result.violations.extend(violations)
-        except Exception:
-            pass  # Invariant checks should never crash the pipeline
+    with suppress(Exception):
+        result.violations.extend(check_ip_consistency(alert, decision))
+    result.checks_run += 1
+
+    with suppress(Exception):
+        result.violations.extend(check_confidence_bound(decision))
+    result.checks_run += 1
+
+    with suppress(Exception):
+        result.violations.extend(check_reasoning_coherence(alert, decision))
+    result.checks_run += 1
+
+    with suppress(Exception):
+        result.violations.extend(check_temporal_consistency(alert, decision))
+    result.checks_run += 1
 
     # Flag as suspected injection using weighted scoring
     # critical=3, high=2, medium=1 — threshold of 3 catches:

@@ -31,19 +31,51 @@ RESPONSE_KB: dict[str, dict[str, Any]] = {
         "severity": "critical",
         "containment": [
             {"action": "Isolate affected host from network", "priority": 1, "automated": True},
-            {"action": "Force password reset for all accounts on compromised host", "priority": 1, "automated": True},
-            {"action": "Revoke Kerberos TGTs for affected domain", "priority": 2, "automated": False},
-            {"action": "Enable LSA protection (RunAsPPL) on domain controllers", "priority": 2, "automated": True},
+            {
+                "action": "Force password reset for all accounts on compromised host",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Revoke Kerberos TGTs for affected domain",
+                "priority": 2,
+                "automated": False,
+            },
+            {
+                "action": "Enable LSA protection (RunAsPPL) on domain controllers",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "eradication": [
-            {"action": "Scan for credential harvesting tools (mimikatz, secretsdump)", "priority": 1, "automated": True},
-            {"action": "Audit LSASS access patterns across all endpoints", "priority": 2, "automated": True},
-            {"action": "Review scheduled tasks and services for persistence", "priority": 2, "automated": False},
+            {
+                "action": "Scan for credential harvesting tools (mimikatz, secretsdump)",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Audit LSASS access patterns across all endpoints",
+                "priority": 2,
+                "automated": True,
+            },
+            {
+                "action": "Review scheduled tasks and services for persistence",
+                "priority": 2,
+                "automated": False,
+            },
         ],
         "recovery": [
-            {"action": "Reset KRBTGT password (twice, 12hr apart)", "priority": 1, "automated": False},
+            {
+                "action": "Reset KRBTGT password (twice, 12hr apart)",
+                "priority": 1,
+                "automated": False,
+            },
             {"action": "Rotate all service account credentials", "priority": 1, "automated": False},
-            {"action": "Re-image compromised host from known-good baseline", "priority": 2, "automated": False},
+            {
+                "action": "Re-image compromised host from known-good baseline",
+                "priority": 2,
+                "automated": False,
+            },
         ],
         "ioc_types": ["process_name", "hash", "ip"],
         "escalation": "Immediate — Tier 3 + IR team. Potential domain compromise.",
@@ -52,17 +84,45 @@ RESPONSE_KB: dict[str, dict[str, Any]] = {
         "title": "Lateral Movement via Remote Services",
         "severity": "high",
         "containment": [
-            {"action": "Block SMB/RDP between compromised segments", "priority": 1, "automated": True},
-            {"action": "Disable admin shares (C$, ADMIN$) on non-critical hosts", "priority": 2, "automated": True},
-            {"action": "Enable network-level authentication for RDP", "priority": 2, "automated": True},
+            {
+                "action": "Block SMB/RDP between compromised segments",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Disable admin shares (C$, ADMIN$) on non-critical hosts",
+                "priority": 2,
+                "automated": True,
+            },
+            {
+                "action": "Enable network-level authentication for RDP",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "eradication": [
-            {"action": "Audit lateral movement artifacts (Event 4648, 4624 Type 3)", "priority": 1, "automated": True},
-            {"action": "Hunt for PsExec/SMBExec/WMIExec artifacts", "priority": 1, "automated": True},
+            {
+                "action": "Audit lateral movement artifacts (Event 4648, 4624 Type 3)",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Hunt for PsExec/SMBExec/WMIExec artifacts",
+                "priority": 1,
+                "automated": True,
+            },
         ],
         "recovery": [
-            {"action": "Re-segment network to limit lateral paths", "priority": 1, "automated": False},
-            {"action": "Deploy host-based firewall rules blocking unnecessary SMB", "priority": 2, "automated": True},
+            {
+                "action": "Re-segment network to limit lateral paths",
+                "priority": 1,
+                "automated": False,
+            },
+            {
+                "action": "Deploy host-based firewall rules blocking unnecessary SMB",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "ioc_types": ["ip", "process_name", "hash"],
         "escalation": "Tier 2 — Active lateral movement indicates post-compromise stage.",
@@ -71,17 +131,45 @@ RESPONSE_KB: dict[str, dict[str, Any]] = {
         "title": "Command and Scripting Interpreter Response",
         "severity": "high",
         "containment": [
-            {"action": "Enable Constrained Language Mode for PowerShell", "priority": 1, "automated": True},
-            {"action": "Block script execution via AppLocker/WDAC", "priority": 1, "automated": True},
-            {"action": "Kill suspicious interpreter processes on affected host", "priority": 1, "automated": True},
+            {
+                "action": "Enable Constrained Language Mode for PowerShell",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Block script execution via AppLocker/WDAC",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Kill suspicious interpreter processes on affected host",
+                "priority": 1,
+                "automated": True,
+            },
         ],
         "eradication": [
-            {"action": "Review PowerShell script block logs (Event 4104)", "priority": 1, "automated": True},
-            {"action": "Analyze command history for data staging or exfiltration", "priority": 2, "automated": False},
+            {
+                "action": "Review PowerShell script block logs (Event 4104)",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Analyze command history for data staging or exfiltration",
+                "priority": 2,
+                "automated": False,
+            },
         ],
         "recovery": [
-            {"action": "Deploy PowerShell transcription logging fleet-wide", "priority": 2, "automated": True},
-            {"action": "Harden execution policy via Group Policy", "priority": 2, "automated": True},
+            {
+                "action": "Deploy PowerShell transcription logging fleet-wide",
+                "priority": 2,
+                "automated": True,
+            },
+            {
+                "action": "Harden execution policy via Group Policy",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "ioc_types": ["hash", "domain", "url"],
         "escalation": "Tier 2 — Script-based execution often precedes data exfiltration.",
@@ -90,17 +178,37 @@ RESPONSE_KB: dict[str, dict[str, Any]] = {
         "title": "Application Layer C2 Protocol Response",
         "severity": "critical",
         "containment": [
-            {"action": "Block identified C2 domains/IPs at perimeter firewall", "priority": 1, "automated": True},
+            {
+                "action": "Block identified C2 domains/IPs at perimeter firewall",
+                "priority": 1,
+                "automated": True,
+            },
             {"action": "DNS sinkhole known C2 domains", "priority": 1, "automated": True},
             {"action": "Isolate beaconing hosts", "priority": 1, "automated": True},
         ],
         "eradication": [
-            {"action": "Extract and analyze C2 beacon configuration", "priority": 1, "automated": False},
-            {"action": "Hunt for similar User-Agent strings across proxy logs", "priority": 2, "automated": True},
-            {"action": "Check for scheduled beaconing patterns (jitter analysis)", "priority": 2, "automated": True},
+            {
+                "action": "Extract and analyze C2 beacon configuration",
+                "priority": 1,
+                "automated": False,
+            },
+            {
+                "action": "Hunt for similar User-Agent strings across proxy logs",
+                "priority": 2,
+                "automated": True,
+            },
+            {
+                "action": "Check for scheduled beaconing patterns (jitter analysis)",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "recovery": [
-            {"action": "Update IDS/IPS signatures for identified C2 patterns", "priority": 1, "automated": True},
+            {
+                "action": "Update IDS/IPS signatures for identified C2 patterns",
+                "priority": 1,
+                "automated": True,
+            },
             {"action": "Deploy JA3/JA4 fingerprint blocklists", "priority": 2, "automated": True},
         ],
         "ioc_types": ["domain", "ip", "url", "user_agent"],
@@ -110,17 +218,41 @@ RESPONSE_KB: dict[str, dict[str, Any]] = {
         "title": "Brute Force Response",
         "severity": "high",
         "containment": [
-            {"action": "Enable account lockout after 5 failed attempts", "priority": 1, "automated": True},
+            {
+                "action": "Enable account lockout after 5 failed attempts",
+                "priority": 1,
+                "automated": True,
+            },
             {"action": "Block source IPs at WAF/firewall", "priority": 1, "automated": True},
-            {"action": "Enable CAPTCHA on targeted authentication endpoints", "priority": 2, "automated": True},
+            {
+                "action": "Enable CAPTCHA on targeted authentication endpoints",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "eradication": [
-            {"action": "Verify no accounts were successfully compromised", "priority": 1, "automated": True},
-            {"action": "Audit authentication logs for successful logins from brute-force IPs", "priority": 1, "automated": True},
+            {
+                "action": "Verify no accounts were successfully compromised",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Audit authentication logs for successful logins from brute-force IPs",
+                "priority": 1,
+                "automated": True,
+            },
         ],
         "recovery": [
-            {"action": "Force password reset for any successfully accessed accounts", "priority": 1, "automated": True},
-            {"action": "Deploy MFA on all external-facing services", "priority": 1, "automated": False},
+            {
+                "action": "Force password reset for any successfully accessed accounts",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Deploy MFA on all external-facing services",
+                "priority": 1,
+                "automated": False,
+            },
         ],
         "ioc_types": ["ip", "username"],
         "escalation": "Tier 1 — Standard unless successful compromise detected, then Tier 2.",
@@ -129,17 +261,37 @@ RESPONSE_KB: dict[str, dict[str, Any]] = {
         "title": "Boot/Logon Autostart Persistence Response",
         "severity": "high",
         "containment": [
-            {"action": "Disable identified autostart entries (Run keys, services)", "priority": 1, "automated": True},
+            {
+                "action": "Disable identified autostart entries (Run keys, services)",
+                "priority": 1,
+                "automated": True,
+            },
             {"action": "Quarantine persistence payload files", "priority": 1, "automated": True},
         ],
         "eradication": [
-            {"action": "Scan all endpoints for similar persistence mechanisms", "priority": 1, "automated": True},
-            {"action": "Audit Startup folders, Run/RunOnce keys, scheduled tasks", "priority": 2, "automated": True},
+            {
+                "action": "Scan all endpoints for similar persistence mechanisms",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Audit Startup folders, Run/RunOnce keys, scheduled tasks",
+                "priority": 2,
+                "automated": True,
+            },
             {"action": "Check for DLL search order hijacking", "priority": 2, "automated": False},
         ],
         "recovery": [
-            {"action": "Deploy Sysmon or equivalent to monitor registry modifications", "priority": 2, "automated": True},
-            {"action": "Harden autostart locations via Group Policy", "priority": 2, "automated": True},
+            {
+                "action": "Deploy Sysmon or equivalent to monitor registry modifications",
+                "priority": 2,
+                "automated": True,
+            },
+            {
+                "action": "Harden autostart locations via Group Policy",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "ioc_types": ["hash", "file_path", "registry_key"],
         "escalation": "Tier 2 — Persistence means attacker intends to maintain access.",
@@ -148,16 +300,32 @@ RESPONSE_KB: dict[str, dict[str, Any]] = {
         "title": "Account Discovery Response",
         "severity": "medium",
         "containment": [
-            {"action": "Monitor for subsequent credential access or lateral movement", "priority": 1, "automated": True},
-            {"action": "Restrict LDAP/AD enumeration from non-admin accounts", "priority": 2, "automated": True},
+            {
+                "action": "Monitor for subsequent credential access or lateral movement",
+                "priority": 1,
+                "automated": True,
+            },
+            {
+                "action": "Restrict LDAP/AD enumeration from non-admin accounts",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "eradication": [
-            {"action": "Audit who queried AD user/group information", "priority": 1, "automated": True},
+            {
+                "action": "Audit who queried AD user/group information",
+                "priority": 1,
+                "automated": True,
+            },
             {"action": "Review source process for legitimacy", "priority": 2, "automated": False},
         ],
         "recovery": [
             {"action": "Implement tiered admin model (PAW/PAM)", "priority": 2, "automated": False},
-            {"action": "Deploy advanced AD auditing (4662, 4661 events)", "priority": 2, "automated": True},
+            {
+                "action": "Deploy advanced AD auditing (4662, 4661 events)",
+                "priority": 2,
+                "automated": True,
+            },
         ],
         "ioc_types": ["process_name", "username"],
         "escalation": "Tier 1 — Reconnaissance activity; watch for escalation to credential access.",
@@ -174,17 +342,25 @@ GENERIC_RESPONSE: dict[str, Any] = {
     ],
     "eradication": [
         {"action": "Analyze alert context for IOCs", "priority": 1, "automated": False},
-        {"action": "Cross-reference with threat intelligence feeds", "priority": 2, "automated": True},
+        {
+            "action": "Cross-reference with threat intelligence feeds",
+            "priority": 2,
+            "automated": True,
+        },
     ],
     "recovery": [
-        {"action": "Monitor for recurrence of same alert pattern", "priority": 2, "automated": True},
+        {
+            "action": "Monitor for recurrence of same alert pattern",
+            "priority": 2,
+            "automated": True,
+        },
     ],
     "ioc_types": ["ip", "hash"],
     "escalation": "Tier 1 — Assess severity based on context and escalate as needed.",
 }
 
 
-def _extract_iocs(alert: "UnifiedAlert", ioc_types: list[str]) -> list[dict[str, str]]:
+def _extract_iocs(alert: UnifiedAlert, ioc_types: list[str]) -> list[dict[str, str]]:
     """Extract IOCs from alert based on expected types."""
     iocs: list[dict[str, str]] = []
     if "ip" in ioc_types:
@@ -197,6 +373,7 @@ def _extract_iocs(alert: "UnifiedAlert", ioc_types: list[str]) -> list[dict[str,
     if "hash" in ioc_types and alert.raw_log:
         # Extract SHA256-like patterns from raw log
         import re
+
         hashes = re.findall(r"[A-Fa-f0-9]{64}", alert.raw_log)
         for h in hashes[:3]:
             iocs.append({"type": "sha256", "value": h, "role": "artifact"})
@@ -219,7 +396,7 @@ def _determine_severity(
 
 
 def generate_playbook(
-    alert: "UnifiedAlert",
+    alert: UnifiedAlert,
     classification: str = "unknown",
     mitre_techniques: list[str] | None = None,
     correlated_events: list[dict[str, Any]] | None = None,
@@ -253,41 +430,48 @@ def generate_playbook(
     steps: list[dict[str, Any]] = []
     for phase_name in ("containment", "eradication", "recovery"):
         for step in kb_entry.get(phase_name, []):
-            steps.append({
-                "phase": phase_name,
-                "action": step["action"],
-                "priority": step["priority"],
-                "automated": step.get("automated", False),
-            })
+            steps.append(
+                {
+                    "phase": phase_name,
+                    "action": step["action"],
+                    "priority": step["priority"],
+                    "automated": step.get("automated", False),
+                }
+            )
 
     # Add post-incident steps
-    steps.append({
-        "phase": "post_incident",
-        "action": "Document incident timeline and response actions",
-        "priority": 1,
-        "automated": False,
-    })
-    steps.append({
-        "phase": "post_incident",
-        "action": "Update detection rules based on observed TTPs",
-        "priority": 2,
-        "automated": False,
-    })
-    if chains:
-        steps.append({
+    steps.append(
+        {
             "phase": "post_incident",
-            "action": f"Review {len(chains)} detected attack chain(s) for coverage gaps",
+            "action": "Document incident timeline and response actions",
             "priority": 1,
             "automated": False,
-        })
+        }
+    )
+    steps.append(
+        {
+            "phase": "post_incident",
+            "action": "Update detection rules based on observed TTPs",
+            "priority": 2,
+            "automated": False,
+        }
+    )
+    if chains:
+        steps.append(
+            {
+                "phase": "post_incident",
+                "action": f"Review {len(chains)} detected attack chain(s) for coverage gaps",
+                "priority": 1,
+                "automated": False,
+            }
+        )
 
     # Extract IOCs
     iocs = _extract_iocs(alert, kb_entry.get("ioc_types", ["ip"]))
 
     # Build MITRE references
     references = [
-        f"https://attack.mitre.org/techniques/{t.replace('.', '/')}/"
-        for t in techniques[:5]
+        f"https://attack.mitre.org/techniques/{t.replace('.', '/')}/" for t in techniques[:5]
     ]
 
     return {
@@ -319,7 +503,7 @@ class PlaybookAgent(BaseAgent):
 
     async def run(
         self,
-        alert: "UnifiedAlert",
+        alert: UnifiedAlert,
         context: dict[str, Any] | None = None,
     ) -> AgentResult:
         """Generate an incident response playbook."""

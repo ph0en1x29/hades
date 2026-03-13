@@ -85,9 +85,7 @@ class OpenAICompatChatClient:
                 body = response.read().decode("utf-8")
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
-            raise OpenAICompatError(
-                f"HTTP {exc.code} from model server: {detail[:500]}"
-            ) from exc
+            raise OpenAICompatError(f"HTTP {exc.code} from model server: {detail[:500]}") from exc
         except urllib.error.URLError as exc:
             raise OpenAICompatError(f"Model server unreachable: {exc.reason}") from exc
 

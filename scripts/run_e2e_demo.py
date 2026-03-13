@@ -22,14 +22,30 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
-from src.adversarial.vectors import INJECTION_VECTORS
-from src.adversarial.payloads import AttackClass
+from src.adversarial.defenses import CanaryDefense, SanitizationDefense, StructuredPromptDefense
 from src.adversarial.injector import generate_adversarial_variants
-from src.adversarial.defenses import SanitizationDefense, StructuredPromptDefense, CanaryDefense
-from src.agents.triage_prompt import format_alert_for_triage
+from src.adversarial.payloads import AttackClass
+from src.adversarial.vectors import INJECTION_VECTORS
 from src.agents.triage_parser import parse_triage_response
+from src.agents.triage_prompt import format_alert_for_triage
 from src.evaluation.behavioral_invariants import run_invariant_checks
+from src.ingestion.parsers.splunk_attack_data import load_splunk_attack_data_jsonl
+from src.ingestion.parsers.splunk_sysmon import load_sysmon_log
+
+SKIP_MARKER = "SKIPPED:"
+
+
+def _load_demo_alerts():
+    root = Path(__file__).resolve().parents[1]
+    sysmon_path = root / "data/datasets/splunk_attack_data/T1003.001/windows-sysmon.log"
+    if sysmon_path.exists() and sysmon_path.stat().st_size > 0:
+        return load_sysmon_log(str(sysmon_path), mitre_technique="T1003.001", limit=5), sysmon_path.name
+
+    fixture_path = root / "data/benchmarks/public/splunk_attack_data_windows.jsonl"
+    if fixture_path.exists() and fixture_path.stat().st_size > 0:
+        return load_splunk_attack_data_jsonl(fixture_path)[:5], fixture_path.name
+
+    return [], sysmon_path.name
 
 
 def main():
@@ -38,9 +54,14 @@ def main():
     print("=" * 70)
 
     # Step 1: Parse alerts
-    sysmon_path = Path(__file__).resolve().parents[1] / "data/datasets/splunk_attack_data/T1003.001/windows-sysmon.log"
-    print(f"\n[1/7] Parsing alerts from {sysmon_path.name}...")
-    alerts = load_sysmon_log(str(sysmon_path), mitre_technique="T1003.001", limit=5)
+    alerts, source_name = _load_demo_alerts()
+    print(f"\n[1/7] Parsing alerts from {source_name}...")
+    if not alerts:
+        print(
+            f"{SKIP_MARKER} no benchmark alerts are available for the end-to-end demo. "
+            "Provide Splunk Attack Data raw logs or the public benchmark fixture.",
+        )
+        return
     print(f"  → {len(alerts)} alerts loaded")
 
     # Step 2: Generate adversarial variants for first alert

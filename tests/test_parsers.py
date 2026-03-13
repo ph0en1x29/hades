@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import json
@@ -107,7 +108,9 @@ class TestSplunkAttackDataParser:
             "label": {"provenance": "splunk_detection_label_v1"},
         }
 
-        alert = parse_splunk_attack_data_record(record, source_path="data/benchmarks/public/slice.jsonl")
+        alert = parse_splunk_attack_data_record(
+            record, source_path="data/benchmarks/public/slice.jsonl"
+        )
 
         assert alert.signature == "Windows Brute Force Detection"
         assert alert.severity == AlertSeverity.HIGH

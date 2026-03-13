@@ -32,14 +32,15 @@ from typing import Any
 
 from src.evaluation.schemas import TriageCategory, TriageDecision
 
-
 # === SOC-Bench Fox Output Schemas ===
+
 
 @dataclass
 class FoxO1CampaignAssessment:
     """O1: Campaign-scale assessment (39 pts).
     Identifies whether alerts form a coordinated campaign or isolated events.
     """
+
     stage_id: str
     timestamp: str
     campaign_detected: bool
@@ -56,6 +57,7 @@ class FoxO2ActivityReasoning:
     """O2: Activity-type reasoning (39 pts).
     Classifies and explains the type of malicious activity.
     """
+
     stage_id: str
     timestamp: str
     activity_type: str  # e.g., 'credential_access', 'lateral_movement', 'exfiltration'
@@ -71,6 +73,7 @@ class FoxO3TriageBundle:
     """O3: Cross-stage alert triage bundle (22 pts).
     Groups related alerts into coherent bundles with priority.
     """
+
     stage_id: str
     timestamp: str
     bundle_id: str
@@ -84,6 +87,7 @@ class FoxO3TriageBundle:
 @dataclass
 class FoxStageOutput:
     """Complete Fox output for a single 30-minute stage."""
+
     stage_id: str
     stage_timestamp: str
     o1_campaign: FoxO1CampaignAssessment
@@ -96,9 +100,11 @@ class FoxStageOutput:
 
 # === SOC-Bench Tiger Output Schemas ===
 
+
 @dataclass
 class TigerO1DataRelationship:
     """O1: Data source relationships (JSON)."""
+
     source_a: str
     source_b: str
     relationship_type: str  # 'corroborates', 'contradicts', 'extends', 'precedes'
@@ -109,6 +115,7 @@ class TigerO1DataRelationship:
 @dataclass
 class TigerThreatNode:
     """Node in threat graph."""
+
     node_id: str
     node_type: str  # 'host', 'ip', 'user', 'process', 'file', 'service'
     label: str
@@ -119,6 +126,7 @@ class TigerThreatNode:
 @dataclass
 class TigerThreatEdge:
     """Edge in threat graph."""
+
     source_id: str
     target_id: str
     edge_type: str  # 'accessed', 'spawned', 'connected_to', 'authenticated_as', 'wrote', 'read'
@@ -129,6 +137,7 @@ class TigerThreatEdge:
 @dataclass
 class TigerO2ThreatGraph:
     """O2: Threat graph with nodes/edges/vulnerabilities."""
+
     nodes: list[TigerThreatNode] = field(default_factory=list)
     edges: list[TigerThreatEdge] = field(default_factory=list)
     vulnerabilities: list[str] = field(default_factory=list)
@@ -138,6 +147,7 @@ class TigerO2ThreatGraph:
 @dataclass
 class TigerStageOutput:
     """Complete Tiger output for a single stage."""
+
     stage_id: str
     o1_relationships: list[TigerO1DataRelationship]
     o2_threat_graph: TigerO2ThreatGraph
@@ -149,6 +159,7 @@ class TigerStageOutput:
 
 # === SOC-Bench Panda (Containment) ===
 
+
 @dataclass
 class PandaBLUFReport:
     """Panda BLUF (Bottom Line Up Front) report per stage.
@@ -157,13 +168,20 @@ class PandaBLUFReport:
       Action targets:       40 pts
       Reasoning/evidence:   40 pts
     """
+
     stage_timestamp: str
     containment_actions: list[str] = field(default_factory=list)
-    action_targets: dict[str, list[str]] = field(default_factory=lambda: {
-        "hosts": [], "ips": [], "subnets": [],
-        "user_accounts": [], "user_groups": [],
-        "services": [], "other": [],
-    })
+    action_targets: dict[str, list[str]] = field(
+        default_factory=lambda: {
+            "hosts": [],
+            "ips": [],
+            "subnets": [],
+            "user_accounts": [],
+            "user_groups": [],
+            "services": [],
+            "other": [],
+        }
+    )
     reasoning_evidence: str = ""
     # Reasoning must include:
     #   (I) action justification with SOC trade-offs
@@ -175,6 +193,7 @@ class PandaBLUFReport:
 
 
 # === Adapter: Hades → SOC-Bench ===
+
 
 def triage_decisions_to_fox_stage(
     decisions: list[TriageDecision],
@@ -212,22 +231,28 @@ def triage_decisions_to_fox_stage(
     all_techniques = []
     affected_ips = set()
     for d in decisions:
-        for ev in (d.evidence_trace or []):
-            all_evidence.append(ev.evidence_id if hasattr(ev, 'evidence_id') else str(ev))
-        for t in (d.mitre_techniques or []):
+        for ev in d.evidence_trace or []:
+            all_evidence.append(ev.evidence_id if hasattr(ev, "evidence_id") else str(ev))
+        for t in d.mitre_techniques or []:
             if t not in all_techniques:
                 all_techniques.append(t)
         # Try to get IPs from alert object (if attached) or alert map
-        alert = getattr(d, 'alert', None) or alert_map.get(d.alert_id)
+        alert = getattr(d, "alert", None) or alert_map.get(d.alert_id)
         if alert:
-            if getattr(alert, 'src_ip', None):
+            if getattr(alert, "src_ip", None):
                 affected_ips.add(alert.src_ip)
-            if getattr(alert, 'dst_ip', None):
+            if getattr(alert, "dst_ip", None):
                 affected_ips.add(alert.dst_ip)
 
     # O1: Campaign assessment
     campaign_detected = len(critical) >= 3  # threshold: 3+ related true positives
-    scope = "widespread" if len(affected_ips) > 10 else "targeted" if len(affected_ips) > 3 else "isolated"
+    scope = (
+        "widespread"
+        if len(affected_ips) > 10
+        else "targeted"
+        if len(affected_ips) > 3
+        else "isolated"
+    )
     o1 = FoxO1CampaignAssessment(
         stage_id=stage_id,
         timestamp=stage_timestamp,
@@ -253,12 +278,14 @@ def triage_decisions_to_fox_stage(
     )
 
     # O3: Triage bundle
-    priority = "critical" if len(escalations) > 0 else "high" if len(true_positives) > 0 else "medium"
+    priority = (
+        "critical" if len(escalations) > 0 else "high" if len(true_positives) > 0 else "medium"
+    )
     o3 = FoxO3TriageBundle(
         stage_id=stage_id,
         timestamp=stage_timestamp,
         bundle_id=f"B-{stage_id}-{datetime.now(UTC).strftime('%H%M%S')}",
-        alert_ids=[d.alert_id for d in decisions[:50] if hasattr(d, 'alert_id')],
+        alert_ids=[d.alert_id for d in decisions[:50] if hasattr(d, "alert_id")],
         priority=priority,
         triage_decision=decisions[0].classification.value if decisions else "needs_investigation",
         recommended_actions=_generate_recommendations(all_techniques, critical),
@@ -294,11 +321,21 @@ _TACTIC_ACTIVITY = {
 
 # Technique prefix → tactic (simplified)
 _TECHNIQUE_TACTIC = {
-    "T1003": "TA0006", "T1021": "TA0008", "T1027": "TA0005",
-    "T1036": "TA0005", "T1053": "TA0003", "T1055": "TA0005",
-    "T1059": "TA0002", "T1071": "TA0011", "T1078": "TA0001",
-    "T1087": "TA0007", "T1105": "TA0011", "T1110": "TA0006",
-    "T1218": "TA0005", "T1547": "TA0003", "T1569": "TA0002",
+    "T1003": "TA0006",
+    "T1021": "TA0008",
+    "T1027": "TA0005",
+    "T1036": "TA0005",
+    "T1053": "TA0003",
+    "T1055": "TA0005",
+    "T1059": "TA0002",
+    "T1071": "TA0011",
+    "T1078": "TA0001",
+    "T1087": "TA0007",
+    "T1105": "TA0011",
+    "T1110": "TA0006",
+    "T1218": "TA0005",
+    "T1547": "TA0003",
+    "T1569": "TA0002",
 }
 
 
@@ -322,13 +359,18 @@ def _techniques_to_kill_chain(techniques: list[str]) -> str:
     """Map techniques to Lockheed Martin kill chain phase."""
     if not techniques:
         return ""
-    tactic_order = ["TA0001", "TA0002", "TA0003", "TA0004", "TA0005",
-                    "TA0006", "TA0007", "TA0008", "TA0009", "TA0010", "TA0011"]
     phase_map = {
-        "TA0001": "delivery", "TA0002": "exploitation", "TA0003": "installation",
-        "TA0004": "exploitation", "TA0005": "installation", "TA0006": "exploitation",
-        "TA0007": "reconnaissance", "TA0008": "actions", "TA0009": "actions",
-        "TA0010": "actions", "TA0011": "c2",
+        "TA0001": "delivery",
+        "TA0002": "exploitation",
+        "TA0003": "installation",
+        "TA0004": "exploitation",
+        "TA0005": "installation",
+        "TA0006": "exploitation",
+        "TA0007": "reconnaissance",
+        "TA0008": "actions",
+        "TA0009": "actions",
+        "TA0010": "actions",
+        "TA0011": "c2",
     }
     for t in techniques:
         prefix = t.split(".")[0] if "." in t else t
@@ -338,7 +380,10 @@ def _techniques_to_kill_chain(techniques: list[str]) -> str:
     return ""
 
 
-def _generate_recommendations(techniques: list[str], critical: list) -> list[str]:
+def _generate_recommendations(
+    techniques: list[str],
+    critical: list[TriageDecision],
+) -> list[str]:
     """Generate actionable recommendations based on findings."""
     recs = []
     technique_set = set(t.split(".")[0] for t in techniques)

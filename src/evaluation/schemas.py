@@ -41,9 +41,7 @@ class EvalResult:
     tokens_output: int = 0
     mode_used: InferenceMode = InferenceMode.DETERMINISTIC
     model_version: str = ""
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @property
     def correct(self) -> bool:
@@ -69,13 +67,19 @@ class EvalResult:
             transform_version=data.get("transform_version", "alert_projection_v1"),
             annotation_protocol=data.get("annotation_protocol", "benchmark_label_v1"),
             alert_id=data.get("alert_id", ""),
-            ground_truth=TriageCategory(data["ground_truth"]) if "ground_truth" in data else TriageCategory.TRUE_POSITIVE,
-            prediction=TriageCategory(data["prediction"]) if "prediction" in data else TriageCategory.TRUE_POSITIVE,
+            ground_truth=TriageCategory(data["ground_truth"])
+            if "ground_truth" in data
+            else TriageCategory.TRUE_POSITIVE,
+            prediction=TriageCategory(data["prediction"])
+            if "prediction" in data
+            else TriageCategory.TRUE_POSITIVE,
             confidence=data.get("confidence", 0.0),
             latency_ms=data.get("latency_ms", 0),
             tokens_input=data.get("tokens_input", 0),
             tokens_output=data.get("tokens_output", 0),
-            mode_used=InferenceMode(data["mode_used"]) if "mode_used" in data else InferenceMode.DETERMINISTIC,
+            mode_used=InferenceMode(data["mode_used"])
+            if "mode_used" in data
+            else InferenceMode.DETERMINISTIC,
             model_version=data.get("model_version", ""),
             timestamp=data.get("timestamp", datetime.now(UTC).isoformat()),
         )
@@ -131,9 +135,7 @@ class TriageDecision:
     mode_used: InferenceMode = InferenceMode.DETERMINISTIC
     model_version: str = ""
     override_record: OverrideRecord | None = None
-    created_at: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -166,7 +168,9 @@ class TriageDecision:
         return cls(
             decision_id=data.get("decision_id", str(uuid4())),
             alert_id=data.get("alert_id", ""),
-            classification=TriageCategory(data["classification"]) if "classification" in data else TriageCategory.NEEDS_INVESTIGATION,
+            classification=TriageCategory(data["classification"])
+            if "classification" in data
+            else TriageCategory.NEEDS_INVESTIGATION,
             confidence=data.get("confidence", 0.0),
             severity_override=data.get("severity_override"),
             evidence_trace=evidence_trace,
@@ -176,7 +180,9 @@ class TriageDecision:
             mitre_techniques=data.get("mitre_techniques", []),
             playbook_id=data.get("playbook_id"),
             processing_time_ms=data.get("processing_time_ms", 0),
-            mode_used=InferenceMode(data["mode_used"]) if "mode_used" in data else InferenceMode.DETERMINISTIC,
+            mode_used=InferenceMode(data["mode_used"])
+            if "mode_used" in data
+            else InferenceMode.DETERMINISTIC,
             model_version=data.get("model_version", ""),
             override_record=override_record,
             created_at=data.get("created_at", datetime.now(UTC).isoformat()),
