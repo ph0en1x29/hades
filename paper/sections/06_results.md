@@ -350,7 +350,7 @@ We evaluated the pipeline's campaign-detection capability using the SOC-Bench Fo
 
 O1 and O2 suffer the largest absolute drops because they aggregate across multiple alerts — a single corrupted triage decision cascades into campaign-level misassessment. O3 degrades less in absolute terms but this is potentially misleading: O3's maximum is 22 points (vs 39 for O1/O2), so the −9.0 drop represents a 41% degradation of triage quality. The disproportionate campaign-level impact motivates the correlator agent: even if individual triage decisions are compromised, independent campaign detection through IP clustering and technique chain matching provides a redundant assessment path.
 
-The O1 campaign assessment achieves perfect scores in the clean scenario because the adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. The O2 kill chain phase receives inner-ring (8.7/13) when the multi-stage scenario spans exploitation and actions phases.
+The O1 campaign assessment achieves perfect scores in the clean scenario because the adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. The O2 activity classification (39 points total) loses 4.3 points because the kill chain phase sub-component receives inner-ring rather than bullseye scoring when the multi-stage DarkSide scenario spans exploitation and actions phases — the adapter correctly identifies the phases but not at bullseye precision.
 
 ## 6.10 Pre-GPU Validated Claims
 

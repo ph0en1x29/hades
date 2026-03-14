@@ -27,8 +27,8 @@ Hades is a modular evaluation framework for measuring the adversarial robustness
   │Suricata │          │ Payload │          │ Dual-LLM│
   │ Parser  │          │ Encoder │          └────┬────┘
   ├─────────┤          ├─────────┤               │
-  │CIC-IDS  │          │ Field   │               ▼
-  │ Parser  │          │Injector │     ┌──────────────┐
+  │WinSec/  │          │ Field   │               ▼
+  │PowerSh  │          │Injector │     ┌──────────────┐
   └────┬────┘          └─────────┘     │   Triage     │
        │                               │   Agent      │
        ▼                               │  (vLLM)      │

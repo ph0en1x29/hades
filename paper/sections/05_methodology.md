@@ -8,7 +8,7 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 |-----|------|---------|--------|--------|
 | E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 12,147 |
 | E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | 1,457,640 |
-| E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
+| E3 | SIEM Survival | Test payload survival through normalization | — | 9 enc × 11 rules × 15 templates |
 | E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 1,457,640 |
 | E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 1,457,640 |
 | E6 | Defense: Dual-LLM Verify (planned) | Evaluate dual-model verification | 4 | 1,457,640 |
@@ -173,7 +173,7 @@ A second LLM independently triages the same alert. Disagreements between the pri
 
 A known canary string is injected into the alert's metadata field. If the LLM's response references or is influenced by the canary in unexpected ways, the system flags a potential injection attack.
 
-### D5 — Adaptive Attacker Evaluation (E8)
+### Adaptive Attacker Evaluation (E8)
 
 Following Nasr et al. [2025], we evaluate whether defenses survive when the attacker knows the defense mechanism and can adapt payloads accordingly:
 
@@ -191,7 +191,7 @@ Our evaluation pipeline produces outputs compatible with the SOC-Bench framework
 
 **Ring Scoring.** We adopt SOC-Bench's graduated ring scoring model (Bullseye=3, Inner=2, Outer=1, Miss=0) rather than binary correct/incorrect for technique identification accuracy. This rewards partial matches — correctly identifying the tactic but wrong sub-technique scores Inner rather than Miss.
 
-**Design Principle Compliance.** Following DP1 (loyalty to existing SOCs), our triage pipeline processes alerts as a SOC analyst would receive them — timestamp-ordered, without attacker narrative context. Following DP3 (real-world basis), our benchmark uses real Splunk detection rule outputs rather than synthetic data.
+**Design Principle Compliance.** Following DP1 (loyalty to existing SOCs), our triage pipeline processes alerts as a SOC analyst would receive them — timestamp-ordered, without attacker narrative context. Following DP3 (real-world basis), our benchmark uses detection rule outputs from Splunk Attack Data — controlled attack simulations (Atomic Red Team) processed by real SIEM detection rules, providing realistic alert structure if not production-environment diversity.
 
 ## 5.7 Reproducibility
 
