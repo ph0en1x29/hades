@@ -197,13 +197,13 @@ We tested whether adversarial payloads survive 11 common SIEM normalization step
 
 1. **Field truncation is not protective.** Even Elasticsearch's aggressive 256-char `ignore_above` preserves most injection payloads because effective payloads are compact (~50–150 chars).
 2. **Character encoding transformations are payload-transparent.** JSON/XML/CEF escaping adds characters but preserves semantic content.
-3. **Attack class determines survival, not SIEM config.** The 40% overall survival rate is entirely explained by the 2/5 attack classes that use explicit instruction keywords. The remaining 3 classes use subtler manipulation that wouldn't be caught by keyword-based detection anyway — making them potentially *more* dangerous despite lower keyword survival.
+3. **Attack class determines detectability, not SIEM config.** All five attack classes achieve 100% SIEM normalization survival — the pipeline preserves payloads intact regardless of encoding or SIEM platform. Keyword-based sanitization (D1) catches only 2 of 5 classes (C1 and C2, which use explicit instruction markers). The remaining 3 classes (C3, C4, C5) use natural language manipulation that evades keyword detection entirely — making them potentially *more* dangerous despite being harder to characterize.
 
 ### 6.6.4 Extended: Encoding Strategy Effectiveness
 
-We tested 9 encoding strategies (6 evasion, 3 protocol-constrained) across all 11 normalization rules (1,485 total tests).
+We tested 9 encoding strategies (6 evasion, 3 protocol-constrained) across all 11 normalization rules and 15 payload templates (9 × 11 × 15 = 1,485 total tests).
 
-| Encoding | Type | Keyword Survival | LLM-Readable? |
+| Encoding | Type | Keyword Detection Rate | LLM-Readable? |
 |---|---|---:|---|
 | Markdown comment | Evasion | **33.3%** | Yes |
 | Synonym substitution | Evasion | **20.0%** | Yes |
@@ -215,9 +215,9 @@ We tested 9 encoding strategies (6 evasion, 3 protocol-constrained) across all 1
 | TLS CN constrained | Protocol | **26.7%** | N/A (64-char limit) |
 | SMB constrained | Protocol | 6.7% | N/A (15-char limit) |
 
-**Critical methodological note:** Low keyword survival for evasion encodings does not mean ineffectiveness. Homoglyph, zero-width, and leetspeak encodings are *designed* to evade keyword-based detection — they show 0% keyword survival because our detector can't read them, but LLMs can. These encodings would bypass sanitization defenses (D1) while remaining semantically valid to the model. Whether they actually succeed requires GPU-based E2 experiments.
+**Critical methodological note:** Low keyword detection rates for evasion encodings does not mean ineffectiveness. Homoglyph, zero-width, and leetspeak encodings are *designed* to evade keyword-based detection — they show 0% keyword detection because the sanitizer can't parse them, but LLMs can. These encodings would bypass sanitization defenses (D1) while remaining semantically valid to the model. Whether they actually succeed requires GPU-based E2 experiments.
 
-This reveals a **dual vulnerability**: payloads using direct keywords survive SIEM normalization (§6.6.2), while payloads using evasion encodings survive keyword-based defenses. No single defense layer addresses both.
+This reveals a **layered vulnerability**: all payloads survive SIEM normalization intact (§6.6.2), but keyword-based sanitization only detects payloads with explicit instruction markers (C1/C2). Evasion encodings and natural-language attack classes (C3/C4/C5) bypass keyword detection entirely while remaining semantically effective to LLMs. No single defense layer addresses the full attack surface.
 
 ### 6.6.5 Protocol Constraint Impact
 
@@ -255,13 +255,13 @@ We evaluated our behavioral invariant detection system on 50 real Sysmon alerts 
 
 **Scope caveat.** These detection rates are validated against *template-based* simulated triage outputs designed to represent each attack class, not against real LLM model outputs. Actual model responses under adversarial injection may exhibit different patterns — more varied phrasing, partial compliance with injections, or novel failure modes not captured by our templates. Phase 2 GPU experiments (E2, E4–E8) will validate these detection rates against real model behavior.
 
-The behavioral invariant system detects 3 of 4 attack classes with near-perfect accuracy and zero false positives. The key insight is that these checks operate on the triage **output**, not the prompt **input** — they are resistant to prompt-level obfuscation techniques that defeat input-level defenses.
+The behavioral invariant system detects 3 of the 4 attack classes evaluated in this pre-GPU study with near-perfect accuracy and zero false positives. C5 (Escalation Suppression) targets the correlation stage rather than individual triage decisions and is not evaluated here; its detection requires campaign-level invariants planned for Phase 2. The key insight is that these checks operate on the triage **output**, not the prompt **input** — they are resistant to prompt-level obfuscation techniques that defeat input-level defenses.
 
 †C2 detection is conditional: when confidence manipulation co-occurs with reasoning anomalies (INV-5 temporal downplay), the combined weighted score crosses the detection threshold (100%). Pure confidence-only manipulation without any reasoning artifacts produces a single high-severity violation below threshold (0%). We report the range to reflect this honest limitation.
 
 **C2 (Confidence Manipulation)** is detected by the combination of INV-6 (confidence-severity alignment, added to address the original gap) and temporal/contextual invariants. INV-6 flags when a HIGH-severity alert receives an unusually low confidence score (<0.4) on a true-positive classification — a signature of confidence manipulation attacks that try to suppress escalation without changing the verdict. When combined with INV-5 temporal downplay patterns (common in manipulated reasoning), the weighted score crosses the detection threshold. *Note: pure confidence manipulation alone (without any reasoning anomaly) produces a single high violation below threshold — this honest limitation motivates dual-model verification as a complementary defense.*
 
-The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was tuned to minimize false positives: no clean decision triggered any violation across 50 test alerts.
+The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was tuned to minimize false positives: no clean decision triggered any violation across 50 test alerts. **Confidence intervals** (95% Clopper-Pearson): C1/C3 detection 100% [92.9%, 100.0%]; C4 detection 98% [89.4%, 99.9%]; FPR 0% [0.0%, 7.1%]. These wide intervals reflect the small calibration sample; narrowing them is a priority for the full GPU evaluation.
 
 **Sample size limitation.** The current threshold calibration uses 50 alerts from a single technique family (T1003.001 credential access). This narrow calibration base means detection rates and false positive rates may differ across other technique types, particularly those with different alert structures (e.g., network-based vs. host-based indicators). Broader calibration across diverse technique families is planned for the full GPU evaluation.
 
@@ -269,7 +269,7 @@ The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was
 
 | ID | Check | Severity | What It Catches |
 |---|---|---|---|
-| INV-1 | Severity downgrade without evidence | critical/high | C1 (misclassification), C4 (attention hijack) |
+| INV-1 | Severity downgrade without evidence | critical (≥2 levels) / high (1 level) | C1 (misclassification), C4 (attention hijack) |
 | INV-2 | Phantom IPs in output | critical | C3 (IP substitution — the LevelBlue attack) |
 | INV-3 | Unrealistic confidence scores | high | C2 (confidence inflation) |
 | INV-4 | Fabricated references in reasoning | medium | C3 (fake change requests, pentest claims) |
@@ -280,12 +280,14 @@ The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was
 
 ### Table A — Clean Baseline Accuracy (E1)
 
-| Model | F1 | Precision | Recall | FP Rate | FN Rate |
-|---|---:|---:|---:|---:|---:|
-| DeepSeek R1 | TBD | TBD | TBD | TBD | TBD |
-| GLM-5 | TBD | TBD | TBD | TBD | TBD |
-| Kimi K2.5 | TBD | TBD | TBD | TBD | TBD |
-| Qwen 3.5 | TBD | TBD | TBD | TBD | TBD |
+| Model | F1 | Precision | Recall | FN Rate |
+|---|---:|---:|---:|---:|
+| DeepSeek R1 | TBD | TBD | TBD | TBD |
+| GLM-5 | TBD | TBD | TBD | TBD |
+| Kimi K2.5 | TBD | TBD | TBD | TBD |
+| Qwen 3.5 | TBD | TBD | TBD | TBD |
+
+*Note: FP Rate (benign → malicious) requires supplementary benign alert data not included in the current all-positive benchmark and is therefore excluded from this table. See §5.4.1.*
 
 ### Table B — Attack Success Rate by Model (E2)
 
@@ -332,13 +334,13 @@ We evaluated the pipeline's campaign-detection capability using the SOC-Bench Fo
 |---|---:|---:|---:|---:|---:|
 | Clean (30 T1003.001 Sysmon alerts) | 39.0 | 39.0 | 22.0 | **100.0** | 0 |
 | DarkSide multi-stage (7 alerts, 7 techniques) (T1566.001 Spearphishing → T1059.001 PowerShell → T1003.001 LSASS Dump → T1021.006 WinRM Lateral → T1543.003 Service Persistence → T1562.001 Disable Defenses → T1105 C2 Tool Transfer) | 39.0 | 34.7 | 22.0 | **95.7** | 0 |
-| Adversarial-injected campaign | 17.0 | 12.0 | 22.0 | **51.0** | 0 |
+| Adversarial-injected campaign | 17.0 | 12.0 | 13.0 | **42.0** | 0 |
 
-**Scenario comparison.** All three rows use the same evaluation rubric but different alert inputs. Row 1 (clean) evaluates 30 homogeneous T1003.001 credential dumping alerts — a best-case scenario for campaign detection. Row 2 (DarkSide) evaluates a realistic 7-alert multi-stage campaign across 7 techniques. Row 3 (adversarial) applies injection payloads to the DarkSide campaign alerts, measuring how adversarial manipulation degrades the same campaign's assessment. The −44.7 point delta (Row 2 → Row 3) represents the operational impact of injection on an identical alert set.
+**Scenario comparison.** All three rows use the same evaluation rubric but different alert inputs. Row 1 (clean) evaluates 30 homogeneous T1003.001 credential dumping alerts — a best-case scenario for campaign detection. Row 2 (DarkSide) evaluates a realistic 7-alert multi-stage campaign across 7 techniques. Row 3 (adversarial) applies injection payloads to the DarkSide campaign alerts with behavioral invariants disabled, measuring worst-case degradation before defenses intervene. The −53.7 point delta (Row 2 → Row 3) represents the potential operational impact of injection on an identical alert set without output-level defenses.
 
-**Methodology note.** These Fox scores are computed from simulated triage decisions, not real LLM model outputs (GPU experiments pending). Row 2 assumes correct triage; Row 3 assumes successful injection that causes misclassification and reasoning corruption. The −44.7 delta therefore represents the *potential* operational impact if injection succeeds at the rates observed in external work [Neaves2025], not a measured attack success rate from our models.
+**Methodology note.** These Fox scores are computed from simulated triage decisions with behavioral invariants **disabled**, not real LLM model outputs (GPU experiments pending). Row 2 assumes correct triage; Row 3 assumes successful injection that causes misclassification and reasoning corruption, showing the raw impact before any defense layer intervenes. The −53.7 point delta (Row 2 → Row 3) therefore represents the *potential worst-case* operational impact if injection succeeds without defenses, at the rates observed in external work [Neaves2025], not a measured attack success rate from our models. The post-invariant Fox score (with behavioral defenses enabled) is expected to fall between Rows 2 and 3, and will be measured in the GPU evaluation.
 
-**Fox score delta under adversarial attack: −44.7 points** (clean 95.7 → attacked 51.0). This illustrates the potential operational impact of successful prompt injection on SOC campaign assessment: even when individual alerts are caught by behavioral invariants, the corrupted triage decisions degrade the aggregate campaign picture.
+**Fox score delta under adversarial attack: −53.7 points** (clean 95.7 → attacked 42.0, invariants disabled). This illustrates the potential worst-case operational impact of successful prompt injection on SOC campaign assessment when no output-level defenses are active. The O3 triage component drops from 22.0 to 13.0, reflecting corrupted priority assignments and action recommendations. With behavioral invariants enabled, we expect partial recovery as auto-escalation corrects the most overt injection attempts; measuring this recovery is a key objective of the GPU evaluation.
 
 The O1 campaign assessment achieves perfect scores because the improved adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. The O2 kill chain phase receives inner-ring (8.7/13) when the multi-stage scenario spans exploitation and actions phases.
 
@@ -349,7 +351,4 @@ Even before full model inference, several claims are already empirically establi
 1. **Dataset adequacy requirements are satisfied for v1 per the criteria of Liu [2026].** We now have a benchmark-of-record with rule associations, MITRE mappings, provenance chains, and enforced contract validation.
 2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,457,640 realistic adversarial samples today.
 3. **The highest-value injection vectors are operationally grounded.** HTTP User-Agent, Windows Event authentication fields, and SSH usernames are all both realistic and externally validated.
-4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.
- arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.
-ndows Event authentication fields, and SSH usernames are all both realistic and externally validated.
 4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.

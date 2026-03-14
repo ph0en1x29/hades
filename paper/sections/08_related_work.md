@@ -40,7 +40,7 @@ These findings suggest that different MoE architectures may exhibit different ad
 
 **CyBench** [Zhang2025] evaluates LLM offensive cybersecurity capabilities across 40 CTF-style tasks (ICLR 2025 Oral). Funded by a $2.9M Open Philanthropy grant, it benchmarks whether LLMs can *attack* systems. We benchmark whether LLMs deployed *defensively* can be attacked through their data pipelines — the complementary question.
 
-**SOC-Bench** [Liu2026] defines design principles for evaluating multi-agent AI in SOC contexts, grounded in the Colonial Pipeline/DarkSide ransomware incident. Its five tasks (Fox: campaign detection, Tiger: attribution, Panda: containment, Goat: forensics, Mouse: exfiltration detection) provide a structured evaluation framework. Our work could serve as the first system evaluated against SOC-Bench, with our adversarial angle measurable through the framework's formal rubric.
+**SOC-Bench** [Liu2026] defines design principles for evaluating multi-agent AI in SOC contexts, grounded in the Colonial Pipeline/DarkSide ransomware incident. Its five tasks (Fox: campaign detection, Tiger: attribution, Panda: containment, Goat: forensics, Mouse: exfiltration detection) provide a structured evaluation framework. Our work is designed for direct SOC-Bench compatibility, with our adversarial angle measurable through the framework's formal rubric.
 
 **SecBench** [Jing2024] benchmarks LLM cybersecurity knowledge through MCQ-style assessments. Unlike SecBench, we evaluate operational performance under adversarial conditions, not knowledge recall.
 

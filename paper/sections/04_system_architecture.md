@@ -160,7 +160,7 @@ The correlator (`correlator.py`) detects multi-stage attack campaigns by running
 
 **Technique source.** In the evaluation pipeline, the correlator receives MITRE technique labels from the triage model's structured output (the `TriageDecision.mitre_techniques` field), not from benchmark ground-truth metadata. This means correlator accuracy depends on triage model accuracy — if adversarial injection causes the triage model to misidentify techniques, campaign detection degrades accordingly. The benchmark metadata is used only for scoring the correlator's output against ground truth.
 
-Campaign assessment combines all strategies: a campaign is declared when any attack chain is detected, any temporal burst occurs, or ≥10 correlated events are found.
+Campaign assessment combines all strategies: a campaign is declared when any attack chain is detected, any temporal burst occurs, or ≥10 correlated events are found. All benchmark alerts preserve their original timestamps from the Splunk Attack Data repository, enabling realistic temporal correlation during file-replay evaluation.
 
 ### 4.5.3 Playbook Agent
 
@@ -174,7 +174,7 @@ Severity is dynamically escalated when attack chains are detected: a medium-seve
 
 ### 4.5.4 Behavioral Invariant Defense
 
-The invariant layer (`behavioral_invariants.py`) is our primary defense against prompt injection — and crucially, it operates on triage **outputs**, not **inputs**. This makes it significantly more robust against prompt-level obfuscation techniques that defeat input-level defenses like sanitization and structured prompts (Nasr et al., 2025).
+The invariant layer (`behavioral_invariants.py`) is our primary defense against prompt injection — and crucially, it operates on triage **outputs**, not **inputs**. Because input-level defenses like sanitization and structured prompts are consistently bypassed by adaptive attackers (Nasr et al., 2025), output-level checking is potentially more robust in principle — though this comparative advantage remains to be validated against real model outputs in E8.
 
 Six invariants are checked against every triage decision:
 - **INV-1:** Severity downgrade without supporting evidence (critical/high)
@@ -206,19 +206,6 @@ Models are served via vLLM with the following configuration:
 - INT4 quantization for all models (native for Kimi K2.5, GPTQ for others)
 - Tensor parallelism scaled to available GPUs
 - Temperature=0 for near-deterministic inference (see §5.7 for MoE caveats)
-- Max output tokens=1024 per triage decision
-
-## 4.7 Deployment
-
-The system is containerized via Docker Compose:
-- `vllm-server`: Model serving with configurable model path
-- `qdrant`: Vector database for RAG retrieval
-- `hades`: Pipeline orchestration and evaluation
-- `evaluator`: Metrics computation and statistical analysis
-guration:
-- INT4 quantization for all models (native for Kimi K2.5, GPTQ for others)
-- Tensor parallelism scaled to available GPUs
-- Temperature=0 for deterministic inference
 - Max output tokens=1024 per triage decision
 
 ## 4.7 Deployment

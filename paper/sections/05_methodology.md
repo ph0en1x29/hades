@@ -17,16 +17,16 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 
 ## 5.2 Models Under Evaluation
 
-We evaluate four frontier open-weight LLMs, all Mixture-of-Experts (MoE) architectures, selected for their diverse routing strategies and active parameter counts:
+We evaluate four frontier open-weight LLMs, primarily Mixture-of-Experts (MoE) architectures, selected for their diverse routing strategies and active parameter counts:
 
 | Model | Total Params | Active Params | Experts | Architecture | Quantization |
 |---|---|---|---|---|---|
 | DeepSeek R1 | 671B | ~37B | 256 | DeepSeekMoE | INT4 |
-| GLM-5 | 744B | ~32B | — | GLM | INT4 |
+| GLM-5 | 744B | ~32B | — | Dense/GLM | INT4 |
 | Kimi K2.5 | 1T | 32B | 384 | MoonlightMoE | INT4 native |
 | Qwen 3.5 | 397B | ~17B | 128 | QwenMoE | INT4 |
 
-We selected open-weight models to enable fully reproducible local evaluation without API rate limits, terms-of-service restrictions, or non-deterministic API-side changes; commercial API-based models (GPT-4o, Claude) are excluded because they cannot be served locally for controlled experimentation. Different MoE routing strategies may exhibit different adversarial vulnerability profiles. By comparing four architectures, we can identify whether routing decisions (which experts are activated) correlate with injection susceptibility.
+We selected open-weight models to enable fully reproducible local evaluation without API rate limits, terms-of-service restrictions, or non-deterministic API-side changes; commercial API-based models (GPT-4o, Claude) are excluded because they cannot be served locally for controlled experimentation. Different MoE routing strategies may exhibit different adversarial vulnerability profiles. By comparing four architectures — three MoE and one dense (GLM-5) — we can identify whether routing decisions (which experts are activated) correlate with injection susceptibility, with GLM-5 serving as a non-MoE control.
 
 All models are served via vLLM with tensor parallelism appropriate to the available hardware. Each model receives identical prompts to enable fair comparison.
 
@@ -181,7 +181,7 @@ Our evaluation pipeline produces outputs compatible with the SOC-Bench framework
 
 **Task Fox (Campaign Detection).** Hades triage decisions are aggregated into SOC-Bench Fox stage outputs comprising three structured outcomes: O1 campaign-scale assessment (campaign detection, scope, affected hosts), O2 activity-type reasoning (MITRE technique classification, kill chain phase), and O3 cross-stage alert triage bundles (priority, recommended actions). All outputs include evidence_id chains for chain-of-custody verification.
 
-**Task Tiger (Attribution/TTP Reporting).** The classifier's MITRE technique identification and RAG-retrieved context naturally produce the data required for Tiger O1 (data source relationships) and O2 (threat graphs). We implement a SOC-Bench adapter layer that transforms flat TriageDecision objects into the richer, evidence-backed JSON schemas SOC-Bench expects.
+**Task Tiger (Attribution/TTP Reporting).** The classifier's MITRE technique identification and RAG-retrieved context naturally produce the data required for Tiger O1 (data source relationships) and O2 (threat graphs). We implement a SOC-Bench adapter layer that transforms flat TriageDecision objects into the richer, evidence-backed JSON schemas SOC-Bench expects. *Note: This work evaluates only Fox task scoring (§6.9); Tiger evaluation is deferred to Phase 2.*
 
 **Ring Scoring.** We adopt SOC-Bench's graduated ring scoring model (Bullseye=3, Inner=2, Outer=1, Miss=0) rather than binary correct/incorrect for technique identification accuracy. This rewards partial matches — correctly identifying the tactic but wrong sub-technique scores Inner rather than Miss.
 
@@ -191,7 +191,7 @@ Our evaluation pipeline produces outputs compatible with the SOC-Bench framework
 
 All experiments use:
 - Fixed random seeds for any stochastic components
-- Near-deterministic model inference (temperature=0). Note: MoE architectures may exhibit minor non-determinism due to expert routing order and GPU parallelism even at temperature 0. We mitigate this by averaging results across multiple runs where feasible.
+- Near-deterministic model inference (temperature=0). Note: MoE architectures may exhibit minor non-determinism due to expert routing order and GPU parallelism even at temperature 0. We mitigate this by averaging results across 3 independent runs per experiment configuration and reporting mean ± standard deviation.
 - Published evaluation scripts with hash-verified benchmark data
 - Docker-based deployment for model serving
 - Version-pinned dependencies (pyproject.toml)
