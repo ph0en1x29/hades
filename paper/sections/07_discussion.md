@@ -2,7 +2,7 @@
 
 ## 7.1 Implications for SOC Deployment
 
-Our results demonstrate that LLM-based triage systems face a fundamental tension: the same capability that makes them useful — processing unstructured log data with contextual reasoning — makes them vulnerable to adversarial manipulation through that data. This is not a bug to be patched but a structural property of deploying language models on adversary-generated content.
+Our preliminary results and framework design suggest that LLM-based triage systems face a fundamental tension: the same capability that makes them useful — processing unstructured log data with contextual reasoning — makes them vulnerable to adversarial manipulation through that data. This is not a bug to be patched but a structural property of deploying language models on adversary-generated content.
 
 **Practical recommendation.** Organizations deploying LLM triage should treat model outputs as *suggestions* requiring human verification for any alert the model recommends downgrading. The confidence threshold for automatic closure must account for the possibility that the confidence score itself has been manipulated (Attack Class C2).
 
@@ -12,13 +12,13 @@ Our key insight is that effective SOC triage defenses must operate at the *workf
 
 Behavioral invariants sidestep this entirely by checking the model's output against ground-truth properties of the source alert. A triage decision that references IP addresses not present in the original alert (INV-2) is suspicious regardless of how the model arrived at it. A classification of BENIGN for an alert the SIEM flagged as HIGH severity, without documented rationale (INV-1), warrants escalation regardless of whether the decision was caused by prompt injection or model error.
 
-Our pre-GPU evaluation shows 100% detection on C1 (direct misclassification) and C3 (reasoning corruption), 98% on C4 (attention hijacking), and 0% false positives. The notable exception is C2 (confidence manipulation), where detection ranges from 0% (pure confidence inflation) to 100% (when combined with reasoning anomalies) — the subtlest attack class. This motivates layered defenses: behavioral invariants catch the overt attacks, while output confidence calibration and dual-model verification target C2.
+Our pre-GPU evaluation shows 100% detection on C1 (direct misclassification) and C3 (reasoning corruption), 98% on C4 (attention hijacking), and 0% false positives. These results are preliminary, validated against simulated template outputs (§6.7). Real model outputs may exhibit more varied failure modes, and detection rates could differ. Full validation awaits GPU experiments. The notable exception is C2 (confidence manipulation), where detection ranges from 0% (pure confidence inflation) to 100% (when combined with reasoning anomalies) — the subtlest attack class. This motivates layered defenses: behavioral invariants catch the overt attacks, while output confidence calibration and dual-model verification target C2.
 
 ## 7.3 The Input Defense Paradox
 
 Defenses face a fundamental asymmetry: sanitization must be aggressive enough to neutralize payloads without destroying the log content that makes triage useful. Overly aggressive sanitization (Level 3) effectively truncates the data the model needs to make accurate decisions, while minimal sanitization (Level 1) fails to catch semantically-varied payloads.
 
-Structured prompt architectures (D2) show promise because they add explicit data/instruction boundaries, but Nasr et al. [2025] demonstrate that adaptive attackers can learn to exploit boundary markers themselves. Our E8 results [to be filled] will quantify whether this theoretical concern manifests in practice.
+Structured prompt architectures (D2) show promise because they add explicit data/instruction boundaries, but Nasr et al. [2025] demonstrate that adaptive attackers can learn to exploit boundary markers themselves. Our planned E8 experiments will quantify whether this theoretical concern manifests in practice.
 
 ## 7.4 MoE Architecture Vulnerability
 
@@ -26,7 +26,7 @@ Different Mixture-of-Experts architectures may exhibit different vulnerability p
 
 ## 7.5 Cost of Autonomy
 
-As SOC systems move toward autonomous response (blocking IPs, isolating hosts, triggering playbooks), the cost of adversarial manipulation scales dramatically. An attacker who can suppress triage escalation for their C2 traffic gains persistent access; an attacker who can trigger false containment actions against legitimate infrastructure achieves denial of service without launching a traditional attack. Our evaluation quantifies the misclassification risk that would underlie such autonomous decisions.
+As SOC systems move toward autonomous response (blocking IPs, isolating hosts, triggering playbooks), the cost of adversarial manipulation scales dramatically. An attacker who can suppress triage escalation for their C2 traffic gains persistent access; an attacker who can trigger false containment actions against legitimate infrastructure achieves denial of service without launching a traditional attack. Our framework is designed to quantify the misclassification risk that would underlie such autonomous decisions.
 
 ## 7.6 Limitations
 

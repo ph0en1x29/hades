@@ -41,14 +41,17 @@ Our benchmark comprises 12,147 alerts parsed from the Splunk Attack Data reposit
 | TA0001 Initial Access | T1566.001 | Spearphishing Attachment | 500 |
 | TA0002 Execution | T1047 | WMI Command Execution | 500 |
 | TA0002 Execution | T1059.001 | PowerShell Script Execution | 502 |
+| TA0002 Execution | T1204.002 | User Execution: Malicious File | 500 |
 | TA0002 Execution | T1569.002 | Service Execution | 500 |
 | TA0003 Persistence | T1053.005 | Scheduled Task | 514 |
+| TA0003 Persistence | T1136.001 | Create Local Account | 500 |
 | TA0003 Persistence | T1543.003 | Create/Modify Windows Service | 500 |
 | TA0003 Persistence | T1547.001 | Registry Run Keys | 500 |
 | TA0004 Privilege Escalation | T1548.002 | Bypass UAC | 500 |
 | TA0005 Defense Evasion | T1027 | Obfuscated Files / Information | 500 |
 | TA0005 Defense Evasion | T1036.003 | Masquerading: Rename System Utilities | 500 |
 | TA0005 Defense Evasion | T1055.001 | Process Injection (Cobalt Strike) | 500 |
+| TA0005 Defense Evasion | T1112 | Modify Registry | 500 |
 | TA0005 Defense Evasion | T1218.011 | Rundll32 Signed Binary Proxy | 500 |
 | TA0005 Defense Evasion | T1562.001 | Impair Defenses: Disable Tools | 500 |
 | TA0006 Credential Access | T1003.001 | LSASS Credential Dumping | 500 |
@@ -62,9 +65,6 @@ Our benchmark comprises 12,147 alerts parsed from the Splunk Attack Data reposit
 | TA0008 Lateral Movement | T1550.002 | Pass the Hash | 500 |
 | TA0011 Command & Control | T1071.001 | HTTP C2 Traffic | 104 |
 | TA0011 Command & Control | T1105 | Ingress Tool Transfer | 500 |
-| TA0011 Command & Control | T1112 | Modify Registry | 500 |
-| TA0011 Command & Control | T1136.001 | Create Local Account | 500 |
-| TA0011 Command & Control | T1204.002 | User Execution: Malicious File | 500 |
 
 ### 5.3.2 Dataset Adequacy
 
@@ -80,6 +80,8 @@ These requirements are enforced programmatically via a dataset gate that rejects
 
 **Limitation: All-positive benchmark.** All 12,147 benchmark alerts are true-positive attack alerts. Real SOC environments see 80–95% false-positive rates. Our current evaluation measures whether adversarial injection can cause misclassification of *malicious* alerts (evasion attacks). The reverse direction — injecting into benign traffic to *create* false positives — is not evaluated in this work and represents a complementary threat axis for future investigation.
 
+**Technique imbalance.** Alert counts range from 4 (T1021.002, SMB/Windows Admin Shares) to 514 (T1059.001, PowerShell). This reflects the natural distribution in Splunk Attack Data rather than deliberate balancing. Techniques with fewer than ~30 alerts may lack statistical power for per-technique analysis; aggregate results should be interpreted with this caveat.
+
 ### 5.3.3 Adversarial Variant Generation
 
 For each clean benchmark alert, we generate adversarial variants by injecting payloads into realistic log fields:
@@ -93,6 +95,8 @@ Plus 3 protocol-specific constraints (DNS 253-byte, SMB 14-char, TLS CN 64-char)
 
 The base end-to-end matrix produces **120 variants per alert** and **1,457,640 total adversarial samples** for the full benchmark. Extended E3 encoding tests are reported separately because they measure normalization survival rather than full triage runs. Payloads are truncated to respect field length constraints per vector.
 
+**Vector applicability.** Not all injection vectors are applicable to every alert type. For example, Sysmon process creation logs do not contain HTTP User-Agent or DNS query fields. In our variant generation, payloads are injected into synthesized fields appended to the alert context — modeling the scenario where an attacker's traffic generates correlated alerts across multiple log sources that are co-presented to the triage model. We acknowledge this represents a worst-case evaluation; per-vector eligible alert counts would be lower in deployments that strictly scope log fields by source type. Future work should evaluate vector-restricted variant sets.
+
 ## 5.4 Evaluation Metrics
 
 ### 5.4.1 Triage Accuracy (E1)
@@ -100,10 +104,11 @@ The base end-to-end matrix produces **120 variants per alert** and **1,457,640 t
 For clean alerts, we measure:
 - **F1 score** (macro-averaged across severity levels)
 - **Precision** and **recall** per severity class
-- **False positive rate** (benign classified as malicious)
 - **False negative rate** (malicious classified as benign)
 
 Ground truth labels are derived from Splunk detection rule associations: alerts from attack datasets are labeled as true positives.
+
+**Note:** False positive rate (benign classified as malicious) requires supplementary benign alert data not included in the current benchmark. We report FPR only for the behavioral invariant detector (measuring false escalation of clean triage decisions) where simulated clean outputs serve as the negative class.
 
 ### 5.4.2 Attack Success Rate (E2–E8)
 
@@ -184,7 +189,7 @@ Our evaluation pipeline produces outputs compatible with the SOC-Bench framework
 
 All experiments use:
 - Fixed random seeds for any stochastic components
-- Deterministic model inference (temperature=0)
+- Near-deterministic model inference (temperature=0). Note: MoE architectures may exhibit minor non-determinism due to expert routing order and GPU parallelism even at temperature 0. We mitigate this by averaging results across multiple runs where feasible.
 - Published evaluation scripts with hash-verified benchmark data
 - Docker-based deployment for model serving
 - Version-pinned dependencies (pyproject.toml)

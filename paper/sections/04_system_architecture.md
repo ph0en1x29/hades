@@ -57,11 +57,17 @@ All parsers emit `UnifiedAlert` objects with a fixed schema:
 | Provenance | `dataset_name`, `dataset_role`, `parser_version`, `label_provenance` | Reproducibility |
 | Benchmark | `scenario_id`, `rule_id`, `rule_source`, `mitre_techniques` | Scientific validity |
 
+**Evaluation-only metadata.** The unified alert schema includes benchmark provenance fields (`scenario_id`, `source_dataset`, `mitre_techniques`, `rule_id`) used exclusively for evaluation scoring and ground-truth comparison. These fields are NOT included in the prompt sent to the triage model. The model receives only the alert content fields (timestamp, source/destination IPs, log message, severity, parsed fields). This separation prevents information leakage from benchmark metadata into model inference.
+
 ### 4.3.2 Implemented Parsers
 
 **Sysmon XML Parser** (`splunk_sysmon.py`). Parses Windows Sysmon event logs from Splunk Attack Data. Handles concatenated `<Event>` XML elements with no root wrapper. Maps Sysmon EventIDs (1=Process Creation, 3=Network Connection, 10=Process Access, etc.) to alert severity levels and human-readable descriptions. Extracts source/destination IPs from network connection events.
 
 **Suricata JSON Parser** (`splunk_suricata.py`). Parses Suricata eve.json-format logs. Handles HTTP, DNS, TLS, alert, and fileinfo event types. Extracts HTTP User-Agent strings (our primary injection vector), request/response headers, and full network context.
+
+**Windows Security XML Parser** (`windows_security.py`). Parses Windows Security Event Logs in XML format. Handles authentication events (EventID 4624/4625), account management (4720/4726), and privilege escalation (4672). Extracts TargetUserName, TargetDomainName, and LogonType fields for authentication-based attack scenarios.
+
+**PowerShell Logging Parser** (integrated in `splunk_sysmon.py`). Parses Windows PowerShell event logs (EventID 4103/4104) from Splunk Attack Data. Extracts ScriptBlock content, HostApplication, and command-line arguments for detection of malicious PowerShell execution (T1059.001).
 
 **CIC-IDS2018 CSV Parser** (`cicids2018.py`). Parses CICFlowMeter network flow features. Used as an engineering scaffold for pipeline development; not part of the benchmark of record due to missing rule associations.
 
@@ -124,10 +130,12 @@ The injector is format-aware: it handles Sysmon XML EventData fields differently
 
 ### 4.4.4 Defense Implementations
 
-Three defense mechanisms are implemented:
+Three defense mechanisms are currently implemented:
 - **SanitizationDefense:** Regex-based removal of instruction-like patterns
 - **StructuredPromptDefense:** Recursive field wrapping with `[FIELD:path]` markers
 - **CanaryDefense:** Injects known canary strings into alert metadata
+
+A fourth defense (**Dual-LLM Verification**, described in §5.5 as D3) is planned for future implementation. The dual-model verification defense will use a second LLM to independently triage alerts, flagging disagreements for human review.
 
 ## 4.5 Multi-Agent Pipeline
 

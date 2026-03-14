@@ -191,7 +191,7 @@ We tested whether adversarial payloads survive 11 common SIEM normalization step
 
 **Important distinction:** These survival rates measure payload *integrity* — whether the payload text passes through SIEM normalization intact — not attack *effectiveness* against a target model. Whether an intact payload successfully manipulates a model's triage decision requires GPU-based E2 experiments (§6.8). High survival means the attack *opportunity* is preserved, not that the attack *succeeds*.
 
-**Key finding:** The two attack classes most dangerous to SOC operations (direct misclassification and confidence manipulation) survive all tested normalization steps across all SIEMs. Normalization is not a defense.
+**Key finding:** The two attack classes most dangerous to SOC operations (direct misclassification and confidence manipulation) survive all tested normalization steps across all SIEMs. Our normalization analysis suggests that standard SIEM normalization provides limited defense against these attack classes.
 
 ### 6.6.3 Implications
 
@@ -221,18 +221,18 @@ This reveals a **dual vulnerability**: payloads using direct keywords survive SI
 
 ### 6.6.5 Protocol Constraint Impact
 
-Protocol constraints significantly limit payload capacity but do not eliminate the threat:
+Protocol constraints significantly limit payload capacity but do not eliminate the threat. We report payload capacity in bytes/characters; approximate injection budget varies by payload complexity.
 
-| Protocol | Max Payload | Effective Instructions | Viability |
-|---|---:|---:|---|
-| HTTP User-Agent | ~8KB | ~200 words | **Excellent** — unlimited attack surface |
-| HTTP Referer | ~8KB | ~200 words | **Excellent** |
-| TLS Cert SAN | ~2KB | ~50 words | **Strong** — room for full instructions |
-| Email Subject | ~998 chars | ~25 words | **Strong** |
-| SSH Banner | ~255 chars | ~6 words | **Moderate** — fits short commands |
-| DNS Query | 253 bytes | ~4 words | **Tight** — needs compression |
-| TLS Cert CN | 64 chars | ~2 words | **Weak** — barely fits |
-| SMB Hostname | 15 chars | ~1 word | **Minimal** — insufficient alone |
+| Protocol | Max Payload | Viability |
+|---|---|---|
+| HTTP User-Agent | ~8KB | **Excellent** — unlimited attack surface |
+| HTTP Referer | ~8KB | **Excellent** |
+| TLS Cert SAN | ~2KB | **Strong** — room for full instructions |
+| Email Subject | ~998 chars | **Strong** |
+| SSH Banner | ~255 chars | **Moderate** — fits short commands |
+| DNS Query | 253 bytes | **Tight** — needs compression |
+| TLS Cert CN | 64 chars | **Weak** — barely fits |
+| SMB Hostname | 15 chars | **Minimal** — insufficient alone |
 
 HTTP-based vectors provide orders of magnitude more payload capacity than network-layer vectors. This suggests that web-facing log sources (proxy logs, WAF logs, CDN logs) are the primary attack surface for SOC LLM injection.
 
@@ -261,6 +261,8 @@ The behavioral invariant system detects 3 of 4 attack classes with near-perfect 
 **C2 (Confidence Manipulation)** is detected by the combination of INV-6 (confidence-severity alignment, added to address the original gap) and temporal/contextual invariants. INV-6 flags when a HIGH-severity alert receives an unusually low confidence score (<0.4) on a true-positive classification — a signature of confidence manipulation attacks that try to suppress escalation without changing the verdict. When combined with INV-5 temporal downplay patterns (common in manipulated reasoning), the weighted score crosses the detection threshold. *Note: pure confidence manipulation alone (without any reasoning anomaly) produces a single high violation below threshold — this honest limitation motivates dual-model verification as a complementary defense.*
 
 The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was tuned to minimize false positives: no clean decision triggered any violation across 50 test alerts.
+
+**Sample size limitation.** The current threshold calibration uses 50 alerts from a single technique family (T1003.001 credential access). This narrow calibration base means detection rates and false positive rates may differ across other technique types, particularly those with different alert structures (e.g., network-based vs. host-based indicators). Broader calibration across diverse technique families is planned for the full GPU evaluation.
 
 ### Invariant Definitions
 
