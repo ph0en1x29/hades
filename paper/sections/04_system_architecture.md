@@ -192,7 +192,7 @@ When injection is suspected (weighted score ≥3), the pipeline auto-escalates t
 
 ### 4.5.5 SOC-Bench Adapter
 
-The SOC-Bench adapter (`socbench_adapter.py`) maps Hades `TriageDecision` outputs into the ring-scored Fox, Tiger, and Panda output formats defined by Cai et al. (2026). This enables direct evaluation against SOC-Bench ground truth when datasets become available.
+The SOC-Bench adapter (`socbench_adapter.py`) produces Fox-format outputs (O1 campaign assessment, O2 activity classification, O3 triage bundle) with ring scoring per Cai et al. (2026). Tiger and Panda output schemas are drafted but not validated; only Fox scoring is evaluated in this paper (§6.9, using simulated triage decisions).
 
 ### 4.5.6 Benchmark Builder
 

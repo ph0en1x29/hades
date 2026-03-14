@@ -189,7 +189,7 @@ We tested whether adversarial payloads survive 11 common SIEM normalization step
 | Attention hijacking | **100%** | 0% | Misdirects without explicit instructions |
 | Escalation suppression | **100%** | 0% | Implicit suppression, hard to keyword-detect |
 
-**Important distinction:** ALL payloads survive SIEM normalization intact. All five attack classes use plain ASCII text, which passes through Elasticsearch truncation, JSON roundtrip, XML escaping, and all other tested normalization steps without semantic loss. The table measures a SECOND question: can keyword-based sanitization (D1) detect the payload? C1 (Direct misclassification) and C2 (Confidence manipulation) use explicit instruction keywords like "IGNORE" and "CLASSIFY" → 100% detectable by keyword matching. C3, C4, and C5 use natural language without instruction keywords → 0% detectable by keywords but still semantically effective to LLMs.
+**Important distinction:** All 15 tested payload templates survive SIEM normalization intact across our 11 normalization rules. All five attack classes use plain ASCII text, which passes through Elasticsearch truncation, JSON roundtrip, XML escaping, and all other tested normalization steps without semantic loss. The table measures a SECOND question: can keyword-based sanitization (D1) detect the payload? C1 (Direct misclassification) and C2 (Confidence manipulation) use explicit instruction keywords like "IGNORE" and "CLASSIFY" → 100% detectable by keyword matching. C3, C4, and C5 use natural language without instruction keywords → 0% detectable by keywords but still semantically effective to LLMs.
 
 **Key finding:** All five attack classes survive SIEM normalization. However, only C1 and C2 are detectable by keyword-based sanitization. C3, C4, and C5 evade keyword detection entirely while remaining semantically effective — making keyword sanitization (D1) a partial defense at best.
 
@@ -217,7 +217,7 @@ We tested 9 encoding strategies (6 evasion, 3 protocol-constrained) across all 1
 
 **Critical methodological note:** Low keyword detection rates for evasion encodings does not mean ineffectiveness. Homoglyph, zero-width, and leetspeak encodings are *designed* to evade keyword-based detection — they show 0% keyword detection because the sanitizer can't parse them, but LLMs can. These encodings would bypass sanitization defenses (D1) while remaining semantically valid to the model. Whether they actually succeed requires GPU-based E2 experiments.
 
-This reveals a **layered vulnerability**: all payloads survive SIEM normalization intact (§6.6.2), but keyword-based sanitization only detects payloads with explicit instruction markers (C1/C2). Evasion encodings and natural-language attack classes (C3/C4/C5) bypass keyword detection entirely while remaining semantically effective to LLMs. No single defense layer addresses the full attack surface.
+This reveals a **layered vulnerability**: all tested payloads survive SIEM normalization intact (§6.6.2), but keyword-based sanitization only detects payloads with explicit instruction markers (C1/C2). Evasion encodings and natural-language attack classes (C3/C4/C5) bypass keyword detection entirely while remaining semantically effective to LLMs. No single defense layer addresses the full attack surface.
 
 ### 6.6.5 Protocol Constraint Impact
 
@@ -326,7 +326,7 @@ The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was
 | Dual-LLM Verify | TBD | TBD | TBD |
 | Canary Tokens | TBD | TBD | TBD |
 
-## 6.9 SOC-Bench Fox Scoring (Pre-GPU)
+## 6.9 Counterfactual Impact Analysis: Fox Scoring (Pre-GPU)
 
 We evaluated the pipeline's campaign-detection capability using the SOC-Bench Fox ring-scoring rubric (O1 campaign 39pts, O2 activity 39pts, O3 triage 22pts = 100pts max).
 

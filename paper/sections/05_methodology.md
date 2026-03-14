@@ -183,11 +183,11 @@ Following Nasr et al. [2025], we evaluate whether defenses survive when the atta
 
 ## 5.6 SOC-Bench Alignment
 
-Our evaluation pipeline produces outputs compatible with the SOC-Bench framework [Cai et al., 2026], enabling direct comparison with multi-agent SOC systems evaluated under that benchmark. Specifically:
+Our evaluation pipeline includes a partial adapter for the SOC-Bench framework [Cai2026]. Currently, only Fox task scoring is implemented and evaluated (§6.9), using simulated triage decisions rather than real model outputs. Specifically:
 
 **Task Fox (Campaign Detection).** Hades triage decisions are aggregated into SOC-Bench Fox stage outputs comprising three structured outcomes: O1 campaign-scale assessment (campaign detection, scope, affected hosts), O2 activity-type reasoning (MITRE technique classification, kill chain phase), and O3 cross-stage alert triage bundles (priority, recommended actions). All outputs include evidence_id chains for chain-of-custody verification.
 
-**Task Tiger (Attribution/TTP Reporting).** The classifier's MITRE technique identification and RAG-retrieved context naturally produce the data required for Tiger O1 (data source relationships) and O2 (threat graphs). We implement a SOC-Bench adapter layer that transforms flat TriageDecision objects into the richer, evidence-backed JSON schemas SOC-Bench expects. *Note: This work evaluates only Fox task scoring (§6.9); Tiger evaluation is deferred to Phase 2.*
+**Task Tiger (Attribution/TTP Reporting).** The adapter includes Tiger output schemas, but Tiger requires data source relationship graphs and attribution reasoning that our flat TriageDecision objects do not directly produce. Bridging this gap requires additional pipeline components beyond classification. *Tiger evaluation is deferred to Phase 2; this paper evaluates only Fox task scoring (§6.9).*
 
 **Ring Scoring.** We adopt SOC-Bench's graduated ring scoring model (Bullseye=3, Inner=2, Outer=1, Miss=0) rather than binary correct/incorrect for technique identification accuracy. This rewards partial matches — correctly identifying the tactic but wrong sub-technique scores Inner rather than Miss.
 

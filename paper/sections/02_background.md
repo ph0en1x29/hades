@@ -48,7 +48,7 @@ Recent work establishes benchmarking standards for LLM security applications:
 
 - **CyBench** [Zhang2025] evaluates offensive cybersecurity capabilities of LLMs across 40 CTF-style tasks, funded by a $2.9M grant from Open Philanthropy.
 - **AgentDojo** [Debenedetti2024] provides a dynamic benchmark for prompt injection on LLM agents with 97 tasks and 629 security test cases.
-- **SOC-Bench** [Liu2026] defines design principles for evaluating multi-agent AI systems in SOC contexts, grounded in the Colonial Pipeline/DarkSide ransomware incident.
+- **SOC-Bench** [Cai2026] defines design principles for evaluating multi-agent AI systems in SOC contexts, grounded in the Colonial Pipeline/DarkSide ransomware incident.
 - **SecBench** [Jing2024] benchmarks LLM cybersecurity knowledge through MCQ-style assessments.
 
 Our work differs from these in focus: we do not benchmark LLM *offensive* capabilities (CyBench) or *knowledge* (SecBench), but rather evaluate whether LLMs deployed *defensively* in SOCs can be attacked through their own data pipelines.
