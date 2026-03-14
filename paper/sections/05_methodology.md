@@ -95,7 +95,7 @@ For each clean benchmark alert, we generate adversarial variants by injecting pa
 
 Plus 3 protocol-specific constraints (DNS 253-byte, SMB 15-char, TLS CN 64-char) that enforce realistic field length limits.
 
-The base end-to-end matrix produces **120 variants per alert** and **1,457,640 total adversarial samples** for the full benchmark. Extended E3 encoding tests are reported separately because they measure normalization survival rather than full triage runs. Payloads are truncated to respect field length constraints per vector.
+The base end-to-end matrix produces **120 variants per alert** and **1,457,640 total adversarial samples** as the design-space upper bound. This count assumes all 12 vectors apply to all alerts; the realized executable count after vector-applicability filtering will be lower, since not all vector-field combinations exist in every log source (see caveat below). Extended E3 encoding tests are reported separately because they measure normalization survival rather than full triage runs. Payloads are truncated to respect field length constraints per vector.
 
 **Vector applicability.** Not all injection vectors are applicable to every alert type. For example, Sysmon process creation logs do not contain HTTP User-Agent or DNS query fields. In our variant generation, payloads are injected into synthesized fields appended to the alert context — modeling the scenario where an attacker's traffic generates correlated alerts across multiple log sources that are co-presented to the triage model. We acknowledge this represents a worst-case evaluation; per-vector eligible alert counts would be lower in deployments that strictly scope log fields by source type. Future work should evaluate vector-restricted variant sets.
 

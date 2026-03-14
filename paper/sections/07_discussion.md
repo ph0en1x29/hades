@@ -28,7 +28,7 @@ Structured prompt architectures (D2) show promise because they add explicit data
 
 ## 7.4 MoE Architecture Vulnerability
 
-Different Mixture-of-Experts architectures may exhibit different vulnerability profiles because the expert routing decision determines which subset of model parameters processes the adversarial payload. Recent MoE security research enables concrete predictions for our experiments:
+Because all four evaluated models use MoE architectures, any cross-model observations will speak to variation *within* the MoE design space (expert counts, routing mechanisms, active parameter ratios) rather than dense-vs-MoE architectural differences. The expert routing decision determines which subset of model parameters processes the adversarial payload, and recent MoE security research enables concrete predictions:
 
 **Prediction 1: Expert granularity correlates with attack surface.** Qwen 3.5 (512 experts) and K2.5 (384 experts) have more fine-grained routing than DeepSeek R1 and GLM-5 (256 each). Te Lintelo et al. [TeLintelo2026] showed that silencing <20% of layer-wise experts raises ASR from 7.3% to 70.4%. Models with more experts have more potential targets for selective activation. We predict models with higher expert counts (Qwen 3.5, K2.5) will show *higher variance* across injection vectors — some vectors may route through safety-critical experts and be resisted, while others bypass them entirely. The falsifiable prediction is: per-vector ASR standard deviation will correlate positively with expert count across our four models.
 
@@ -50,7 +50,7 @@ As SOC systems move toward autonomous response (blocking IPs, isolating hosts, t
 
 **L1: File replay vs. live deployment.** We evaluate on file-replayed alerts, not live SIEM data. Real deployments may apply additional normalization, enrichment, or filtering that affects injection viability. Our E3 experiment partially addresses this by analyzing SIEM normalization behavior across five platforms.
 
-**L2: Correlation scope.** While Hades includes a correlator agent for multi-stage campaign detection, our adversarial evaluation currently targets single-alert triage decisions. Multi-alert injection attacks (where the payload is split across several related alerts to evade single-alert invariant checks) represent a promising future research direction.
+**L2: Correlation scope.** While Hades includes a correlator agent for multi-stage campaign detection, our adversarial evaluation currently targets single-alert triage decisions. Because the correlator reasons over benchmark-linked alert context and handcrafted heuristic priors (e.g., known attack chain patterns), its apparent recovery capability may partially reflect access to structured campaign information not available in a fully unconstrained deployment. We therefore present the correlator as a design probe rather than a validated production defense. Multi-alert injection attacks represent a promising future research direction.
 
 **L3: Prompt template sensitivity.** Injection success rates depend heavily on the specific prompt template used for triage. We use a single, representative template derived from published SOC automation patterns. Different prompt designs may be more or less vulnerable.
 
