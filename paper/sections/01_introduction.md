@@ -18,7 +18,7 @@ This attack surface is no longer hypothetical. Neaves [2025] demonstrated succes
 
 We pose the following question:
 
-> *Can adversaries manipulate LLM-based SOC triage systems through crafted network traffic, and what defense mechanisms effectively mitigate this threat?*
+> *Can adversaries manipulate LLM-based SOC triage systems through crafted network traffic, and what defense mechanisms appear promising for mitigating this threat?*
 
 This question has three components: (1) characterizing the attack surface specific to SOC triage, (2) measuring vulnerability across different model architectures, and (3) evaluating whether proposed defenses survive adaptive attackers.
 

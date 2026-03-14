@@ -181,9 +181,9 @@ Following Nasr et al. [2025], we evaluate whether defenses survive when the atta
 - **Level 2:** Attacker knows structured prompt format → crafts payloads that exploit field boundaries
 - **Level 3:** Attacker knows dual-LLM setup → crafts payloads optimized to fool both models simultaneously
 
-## 5.6 SOC-Bench Alignment
+## 5.6 SOC-Bench-Inspired Partial Fox Adapter
 
-Our evaluation pipeline includes a partial adapter for the SOC-Bench framework [Cai2026]. Currently, only Fox task scoring is implemented and evaluated (§6.9), using simulated triage decisions rather than real model outputs. Specifically:
+Our evaluation pipeline includes a partial adapter inspired by the SOC-Bench framework [Cai2026]. We do not claim compliance with or direct comparability to full SOC-Bench results — Tiger is not implemented and Fox is used here only for counterfactual downstream scoring on simulated triage decisions, not real model outputs. Specifically:
 
 **Task Fox (Campaign Detection).** Hades triage decisions are aggregated into SOC-Bench Fox stage outputs comprising three structured outcomes: O1 campaign-scale assessment (campaign detection, scope, affected hosts), O2 activity-type reasoning (MITRE technique classification, kill chain phase), and O3 cross-stage alert triage bundles (priority, recommended actions). All outputs include evidence_id chains for chain-of-custody verification.
 

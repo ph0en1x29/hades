@@ -75,7 +75,7 @@ We identify 12 injection vectors — SIEM log fields that (a) originate from net
 
 ## 3.5 Attack Classes
 
-We define five attack classes based on the attacker's objective:
+We define five top-level attack classes (C1–C5) based on the attacker's objective, with C2 containing two subtypes (C2a and C2b):
 
 **C1 — Direct Misclassification.** The payload instructs the LLM to classify the alert as benign, low severity, or false positive. This is the most direct attack and serves as a baseline for measuring vulnerability.
 
