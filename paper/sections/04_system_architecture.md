@@ -154,7 +154,7 @@ The triage pipeline (`pipeline.py`) processes alerts through:
 The correlator (`correlator.py`) detects multi-stage attack campaigns by running four parallel strategies against an in-memory alert store:
 
 1. **IP clustering** — groups alerts sharing source/destination IPs within a configurable time window (default ±15 min)
-2. **Technique chain detection** — maps observed MITRE techniques to tactics, then matches against 5 known attack patterns (ransomware, data exfiltration, credential theft, lateral movement, persistence establishment). A pattern is flagged when ≥40% of its expected tactic sequence is observed.
+2. **Technique chain detection** — maps observed MITRE techniques to tactics, then matches against 5 known attack patterns (ransomware, data exfiltration, credential theft, lateral movement, persistence establishment). A pattern is flagged when ≥40% of its expected tactic sequence is observed. This threshold was chosen heuristically to balance sensitivity (catching partial campaigns) against false positives (coincidental tactic overlap); threshold sensitivity analysis across 20–80% is planned for the full GPU evaluation.
 3. **Session reconstruction** — groups alerts by `src_ip→dst_ip` pairs to identify persistent attacker sessions
 4. **Temporal burst detection** — detects spikes of ≥5 alerts from a single source within the time window
 
