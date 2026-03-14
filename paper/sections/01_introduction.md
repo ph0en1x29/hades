@@ -26,7 +26,7 @@ This question has three components: (1) characterizing the attack surface specif
 
 This paper makes the following contributions:
 
-1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Four vectors are validated against production systems [Neaves2025].
+1. **SOC-specific threat model.** We enumerate 12 candidate injection vectors through SIEM log fields, with payload length constraints, SIEM normalization survival rates, and realism assessments. Of these, 4 are empirically validated against production SIEM systems [Neaves2025]; the remaining 8 are characterized from protocol specifications and SIEM documentation.
 
 2. **Adversarial evaluation framework and benchmark.** We construct a benchmark of 12,147 rule-linked SIEM alerts across 27 MITRE ATT&CK techniques in 9 tactics, and define an evaluation protocol for 4 frontier open-weight models (3 MoE + 1 dense control) under 5 attack classes and a 12-vector injection taxonomy, producing over 1.4 million base adversarial alert variants. Cross-model attack success results await GPU allocation; this paper validates benchmark construction, SIEM normalization survival, and preliminary defense mechanisms.
 
@@ -36,7 +36,7 @@ This paper makes the following contributions:
 
 5. **Defense evaluation protocol.** We implement 3 defense mechanisms — input sanitization, structured prompt architecture, and canary token detection — and design a fourth (dual-LLM verification). Our adaptive attacker evaluation follows Nasr et al. [2025] methodology; defense effectiveness results await GPU experiments.
 
-6. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
+6. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, aligning with the dataset adequacy recommendations for LLM-based security research [Liu2026] across four dimensions (rule association, MITRE mapping, provenance chain, scenario identifier).
 
 7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a reproducibility harness (see scripts/reproduce_all.py) and a partial SOC-Bench [Cai2026] Fox-task scoring adapter.
 

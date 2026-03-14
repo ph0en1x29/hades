@@ -2,6 +2,8 @@
 
 > **Status:** Experimental infrastructure is complete; full model runs are pending Penn State lab GPU allocation. This section records validated pre-experiment results, benchmark construction outputs, and the exact result tables that will be populated once model inference begins.
 
+**Attack chain validation status.** The end-to-end attack path (attacker → protocol field → SIEM normalization → prompt construction → model influence → triage corruption) is validated through the first four stages: payloads survive SIEM normalization (§6.6.2) and appear in serialized alert text presented to the model (§6.4). The final two stages — whether surviving payloads achieve sufficient salience to influence model output and corrupt triage decisions — require GPU experiments (E1–E2) and remain pending.
+
 ## 6.1 Benchmark Construction Results
 
 We constructed **Hades Benchmark v1** from Splunk Attack Data and validated every alert against the dataset gate.
@@ -142,7 +144,7 @@ The triage prompt module was validated on representative alerts.
 | Structured prompt | ~767 | D2 defense enabled |
 | Suricata HTTP prompt | ~711 | preserves HTTP header context |
 
-This means a full triage call with a 1,024-token response budget remains under ~1,800 tokens per alert — well within the 20K prompt budget target.
+This means a full triage call with a 1,024-token response budget remains under ~1,800 tokens per alert (measured using the DeepSeek R1 tokenizer) — well within the 20K prompt budget target.
 
 ## 6.5 Dry-Run Experiment Validation
 
@@ -261,7 +263,7 @@ The behavioral invariant system detects 3 of the 4 attack classes evaluated in t
 
 **C2 (Confidence Manipulation)** is detected by the combination of INV-6 (confidence-severity alignment, added to address the original gap) and temporal/contextual invariants. INV-6 flags when a HIGH-severity alert receives an unusually low confidence score (<0.4) on a true-positive classification — a signature of confidence manipulation attacks that try to suppress escalation without changing the verdict. When combined with INV-5 temporal downplay patterns (common in manipulated reasoning), the weighted score crosses the detection threshold. *Note: pure confidence manipulation alone (without any reasoning anomaly) produces a single high violation below threshold — this gap motivates dual-model verification as a complementary defense.*
 
-The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was tuned to minimize false positives: no clean decision triggered any violation across 50 test alerts. **Confidence intervals** (95% Clopper-Pearson): C1/C3 detection 100% [92.9%, 100.0%]; C4 detection 98% [89.4%, 99.9%]; FPR 0% [0.0%, 7.1%]. These wide intervals reflect the small calibration sample; narrowing them is a priority for the full GPU evaluation.
+**Study composition.** The 50-alert study comprises: 50 clean (uninjected) triage outputs serving as the negative class for false-positive measurement, plus 50 adversarial outputs per evaluated attack class (C1, C2, C3, C4) — hand-crafted by the authors to represent successful injection outcomes for a single technique family (T1003.001 LSASS). All outputs were evaluated without author blinding. The weighted scoring threshold (critical=3, high=2, medium=1, threshold≥3) was tuned to minimize false positives: no clean decision triggered any violation across 50 test alerts. **Confidence intervals** (95% Clopper-Pearson): C1/C3 detection 100% [92.9%, 100.0%]; C4 detection 98% [89.4%, 99.9%]; FPR 0% [0.0%, 7.1%]. These wide intervals reflect the small calibration sample; narrowing them is a priority for the full GPU evaluation.
 
 **Sample size limitation.** The current threshold calibration uses 50 alerts from a single technique family (T1003.001 credential access). This narrow calibration base means detection rates and false positive rates may differ across other technique types, particularly those with different alert structures (e.g., network-based vs. host-based indicators). Broader calibration across diverse technique families is planned for the full GPU evaluation.
 
