@@ -107,7 +107,6 @@ The payload library (`payloads.py`) contains 15 templates across 5 attack classe
   - **Underscore:** Space-to-underscore substitution (demonstrated in [Neaves2025])
 
 - **Extended encodings (E3 normalization tests):**
-  - **URL-encoded:** Percent-encoding for HTTP fields
   - **Base64 wrapped:** Partial base64 wrapping
   - **Markdown comment:** Injection wrapped in HTML comment syntax
   - **Synonym substitution:** Rephrasing to evade keyword detection

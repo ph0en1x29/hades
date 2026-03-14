@@ -8,7 +8,7 @@ The vulnerability we study is structural, not incidental: any SOC pipeline that 
 
 ## 7.2 Behavioral Invariants: Output-Level Defense
 
-Our key insight is that effective SOC triage defenses must operate at the *workflow level*, not the *model level*. Nasr et al. [2025] demonstrated that 14 research teams could break ALL 12 proposed prompt injection defenses with >90% attack success rate using adaptive attacks. This result is devastating for any defense that operates on the model's input or internal processing — an adaptive attacker can always find a way to craft payloads that bypass sanitization, structured prompts, or canary tokens.
+Our key insight is that effective SOC triage defenses must operate at the *workflow level*, not the *model level*. Nasr et al. [2025] assembled a 14-author red team spanning OpenAI, Anthropic, DeepMind, and ETH Zurich, and demonstrated that adaptive attackers could break ALL 12 proposed prompt injection defenses with >90% attack success rate. This result is devastating for any defense that operates on the model's input or internal processing — an adaptive attacker can always find a way to craft payloads that bypass sanitization, structured prompts, or canary tokens.
 
 Behavioral invariants address this from a different angle by checking the model's output against ground-truth properties of the source alert. The key asymmetry is informational: input-level defenses operate in the **attacker's action space** — the payload content, encoding, and phrasing, all of which the attacker controls and can iteratively refine. Output-level invariants operate in the **problem's constraint space** — physical and logical properties of the alert that the attacker cannot modify without controlling the network infrastructure itself. An alert from 10.0.1.15 will always originate from 10.0.1.15; a SIEM rule matching T1003.001 will always carry that technique tag. No amount of prompt engineering can change these ground-truth properties.
 
@@ -34,7 +34,7 @@ Different Mixture-of-Experts architectures may exhibit different vulnerability p
 
 **Prediction 3: Dense vs MoE baseline.** GLM-5 (dense) should show different vulnerability *patterns* than the three MoE models, even if overall ASR is similar. Specifically, we predict MoE models will show higher variance across vectors (some vectors may preferentially activate safety-critical experts), while GLM-5 should show more uniform vulnerability across vectors.
 
-These predictions are falsifiable in E1-E8 and would constitute the first empirical evidence connecting MoE architecture properties to indirect prompt injection vulnerability in a domain-specific deployment.
+These predictions are falsifiable in E1-E8 and, if confirmed, would provide early empirical evidence connecting MoE architecture properties to indirect prompt injection vulnerability in a domain-specific deployment.
 
 ## 7.5 Cost of Autonomy and Attack Economics
 

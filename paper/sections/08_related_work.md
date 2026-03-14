@@ -34,7 +34,7 @@ Our cross-model comparison includes three MoE architectures (DeepSeek R1, Kimi K
 
 **L³ (Large Language Lobotomy)** [TeLintelo2026] demonstrates a training-free attack that silences safety-critical experts in MoE models, increasing ASR from 7.3% to 70.4% (peak 86.3%) by disabling <20% of layer-wise experts while preserving utility. **SAFEx** [Lai2025] identifies that safety behavior concentrates in specific expert groups (HCDG/HRCG) — disabling just 12 experts in Qwen3-30B reduces refusal rate by 22%.
 
-These findings suggest that different MoE architectures may exhibit different adversarial vulnerability profiles depending on how safety-critical behavior is distributed across experts — a hypothesis our E1-E8 cross-model experiments can test. If injection payloads differentially exploit expert routing patterns, this would be the first demonstration of architecture-dependent IPI vulnerability in SOC contexts.
+These findings suggest that different MoE architectures may exhibit different adversarial vulnerability profiles depending on how safety-critical behavior is distributed across experts — a hypothesis our E1-E8 cross-model experiments can test. If injection payloads differentially exploit expert routing patterns, this would provide early evidence of architecture-dependent IPI vulnerability in SOC contexts.
 
 ## 8.4 Security Benchmarks
 
@@ -78,6 +78,6 @@ Table 2 summarizes how our work fills gaps in the existing literature.
 | Human study | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ (L6) |
 | Live deployment | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ (L1) |
 
-**Our unique contributions:** (1) the first systematic adversarial evaluation of LLM triage systems through SIEM log field injection, (2) cross-architecture vulnerability comparison of 4 frontier MoE models, (3) defense evaluation following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements, and (5) SOC-Bench-compatible output schemas enabling direct comparison with future SOC AI systems. Items marked '(designed)' indicate implemented experimental infrastructure with evaluation pending GPU allocation.
+**Our unique contributions:** (1) the first systematic adversarial evaluation of LLM triage systems through SIEM log field injection, (2) cross-architecture vulnerability comparison of 4 frontier models (3 MoE + 1 dense control), (3) defense evaluation following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements, and (5) SOC-Bench-compatible output schemas enabling direct comparison with future SOC AI systems. Items marked '(designed)' indicate implemented experimental infrastructure with evaluation pending GPU allocation.
 
 No prior work occupies the intersection of SOC-specific evaluation, SIEM-channel adversarial attack, and adaptive defense evaluation. AgentSentry [Zhang2026a] addresses adversarial robustness but not SOC workflows; CORTEX [Wei2025] addresses SOC triage but not adversarial robustness; SOC-Bench [Liu2026] defines evaluation structure but assumes benign inputs. Hades fills the gap where all three concerns converge.
