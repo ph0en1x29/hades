@@ -101,7 +101,7 @@ We define five attack classes based on the attacker's objective:
 
 ## 3.6 Defense Coverage Matrix
 
-Table 2 maps each defense mechanism to the attack classes it is designed to address. No single defense covers all five classes, motivating the layered approach evaluated in E4–E8.
+Table 1 maps each defense mechanism to the attack classes it is designed to address. No single defense covers all five classes, motivating the layered approach evaluated in E4–E8.
 
 | Defense | C1 Misclassification | C2 Confidence | C3 Reasoning | C4 Attention | C5 Escalation |
 |---|---|---|---|---|---|

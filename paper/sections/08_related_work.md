@@ -30,7 +30,7 @@ OWASP LLM Top 10 [2025] ranks prompt injection as LLM01, the #1 vulnerability fo
 
 ## 8.3 MoE Architecture Vulnerabilities
 
-Our cross-model comparison (DeepSeek R1, GLM-5, Kimi K2.5, Qwen 3.5) uses exclusively Mixture-of-Experts architectures, making MoE-specific adversarial research directly relevant.
+Our cross-model comparison includes three MoE architectures (DeepSeek R1, Kimi K2.5, Qwen 3.5) plus GLM-5 as a dense control, making MoE-specific adversarial research directly relevant.
 
 **L³ (Large Language Lobotomy)** [TeLintelo2026] demonstrates a training-free attack that silences safety-critical experts in MoE models, increasing ASR from 7.3% to 70.4% (peak 86.3%) by disabling <20% of layer-wise experts while preserving utility. **SAFEx** [Lai2025] identifies that safety behavior concentrates in specific expert groups (HCDG/HRCG) — disabling just 12 experts in Qwen3-30B reduces refusal rate by 22%.
 
@@ -62,7 +62,7 @@ These findings suggest that different MoE architectures may exhibit different ad
 
 ## 8.7 Gap Analysis
 
-Table 1 summarizes how our work fills gaps in the existing literature.
+Table 2 summarizes how our work fills gaps in the existing literature.
 
 | Capability | CyBench | AgentDojo | AgentSentry | CORTEX | SOC-Bench | Hades |
 |---|---|---|---|---|---|---|
