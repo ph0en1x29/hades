@@ -2,7 +2,7 @@
 
 ## 7.1 Implications for SOC Deployment
 
-Our preliminary results and framework design suggest that LLM-based triage systems face a fundamental tension: the same capability that makes them useful — processing unstructured log data with contextual reasoning — makes them vulnerable to adversarial manipulation through that data. This is not a bug to be patched but a structural property of deploying language models on adversary-generated content.
+The vulnerability we study is structural, not incidental: any SOC pipeline that asks an LLM to reason over attacker-controlled telemetry invites the adversary to compete for control of the model's interpretation process. This is not an implementation flaw to be patched; it is the predictable consequence of placing a language model inside an adversarially supplied data path. The same capability that makes LLMs useful for triage — processing unstructured log data with contextual reasoning — makes them vulnerable to adversarial manipulation through that data.
 
 **Practical recommendation.** Organizations deploying LLM triage should treat model outputs as *suggestions* requiring human verification for any alert the model recommends downgrading. The confidence threshold for automatic closure must account for the possibility that the confidence score itself has been manipulated (Attack Class C2).
 
@@ -14,7 +14,7 @@ Behavioral invariants address this from a different angle by checking the model'
 
 Concretely: a triage decision that references IP addresses not present in the original alert (INV-2) is suspicious regardless of how the model arrived at it. A classification of BENIGN for an alert the SIEM flagged as HIGH severity, without documented rationale (INV-1), warrants escalation regardless of whether the decision was caused by prompt injection or model error.
 
-Our pre-GPU evaluation shows 100% detection on C1 (direct misclassification) and C3 (reasoning corruption), 98% on C4 (attention hijacking), and 0% false positives. These results are preliminary, validated against simulated template outputs (§6.7). Real model outputs may exhibit more varied failure modes, and detection rates could differ. Full validation awaits GPU experiments. The notable exception is C2 (confidence manipulation), where detection ranges from 0% (pure confidence inflation) to 100% (when combined with reasoning anomalies) — the subtlest attack class. This motivates layered defenses: behavioral invariants catch the overt attacks, while output confidence calibration and dual-model verification target C2.
+In effect, behavioral invariants shift defense from trying to sanitize language to verifying consequences. Our pre-GPU evaluation shows 100% detection on C1 (direct misclassification) and C3 (reasoning corruption), 98% on C4 (attention hijacking), and 0% false positives. These results are preliminary, validated against simulated template outputs (§6.7). Real model outputs may exhibit more varied failure modes, and detection rates could differ. Full validation awaits GPU experiments. The notable exception is C2 (confidence manipulation), where detection ranges from 0% (pure confidence inflation) to 100% (when combined with reasoning anomalies) — the subtlest attack class. This motivates layered defenses: behavioral invariants catch the overt attacks, while output confidence calibration and dual-model verification target C2.
 
 ## 7.3 The Input Defense Paradox
 

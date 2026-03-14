@@ -80,7 +80,7 @@ Each alert in our benchmark satisfies four adequacy requirements:
 
 These requirements are enforced programmatically via a dataset gate that rejects alerts missing any field.
 
-**Limitation: All-positive benchmark.** All 12,147 benchmark alerts are true-positive attack alerts. Real SOC environments see 80–95% false-positive rates. Our current evaluation measures whether adversarial injection can cause misclassification of *malicious* alerts (evasion attacks). The reverse direction — injecting into benign traffic to *create* false positives — is not evaluated in this work and represents a complementary threat axis for future investigation.
+**Limitation: All-positive benchmark.** All 12,147 benchmark alerts are true-positive attack alerts. Real SOC environments see 80–95% false-positive rates. This creates an asymmetry in our evaluation: we primarily measure **suppression/evasion attacks on true positives** (can an attacker hide their own malicious activity?), but do not quantify **false-positive induction on benign telemetry** (can an attacker inject into benign traffic to overwhelm analysts with spurious escalations?). The latter represents a complementary threat axis — a denial-of-service attack on SOC attention — and is deferred to future investigation with supplementary benign alert datasets.
 
 **Technique imbalance.** Alert counts range from 4 (T1021.002, SMB/Windows Admin Shares) to 514 (T1059.001, PowerShell). This reflects the natural distribution in Splunk Attack Data rather than deliberate balancing. Techniques with fewer than ~30 alerts may lack statistical power for per-technique analysis; aggregate results should be interpreted with this caveat.
 
@@ -118,11 +118,17 @@ For adversarial alerts, the primary metric is **Attack Success Rate (ASR)**:
 
 $$\text{ASR} = \frac{\text{# alerts where adversarial variant changed the triage decision}}{\text{# total adversarial variants}}$$
 
-We measure ASR at multiple granularities:
-- **ASR per vector:** Which log fields are most vulnerable?
-- **ASR per attack class:** Which objectives are most achievable?
-- **ASR per model:** Which architectures are most vulnerable?
-- **ASR per encoding:** Which encoding strategies are most effective?
+We decompose ASR into operationally meaningful sub-metrics:
+- **ASR-class:** Fraction where severity/classification changed (captures C1)
+- **ASR-confidence:** Fraction where confidence crossed a review threshold without classification change (captures C2)
+- **ASR-rationale:** Fraction where explanation/evidence trace was corrupted while classification remained correct (captures C3/C4)
+- **ASR-campaign:** Fraction where Fox score or chain detection degraded (captures C5)
+
+We further cross-tabulate ASR across four dimensions:
+- **Per vector:** Which log fields are most vulnerable?
+- **Per attack class:** Which objectives are most achievable?
+- **Per model:** Which architectures are most vulnerable?
+- **Per encoding:** Which encoding strategies are most effective?
 
 ### 5.4.3 Defense Effectiveness
 

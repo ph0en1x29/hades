@@ -2,7 +2,7 @@
 
 Security Operations Centers (SOCs) process thousands of alerts daily, yet human analysts can effectively triage only 50–100 alerts per shift [MDPI2025]. This capacity gap has driven rapid adoption of Large Language Models (LLMs) for automated alert triage, where models classify incoming Security Information and Event Management (SIEM) alerts by severity, identify potential attack patterns, and recommend response actions [Wei2025]. Commercial platforms now embed LLM-based assistants directly into SIEM workflows, and research systems like CORTEX demonstrate that multi-agent LLM architectures can substantially reduce false positive rates across enterprise scenarios.
 
-However, this integration introduces a fundamental vulnerability that inverts the trust model of traditional security tools: **the data that LLM triage systems process originates from the same adversaries they are designed to detect.** SIEM platforms log network traffic, authentication events, and system telemetry — all of which contain fields whose content is directly controlled by external actors. When an LLM processes these logs, attacker-controlled data enters the model's context window alongside system instructions, creating a classic indirect prompt injection attack surface [OWASP2025].
+However, this integration introduces a fundamental vulnerability that collapses a trust boundary traditional security tools maintain: **the data that LLM triage systems process originates from the same adversaries they are designed to detect.** In LLM triage, the evidence stream and the adversary-controlled instruction stream are the same object. SIEM platforms log network traffic, authentication events, and system telemetry — all of which contain fields whose content is directly controlled by external actors. When an LLM processes these logs, attacker-controlled data enters the model's context window alongside system instructions, creating a classic indirect prompt injection attack surface [OWASP2025].
 
 ## 1.1 The Overlooked Attack Surface
 
@@ -10,9 +10,9 @@ Unlike conventional prompt injection, where a malicious user interacts directly 
 
 > **Attacker → Network traffic → SIEM normalization → Log storage → LLM prompt construction → Triage decision**
 
-At each stage, attacker-controlled content is preserved and eventually presented to the LLM as "data" to analyze. The model cannot reliably distinguish between legitimate log fields and injected instructions, because the boundary between data and instruction is defined only by prompt formatting — a boundary that LLMs are known to violate [Nasr2025].
+At each stage, attacker-controlled content is preserved and eventually presented to the LLM as "data" to analyze. From an information-flow perspective, the system prompt represents a high-trust control channel and the log data represents a low-trust data channel — but LLMs do not enforce noninterference between the two. The model cannot reliably distinguish between legitimate log fields and injected instructions, because the boundary between data and instruction is defined only by prompt formatting — a boundary that LLMs are known to violate [Nasr2025].
 
-This is not theoretical. Neaves [2025] demonstrated successful prompt injection through HTTP User-Agent headers, SSH username fields, and Windows Event Log authentication records, causing LLM-based SIEM assistants to falsify source IP addresses, hide attack indicators, and fabricate decoy events. Unit 42 [2026] reported 22 distinct indirect prompt injection techniques observed in production telemetry.
+This attack surface is no longer hypothetical. Neaves [2025] demonstrated successful prompt injection through HTTP User-Agent headers, SSH username fields, and Windows Event Log authentication records, causing LLM-based SIEM assistants to falsify source IP addresses, hide attack indicators, and fabricate decoy events. Unit 42 [2026] reported 22 distinct indirect prompt injection techniques observed in production telemetry.
 
 ## 1.2 Research Question
 

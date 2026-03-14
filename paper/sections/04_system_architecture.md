@@ -174,7 +174,7 @@ Severity is dynamically escalated when attack chains are detected: a medium-seve
 
 ### 4.5.4 Behavioral Invariant Defense
 
-The invariant layer (`behavioral_invariants.py`) is our primary defense against prompt injection — and crucially, it operates on triage **outputs**, not **inputs**. Because input-level defenses like sanitization and structured prompts are consistently bypassed by adaptive attackers (Nasr et al., 2025), output-level checking is potentially more robust in principle — though this comparative advantage remains to be validated against real model outputs in E8.
+The invariant layer (`behavioral_invariants.py`) functions as a **runtime assurance monitor** — analogous to runtime verification in safety-critical systems — that checks model outputs against externally verifiable safety properties. Crucially, it operates on triage **outputs**, not **inputs**. Because input-level defenses like sanitization and structured prompts are consistently bypassed by adaptive attackers (Nasr et al., 2025), output-level checking is potentially more robust in principle — though this comparative advantage remains to be validated against real model outputs in E8.
 
 Six invariants are checked against every triage decision:
 - **INV-1:** Severity downgrade without supporting evidence (critical/high)
@@ -187,6 +187,8 @@ Six invariants are checked against every triage decision:
 When injection is suspected (weighted score ≥3), the pipeline auto-escalates the classification from the model's output to `ESCALATE` and records an `OverrideRecord` in the audit trail with the previous classification, the intervening actor (`system:behavioral_invariants`), and the triggering violations.
 
 **Completeness bound.** The six invariants are not exhaustive — they target observable symptoms of the five defined attack classes. An attacker who achieves their objective without violating any invariant (e.g., a C2 attack that adjusts confidence by exactly the amount that stays below INV-3/INV-6 thresholds) would evade detection. This honest limitation motivates the layered defense strategy: invariants catch the majority of attacks, while dual-LLM verification (D3) and human review provide backstops for subtle evasion.
+
+**Planned campaign-level invariants.** C5 (Escalation Suppression) targets the correlation stage and is not addressed by per-alert invariants. Three campaign-level invariants are planned for Phase 2: (1) **chain incompleteness** — flagging temporal technique clusters that fail to produce expected campaign assessments; (2) **anomalous de-correlation** — detecting when alerts sharing infrastructure are suppressed from correlation; (3) **implausible tactic ordering** — identifying when the correlator's observed tactic sequence violates known attack progression patterns (e.g., exfiltration before initial access).
 
 ### 4.5.5 SOC-Bench Adapter
 
