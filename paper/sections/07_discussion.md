@@ -38,7 +38,7 @@ As SOC systems move toward autonomous response (blocking IPs, isolating hosts, t
 
 **L4: Quantization effects.** All models are evaluated at INT4 quantization due to hardware constraints. Full-precision models may exhibit different vulnerability profiles, though existing research suggests that quantization has minimal impact on instruction-following behavior.
 
-**L5: Benchmark coverage.** Our benchmark covers 12 MITRE ATT&CK techniques across 7 tactics. This is sufficient for methodology validation but does not cover the full ATT&CK matrix. The benchmark builder supports easy extension as additional Splunk Attack Data is acquired.
+**L5: Benchmark coverage.** Our benchmark covers 27 MITRE ATT&CK techniques across 9 tactics, providing meaningful coverage of adversary behavior but representing a subset of the full ATT&CK Enterprise matrix (over 200 techniques). The benchmark builder supports easy extension as additional Splunk Attack Data is acquired.
 
 **L6: No human study.** We do not evaluate whether human analysts would catch LLM triage errors introduced by adversarial injection. A user study measuring analyst detection of manipulated triage outputs would strengthen the practical impact assessment.
 

@@ -26,7 +26,7 @@ We evaluate four frontier open-weight LLMs, all Mixture-of-Experts (MoE) archite
 | Kimi K2.5 | 1T | 32B | 384 | MoonlightMoE | INT4 native |
 | Qwen 3.5 | 397B | ~17B | 128 | QwenMoE | INT4 |
 
-**Rationale.** Different MoE routing strategies may exhibit different adversarial vulnerability profiles. By comparing four architectures, we can identify whether routing decisions (which experts are activated) correlate with injection susceptibility.
+We selected open-weight models to enable fully reproducible local evaluation without API rate limits, terms-of-service restrictions, or non-deterministic API-side changes; commercial API-based models (GPT-4o, Claude) are excluded because they cannot be served locally for controlled experimentation. Different MoE routing strategies may exhibit different adversarial vulnerability profiles. By comparing four architectures, we can identify whether routing decisions (which experts are activated) correlate with injection susceptibility.
 
 All models are served via vLLM with tensor parallelism appropriate to the available hardware. Each model receives identical prompts to enable fair comparison.
 

@@ -174,8 +174,8 @@ python -m pytest tests/ -v
 
 ### Project Stats
 
-- **70 Python files** / **13,474 LOC**
-- **19 Python test/validation files** / **29-section reproducibility harness** / **25-check comprehensive validator**
+- **75 Python files** / **15,756 LOC**
+- **18 Python test/validation files** / **29-section reproducibility harness** / **25-check comprehensive validator**
 - **12,147 benchmark alerts** across **27 MITRE ATT&CK techniques** and **9 tactics**
 - **25 modules**, all import cleanly
 - **475MB** real Splunk Attack Data
