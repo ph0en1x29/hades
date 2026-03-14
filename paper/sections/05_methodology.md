@@ -17,7 +17,7 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 
 ## 5.2 Models Under Evaluation
 
-We evaluate four frontier open-weight LLMs, primarily Mixture-of-Experts (MoE) architectures, selected for their diverse routing strategies and active parameter counts:
+We evaluate four frontier open-weight LLMs, all using Mixture-of-Experts (MoE) architectures, selected for their diverse routing strategies, expert counts, and active parameter ratios:
 
 | Model | Total Params | Active Params | Experts | Architecture | Quantization |
 |---|---|---|---|---|---|
