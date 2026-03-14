@@ -1,6 +1,6 @@
 # Abstract
 
-Large Language Models are increasingly deployed for automated alert triage in Security Operations Centers, processing thousands of SIEM alerts that human analysts cannot review at scale. We systematize and evaluate a critical vulnerability first demonstrated by Neaves [2025]: adversaries can embed prompt injection payloads in network traffic fields — HTTP headers, DNS queries, TLS certificates — that SIEM systems log and feed to triage models.
+Large Language Models are increasingly deployed for automated alert triage in Security Operations Centers, processing thousands of SIEM alerts that overwhelm human analysts. This creates a paradox: the data these models must analyze originates from the same adversaries they are designed to detect. We systematize and evaluate this vulnerability, first demonstrated by Neaves [2025]: adversaries can embed prompt injection payloads in network traffic fields — HTTP headers, DNS queries, TLS certificates — that SIEM systems log and feed directly to triage models.
 
 We present **Hades**, an evaluation framework for measuring and defending against adversarial manipulation of LLM-based SOC systems. Using 12,147 rule-linked alerts across 27 MITRE ATT&CK techniques, we generate 1.4 million adversarial variants across 12 injection vectors and 5 attack classes. Our framework targets 4 open-weight models (DeepSeek R1, GLM-5, Kimi K2.5, Qwen 3.5) — three MoE architectures plus one dense control — under three attacker knowledge levels.
 

@@ -186,6 +186,8 @@ Six invariants are checked against every triage decision:
 
 When injection is suspected (weighted score ≥3), the pipeline auto-escalates the classification from the model's output to `ESCALATE` and records an `OverrideRecord` in the audit trail with the previous classification, the intervening actor (`system:behavioral_invariants`), and the triggering violations.
 
+**Completeness bound.** The six invariants are not exhaustive — they target observable symptoms of the five defined attack classes. An attacker who achieves their objective without violating any invariant (e.g., a C2 attack that adjusts confidence by exactly the amount that stays below INV-3/INV-6 thresholds) would evade detection. This honest limitation motivates the layered defense strategy: invariants catch the majority of attacks, while dual-LLM verification (D3) and human review provide backstops for subtle evasion.
+
 ### 4.5.5 SOC-Bench Adapter
 
 The SOC-Bench adapter (`socbench_adapter.py`) maps Hades `TriageDecision` outputs into the ring-scored Fox, Tiger, and Panda output formats defined by Cai et al. (2026). This enables direct evaluation against SOC-Bench ground truth when datasets become available.

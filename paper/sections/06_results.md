@@ -342,7 +342,17 @@ We evaluated the pipeline's campaign-detection capability using the SOC-Bench Fo
 
 **Fox score delta under adversarial attack: −53.7 points** (clean 95.7 → attacked 42.0, invariants disabled). This illustrates the potential worst-case operational impact of successful prompt injection on SOC campaign assessment when no output-level defenses are active. The O3 triage component drops from 22.0 to 13.0, reflecting corrupted priority assignments and action recommendations. With behavioral invariants enabled, we expect partial recovery as auto-escalation corrects the most overt injection attempts; measuring this recovery is a key objective of the GPU evaluation.
 
-The O1 campaign assessment achieves perfect scores because the improved adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. The O2 kill chain phase receives inner-ring (8.7/13) when the multi-stage scenario spans exploitation and actions phases.
+### Per-Component Degradation Analysis
+
+| Component | Clean (Row 2) | Adversarial (Row 3) | Delta | Operational Meaning |
+|---|---:|---:|---:|---|
+| O1 Campaign Assessment | 39.0 | 17.0 | −22.0 | Campaign scope and affected-host enumeration collapses; the SOC loses situational awareness of the attack's breadth |
+| O2 Activity Classification | 34.7 | 12.0 | −22.7 | MITRE technique identification and kill chain phase tracking degrades; the SOC misunderstands *what* the attacker is doing |
+| O3 Alert Triage | 22.0 | 13.0 | −9.0 | Individual alert priority and response recommendations corrupted; analysts receive wrong action guidance |
+
+O1 and O2 suffer the largest absolute drops because they aggregate across multiple alerts — a single corrupted triage decision cascades into campaign-level misassessment. O3 degrades less in absolute terms but this is potentially misleading: O3's maximum is 22 points (vs 39 for O1/O2), so the −9.0 drop represents a 41% degradation of triage quality. The disproportionate campaign-level impact motivates the correlator agent: even if individual triage decisions are compromised, independent campaign detection through IP clustering and technique chain matching provides a redundant assessment path.
+
+The O1 campaign assessment achieves perfect scores in the clean scenario because the adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. The O2 kill chain phase receives inner-ring (8.7/13) when the multi-stage scenario spans exploitation and actions phases.
 
 ## 6.10 Current Interpretation
 

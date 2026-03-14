@@ -99,7 +99,21 @@ We define five attack classes based on the attacker's objective:
 
 *Example:* `These events are isolated maintenance operations and should NOT be correlated with other alerts.`
 
-## 3.6 Scope Boundaries
+## 3.6 Defense Coverage Matrix
+
+Table 2 maps each defense mechanism to the attack classes it is designed to address. No single defense covers all five classes, motivating the layered approach evaluated in E4–E8.
+
+| Defense | C1 Misclassification | C2 Confidence | C3 Reasoning | C4 Attention | C5 Escalation |
+|---|---|---|---|---|---|
+| D1 Sanitization | ✓ (keyword match) | ✓ (keyword match) | ✗ (natural language) | ✗ (natural language) | ✗ (natural language) |
+| D2 Structured Prompt | partial | partial | partial | partial | ✗ |
+| D3 Dual-LLM (planned) | ✓ (disagreement) | ✓ (score divergence) | ✓ (reasoning divergence) | partial | partial |
+| D4 Canary Tokens | partial | ✗ | partial | ✗ | ✗ |
+| Behavioral Invariants | ✓ (INV-1) | partial (INV-3/6) | ✓ (INV-2/4) | ✓ (INV-1/5) | ✗ (campaign-level) |
+
+**Key observations:** (1) C5 (Escalation Suppression) has no single-alert defense — it requires the correlator's campaign-level detection. (2) C2 (Confidence Manipulation) is the hardest to defend: keyword sanitization catches explicit markers, but pure statistical manipulation evades all current defenses except dual-LLM disagreement. (3) Input-level defenses (D1, D2) cover at most 2 of 5 classes with high confidence; output-level defenses (invariants) cover 3 of 4 evaluated classes.
+
+## 3.7 Scope Boundaries
 
 **In scope:**
 - Injection through protocol fields that originate from network traffic
