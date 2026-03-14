@@ -30,7 +30,7 @@ OWASP LLM Top 10 [2025] ranks prompt injection as LLM01, the #1 vulnerability fo
 
 ## 8.3 MoE Architecture Vulnerabilities
 
-Our cross-model comparison includes three MoE architectures (DeepSeek R1, Kimi K2.5, Qwen 3.5) plus GLM-5 as a dense control, making MoE-specific adversarial research directly relevant.
+Our cross-model comparison includes four MoE architectures with diverse routing strategies (DeepSeek R1, GLM-5, Kimi K2.5, Qwen 3.5), making MoE-specific adversarial research directly relevant.
 
 **L³ (Large Language Lobotomy)** [TeLintelo2026] demonstrates a training-free attack that silences safety-critical experts in MoE models, increasing ASR from 7.3% to 70.4% (peak 86.3%) by disabling <20% of layer-wise experts while preserving utility. **SAFEx** [Lai2025] identifies that safety behavior concentrates in specific expert groups (HCDG/HRCG) — disabling just 12 experts in Qwen3-30B reduces refusal rate by 22%.
 
@@ -52,7 +52,7 @@ These findings suggest that different MoE architectures may exhibit different ad
 
 **CIC-IDS2017/2018** [Sharafaldin2018] provide labeled network flow data widely used in intrusion detection research. However, as Liu [2026] notes, these datasets lack SIEM rule associations, making them inadequate for research claiming to evaluate SOC triage systems. We use CIC-IDS2018 only as an engineering scaffold.
 
-**Splunk Attack Data** provides curated attack datasets mapped to MITRE ATT&CK techniques with corresponding detection rules from the Splunk Security Content repository. This is our primary benchmark source, satisfying rule association, MITRE mapping, and provenance requirements.
+**Splunk Attack Data** provides curated attack datasets mapped to MITRE ATT&CK techniques with corresponding detection rules from the Splunk Security Content repository. This is our primary benchmark source, providing rule associations, MITRE mappings, and provenance chains.
 
 ## 8.6 RAG for Threat Intelligence
 
@@ -71,13 +71,13 @@ Table 2 summarizes how our work fills gaps in the existing literature.
 | SIEM log field injection | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
 | Adaptive attacker eval | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (designed) |
 | Rule-linked benchmark | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
-| Cross-model MoE comparison | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (designed) |
+| Cross-model MoE routing comparison | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (designed) |
 | Defense evaluation | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ (designed) |
 | Behavioral invariant detection | ✗ | ✗ | partial | ✗ | ✗ | ✓ (preliminary) |
 | Open-source framework | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
 | Human study | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ (L6) |
 | Live deployment | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ (L1) |
 
-**Our contributions:** (1) a systematic framework for adversarial evaluation of LLM triage systems through SIEM log field injection, (2) an evaluation protocol for cross-architecture vulnerability comparison of 4 frontier models (3 MoE + 1 dense control), with benchmark construction validated and cross-model results pending GPU allocation, (3) a defense evaluation protocol following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], with defense effectiveness results pending GPU experiments, (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements, and (5) a Fox-task adapter for SOC-Bench [Cai2026] with preliminary simulated scoring; Tiger and Panda schema support exists but is not evaluated in this paper.
+**Our contributions:** (1) a systematic framework for adversarial evaluation of LLM triage systems through SIEM log field injection, (2) an evaluation protocol for cross-architecture vulnerability comparison of 4 frontier MoE models with diverse routing strategies, with benchmark construction validated and cross-model results pending GPU allocation, (3) a defense evaluation protocol following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], with defense effectiveness results pending GPU experiments, (4) a benchmark-quality dataset with full provenance chain aligning with [Liu2026]'s dataset adequacy recommendations, and (5) a Fox-task adapter for SOC-Bench [Cai2026] with preliminary simulated scoring; Tiger and Panda schema support exists but is not evaluated in this paper.
 
 No prior work occupies the intersection of SOC-specific evaluation, SIEM-channel adversarial attack, and adaptive defense evaluation. AgentSentry [Zhang2026a] addresses adversarial robustness but not SOC workflows; CORTEX [Wei2025] addresses SOC triage but not adversarial robustness; SOC-Bench [Cai2026] defines evaluation structure but assumes benign inputs. Hades fills the gap where all three concerns converge.
