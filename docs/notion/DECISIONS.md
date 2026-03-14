@@ -25,7 +25,7 @@
 ### Publication: IEEE CNS dropped
 - **Decision:** Removed IEEE CNS May 11 deadline as unrealistic
 - **Date:** March 13, 2026
-- **Context:** GPU experiments won't be done by May. CCS Workshop (Nov) is primary target.
+- **Context:** GPU experiments won't be done by May. CCS Workshop (Nov) is primary target. Stretch: USENIX Security 2027 / IEEE S&P 2027.
 
 ### Behavioral invariants: 6 invariants (INV-1 to INV-6)
 - **Decision:** Added INV-6 (confidence-severity alignment) to catch C2 attacks INV-3 misses

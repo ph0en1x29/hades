@@ -7,11 +7,11 @@
 3. Name it: `HADES — Adversarial SOC Triage`
 4. Upload these files as sources (drag and drop):
    - `01_PROJECT_OVERVIEW.md`
-   - `02_PROPOSAL_V2.md`
-   - `03_PAPER_DRAFT.md`
-   - `04_RESULTS_AND_VALIDATION.md`
-   - `05_EXPERIMENT_DESIGN.md`
-   - `06_ARCHITECTURE_AND_CODE.md`
+   - `02_THREAT_MODEL.md`
+   - `03_ARCHITECTURE_AND_DEFENSES.md`
+   - `04_EXPERIMENTS.md`
+   - `05_RELATED_WORK.md`
+   - `06_TIMELINE_AND_STATUS.md`
 5. Once indexed, click **Audio Overview** → Generate
 6. To share: click **Share** → copy link → send to Prof Liu or anyone
 

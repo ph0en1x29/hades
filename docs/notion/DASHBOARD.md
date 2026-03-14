@@ -19,8 +19,8 @@
 - **12,147** benchmark alerts
 - **27** MITRE ATT&CK techniques
 - **~1.46M** adversarial variants
-- **13,474** lines of code
-- **64** commits
+- **15,756** lines of code
+- **65** commits
 - **95.7 → 51.0** Fox score degradation under attack (-44.7 points)
 
 ---
@@ -37,7 +37,7 @@
 - [x] Statistical framework
 - [x] Reproducibility suite (29 sections)
 - [x] Paper draft (~12K words)
-- [x] Proposal v2 sent to Prof Liu
+- [x] Proposal v3 sent to Prof Liu
 
 ## What's Blocked ⏳
 

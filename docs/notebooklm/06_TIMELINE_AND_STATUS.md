@@ -53,7 +53,7 @@
 
 ## Validation Results (March 13, 2026)
 
-- pytest: 61 passed, 10 skipped
+- pytest: 61 passed, 10 skipped (71 total)
 - Behavioral invariants: 10/10
 - Fox scoring: 95.7/100
 - Architecture validation: 18/18

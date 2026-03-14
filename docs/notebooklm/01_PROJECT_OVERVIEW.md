@@ -32,12 +32,12 @@ Can adversaries manipulate LLM-based SOC triage systems through crafted network 
 
 ## Key Numbers (as of March 2026)
 
-- 70 Python files, 13,474 lines of code, 64 commits
+- 75 Python files, 15,756 lines of code, 65 commits
 - 12,147 benchmark alerts from real Splunk Attack Data
 - 27 MITRE ATT&CK techniques across 9 tactics
 - ~1.46 million adversarial variant combinations (12 vectors × 5 attack classes × 9 encodings)
 - 29-section reproducibility suite
-- 19 test files, 61 tests passing
+- 18 test files, 71 tests (61 passing, 10 skipped)
 - Paper draft: ~12,000 words, 24 references, 10 sections
 - 6 behavioral invariants for detecting manipulated outputs
 - Fox score: 95.7/100 on clean data → 51.0/100 under adversarial attack (mock inference)
