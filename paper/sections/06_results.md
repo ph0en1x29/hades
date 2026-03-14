@@ -179,7 +179,7 @@ We tested whether adversarial payloads survive 11 common SIEM normalization step
 | splunk_linebreak | Splunk | First-line-only extraction |
 | normalize_ws | Generic | Whitespace collapse |
 
-### 6.6.2 Survival by Attack Class
+### 6.6.2 Payload Integrity by Attack Class
 
 | Attack Class | Survival Rate | Notes |
 |---|---:|---|
@@ -188,6 +188,8 @@ We tested whether adversarial payloads survive 11 common SIEM normalization step
 | Reasoning corruption | 0% | Subtle — no detection keywords |
 | Attention hijacking | 0% | Misdirects without explicit instructions |
 | Escalation suppression | 0% | Implicit suppression, hard to keyword-detect |
+
+**Important distinction:** These survival rates measure payload *integrity* — whether the payload text passes through SIEM normalization intact — not attack *effectiveness* against a target model. Whether an intact payload successfully manipulates a model's triage decision requires GPU-based E2 experiments (§6.8). High survival means the attack *opportunity* is preserved, not that the attack *succeeds*.
 
 **Key finding:** The two attack classes most dangerous to SOC operations (direct misclassification and confidence manipulation) survive all tested normalization steps across all SIEMs. Normalization is not a defense.
 
@@ -244,13 +246,17 @@ We evaluated our behavioral invariant detection system on 50 real Sysmon alerts 
 |---|---:|---:|---|
 | Clean (no injection) | 0.0% | **0.0%** | — |
 | C1: Direct Misclassification | **100.0%** | 0.0% | INV-1 (critical) |
-| C2: Confidence Manipulation | 100%* | 0.0% | INV-6 (high) + INV-5 (medium) when combined |
+| C2: Confidence Manipulation | 0–100%† | 0.0% | INV-6 (high) + INV-5 (medium) when combined |
 | C3: Reasoning Corruption | **100.0%** | 0.0% | INV-2 (critical) + INV-4 (medium) |
 | C4: Attention Hijacking | **98.0%** | 0.0% | INV-1 (high) + INV-5 (medium) |
 
 ### Interpretation
 
-The behavioral invariant system detects 3 of 4 attack classes with near-perfect accuracy and zero false positives. The key insight is that these checks operate on the triage **output**, not the prompt **input** — they are immune to prompt-level obfuscation techniques that defeat input sanitization.
+**Scope caveat.** These detection rates are validated against *template-based* simulated triage outputs designed to represent each attack class, not against real LLM model outputs. Actual model responses under adversarial injection may exhibit different patterns — more varied phrasing, partial compliance with injections, or novel failure modes not captured by our templates. Phase 2 GPU experiments (E2, E4–E8) will validate these detection rates against real model behavior.
+
+The behavioral invariant system detects 3 of 4 attack classes with near-perfect accuracy and zero false positives. The key insight is that these checks operate on the triage **output**, not the prompt **input** — they are resistant to prompt-level obfuscation techniques that defeat input-level defenses.
+
+†C2 detection is conditional: when confidence manipulation co-occurs with reasoning anomalies (INV-5 temporal downplay), the combined weighted score crosses the detection threshold (100%). Pure confidence-only manipulation without any reasoning artifacts produces a single high-severity violation below threshold (0%). We report the range to reflect this honest limitation.
 
 **C2 (Confidence Manipulation)** is detected by the combination of INV-6 (confidence-severity alignment, added to address the original gap) and temporal/contextual invariants. INV-6 flags when a HIGH-severity alert receives an unusually low confidence score (<0.4) on a true-positive classification — a signature of confidence manipulation attacks that try to suppress escalation without changing the verdict. When combined with INV-5 temporal downplay patterns (common in manipulated reasoning), the weighted score crosses the detection threshold. *Note: pure confidence manipulation alone (without any reasoning anomaly) produces a single high violation below threshold — this honest limitation motivates dual-model verification as a complementary defense.*
 
@@ -324,6 +330,8 @@ We evaluated the pipeline's campaign-detection capability using the SOC-Bench Fo
 | Clean (30 T1003.001 Sysmon alerts) | 39.0 | 39.0 | 22.0 | **100.0** | 0 |
 | DarkSide multi-stage (7 alerts, 7 techniques) | 39.0 | 34.7 | 22.0 | **95.7** | 0 |
 | Adversarial-injected campaign | 17.0 | 12.0 | 22.0 | **51.0** | 0 |
+
+**Scenario comparison.** All three rows use the same evaluation rubric but different alert inputs. Row 1 (clean) evaluates 30 homogeneous T1003.001 credential dumping alerts — a best-case scenario for campaign detection. Row 2 (DarkSide) evaluates a realistic 7-alert multi-stage campaign across 7 techniques. Row 3 (adversarial) applies injection payloads to the DarkSide campaign alerts, measuring how adversarial manipulation degrades the same campaign's assessment. The −44.7 point delta (Row 2 → Row 3) represents the operational impact of injection on an identical alert set.
 
 **Fox score delta under adversarial attack: −44.7 points** (clean 95.7 → attacked 51.0). This quantifies the real-world impact of successful prompt injection on SOC campaign assessment: even when individual alerts are caught by behavioral invariants, the corrupted triage decisions degrade the aggregate campaign picture.
 

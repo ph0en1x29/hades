@@ -94,12 +94,22 @@ The vector catalog (`vectors.py`) defines 12 SIEM log fields exploitable for inj
 
 ### 4.4.2 Payload Templates
 
-The payload library (`payloads.py`) contains 15 templates across 5 attack classes, with 4 encoding strategies:
+The payload library (`payloads.py`) contains 15 templates across 5 attack classes, with 2 base encoding strategies (plaintext, underscore) used for end-to-end evaluation, plus 9 extended strategies for normalization survival testing:
 
-- **Plaintext:** Direct English instructions
-- **Underscore:** Space-to-underscore substitution (demonstrated in [Neaves2025])
-- **URL-encoded:** Percent-encoding for HTTP fields
-- **Base64 fragment:** Partial base64 wrapping
+- **Base encodings (end-to-end E2/E4-E8):**
+  - **Plaintext:** Direct English instructions
+  - **Underscore:** Space-to-underscore substitution (demonstrated in [Neaves2025])
+
+- **Extended encodings (E3 normalization tests):**
+  - **URL-encoded:** Percent-encoding for HTTP fields
+  - **Base64 fragment:** Partial base64 wrapping
+  - **Markdown comment:** Injection wrapped in HTML comment syntax
+  - **Synonym substitution:** Rephrasing to evade keyword detection
+  - **Homoglyph (Cyrillic):** Visually similar Unicode characters
+  - **Zero-width characters:** Invisible Unicode insertion
+  - **Leetspeak:** Character substitution (e.g., "3" for "E")
+  - **DNS constrained:** 253-byte payload limit
+  - **TLS CN constrained:** 64-character payload limit
 
 ### 4.4.3 Injector
 
@@ -154,9 +164,9 @@ Severity is dynamically escalated when attack chains are detected: a medium-seve
 
 ### 4.5.4 Behavioral Invariant Defense
 
-The invariant layer (`behavioral_invariants.py`) is our primary defense against prompt injection — and crucially, it operates on triage **outputs**, not **inputs**. This makes it immune to input-level obfuscation that defeats sanitization and structured prompt defenses (Nasr et al., 2025).
+The invariant layer (`behavioral_invariants.py`) is our primary defense against prompt injection — and crucially, it operates on triage **outputs**, not **inputs**. This makes it significantly more robust against prompt-level obfuscation techniques that defeat input-level defenses like sanitization and structured prompts (Nasr et al., 2025).
 
-Five invariants are checked against every triage decision:
+Six invariants are checked against every triage decision:
 - **INV-1:** Severity downgrade without supporting evidence (critical/high)
 - **INV-2:** Phantom IPs referenced in output but absent from source alert (critical)
 - **INV-3:** Unrealistically high confidence (>0.95) on benign classifications (high)

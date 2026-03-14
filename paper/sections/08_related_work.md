@@ -75,6 +75,8 @@ Table 1 summarizes how our work fills gaps in the existing literature.
 | Defense evaluation | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ |
 | Behavioral invariant detection | ✗ | ✗ | partial | ✗ | ✗ | ✓ |
 | Open-source framework | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
+| Human study | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ (L6) |
+| Live deployment | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ (L1) |
 
 **Our unique contributions:** (1) the first systematic adversarial evaluation of LLM triage systems through SIEM log field injection, (2) cross-architecture vulnerability comparison of 4 frontier MoE models, (3) defense evaluation following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements, and (5) SOC-Bench-compatible output schemas enabling direct comparison with future SOC AI systems.
 

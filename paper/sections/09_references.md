@@ -30,8 +30,6 @@
 
 [Zhang2026a] Tian Zhang et al. *AgentSentry: Mitigating Indirect Prompt Injection in LLM Agents via Temporal Causal Diagnostics and Context Purification.* arXiv:2602.22724, February 2026.
 
-[Zou2026] Yicheng Zou et al. *Overcoming the Retrieval Barrier: Indirect Prompt Injection in the Wild for LLM Systems.* arXiv:2601.07072, January 2026.
-
 [Zhan2025] Qiusi Zhan, Richard Fang, Henil Shalin Panchal, Daniel Kang. *Adaptive Attacks Break Defenses Against Indirect Prompt Injection Attacks on LLM Agents.* NAACL 2025 Findings (pp. 7116–7132). arXiv:2503.00061.
 
 [Chang2026] Chang, H. et al. *Overcoming the Retrieval Barrier: Indirect Prompt Injection in the Wild for LLM Systems.* arXiv:2601.07072, January 2026.

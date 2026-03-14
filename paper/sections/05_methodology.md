@@ -38,21 +38,33 @@ Our benchmark comprises 12,147 alerts parsed from the Splunk Attack Data reposit
 
 | Tactic | Technique | Description | Alert Count |
 |---|---|---|---|
-| TA0002 Execution | T1059.001 | PowerShell Script Block | 502 |
+| TA0001 Initial Access | T1566.001 | Spearphishing Attachment | 500 |
+| TA0002 Execution | T1047 | WMI Command Execution | 500 |
+| TA0002 Execution | T1059.001 | PowerShell Script Execution | 502 |
 | TA0002 Execution | T1569.002 | Service Execution | 500 |
 | TA0003 Persistence | T1053.005 | Scheduled Task | 514 |
+| TA0003 Persistence | T1543.003 | Create/Modify Windows Service | 500 |
 | TA0003 Persistence | T1547.001 | Registry Run Keys | 500 |
-| TA0005 Defense Evasion | T1027 | Obfuscated Files | 500 |
-| TA0005 Defense Evasion | T1036.003 | Masquerading (Rename) | 500 |
-| TA0005 Defense Evasion | T1218.011 | Signed Binary Proxy (Rundll32) | 500 |
+| TA0004 Privilege Escalation | T1548.002 | Bypass UAC | 500 |
+| TA0005 Defense Evasion | T1027 | Obfuscated Files / Information | 500 |
+| TA0005 Defense Evasion | T1036.003 | Masquerading: Rename System Utilities | 500 |
+| TA0005 Defense Evasion | T1055.001 | Process Injection (Cobalt Strike) | 500 |
+| TA0005 Defense Evasion | T1218.011 | Rundll32 Signed Binary Proxy | 500 |
+| TA0005 Defense Evasion | T1562.001 | Impair Defenses: Disable Tools | 500 |
 | TA0006 Credential Access | T1003.001 | LSASS Credential Dumping | 500 |
+| TA0006 Credential Access | T1003.003 | NTDS.dit Credential Dumping | 500 |
 | TA0006 Credential Access | T1110.001 | RDP Brute Force | 23 |
+| TA0007 Discovery | T1018 | Remote System Discovery | 500 |
+| TA0007 Discovery | T1082 | System Information Discovery | 500 |
 | TA0007 Discovery | T1087.001 | Local Account Discovery | 500 |
 | TA0008 Lateral Movement | T1021.002 | SMB Admin Shares | 4 |
 | TA0008 Lateral Movement | T1021.006 | Windows Remote Management | 500 |
 | TA0008 Lateral Movement | T1550.002 | Pass the Hash | 500 |
-| TA0011 Command & Control | T1105 | Ingress Tool Transfer | 500 |
 | TA0011 Command & Control | T1071.001 | HTTP C2 Traffic | 104 |
+| TA0011 Command & Control | T1105 | Ingress Tool Transfer | 500 |
+| TA0011 Command & Control | T1112 | Modify Registry | 500 |
+| TA0011 Command & Control | T1136.001 | Create Local Account | 500 |
+| TA0011 Command & Control | T1204.002 | User Execution: Malicious File | 500 |
 
 ### 5.3.2 Dataset Adequacy
 
@@ -65,6 +77,8 @@ Each alert in our benchmark satisfies four adequacy requirements:
 4. **Scenario identifier.** Every alert is tagged with a scenario ID linking it to a specific attack simulation (Atomic Red Team, Impacket, manual testing).
 
 These requirements are enforced programmatically via a dataset gate that rejects alerts missing any field.
+
+**Limitation: All-positive benchmark.** All 12,147 benchmark alerts are true-positive attack alerts. Real SOC environments see 80–95% false-positive rates. Our current evaluation measures whether adversarial injection can cause misclassification of *malicious* alerts (evasion attacks). The reverse direction — injecting into benign traffic to *create* false positives — is not evaluated in this work and represents a complementary threat axis for future investigation.
 
 ### 5.3.3 Adversarial Variant Generation
 
