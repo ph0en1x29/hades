@@ -354,13 +354,13 @@ We evaluated the pipeline's campaign-detection capability using the SOC-Bench Fo
 
 O1 and O2 suffer the largest absolute drops because they aggregate across multiple alerts — a single corrupted triage decision cascades into campaign-level misassessment. O3 degrades less in absolute terms but this is potentially misleading: O3's maximum is 22 points (vs 39 for O1/O2), so the −9.0 drop represents a 41% degradation of triage quality. The disproportionate campaign-level impact motivates the correlator agent: even if individual triage decisions are compromised, independent campaign detection through IP clustering and technique chain matching provides a redundant assessment path.
 
-The O1 campaign assessment achieves perfect scores in the clean scenario because the adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. The O2 activity classification (39 points total) loses 4.3 points because the kill chain phase sub-component receives inner-ring rather than bullseye scoring when the multi-stage DarkSide scenario spans exploitation and actions phases — the adapter correctly identifies the phases but not at bullseye precision.
+The O1 campaign assessment achieves perfect scores in the clean scenario because the adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. O2 (39 points) comprises three 13-point dimensions: activity type, MITRE technique accuracy, and kill chain phase. DarkSide loses 4.3 points on MITRE technique accuracy (inner-ring: correct parent techniques but imprecise sub-technique matching across the 7-technique campaign), while activity type and kill chain phase both score bullseye.
 
 ## 6.10 Claims Validated Before GPU-Dependent Model Execution
 
 Even before full model inference, several claims are already established:
 
-1. **Dataset adequacy requirements are satisfied for v1 per the four criteria of Liu [2026].** Our benchmark provides rule associations, MITRE mappings, provenance chains, and enforced contract validation. It remains an all-positive dataset with imbalanced technique counts (§5.3.2), limiting deployment-representative claims.
-2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,457,640 realistic adversarial samples today.
+1. **Dataset adequacy requirements are met for v1 per the four criteria of Liu [2026].** Our benchmark provides rule associations, MITRE mappings, provenance chains, and enforced contract validation. It remains an all-positive dataset with imbalanced technique counts (§5.3.2), limiting deployment-representative claims.
+2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,457,640 adversarial samples today (including worst-case synthesized-field variants; see §5.3.3 for applicability caveats).
 3. **The highest-value injection vectors are operationally grounded.** HTTP User-Agent, Windows Event authentication fields, and SSH usernames are all both realistic and externally validated.
 4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.
