@@ -12,7 +12,7 @@ Unlike conventional prompt injection, where a malicious user interacts directly 
 
 At each stage, attacker-controlled content is preserved and eventually presented to the LLM as "data" to analyze. From an information-flow perspective, the system prompt represents a high-trust control channel and the log data represents a low-trust data channel — but LLMs do not enforce noninterference between the two. The model cannot reliably distinguish between legitimate log fields and injected instructions, because the boundary between data and instruction is defined only by prompt formatting — a boundary that LLMs are known to violate [Nasr2025].
 
-This attack surface is no longer hypothetical. Neaves [2025] demonstrated successful prompt injection through HTTP User-Agent headers, SSH username fields, and Windows Event Log authentication records, causing LLM-based SIEM assistants to falsify source IP addresses, hide attack indicators, and fabricate decoy events. Unit 42 [2026] reported 22 distinct indirect prompt injection techniques observed in production telemetry.
+This attack surface is no longer hypothetical. Neaves [2025] demonstrated successful prompt injection through HTTP User-Agent headers, SSH username fields, and Windows Event Log authentication records, causing LLM-based SIEM assistants to falsify source IP addresses, hide attack indicators, and fabricate decoy events. Unit 42 [2026] documented multiple indirect prompt injection patterns observed in production settings.
 
 ## 1.2 Research Question
 
@@ -28,17 +28,17 @@ This paper makes the following contributions:
 
 1. **SOC-specific threat model.** We define a taxonomy of 12 injection vectors through SIEM log fields, with validated payload length constraints, SIEM normalization survival rates, and realism assessments. Four vectors are validated against production systems [Neaves2025].
 
-2. **Systematic adversarial evaluation.** Our framework enables evaluation of 4 frontier open-weight models (3 MoE + 1 dense control) under 5 attack classes and a 12-vector injection taxonomy, producing over 1.4 million base adversarial alert variants from a benchmark of 12,147 rule-linked SIEM alerts across 27 MITRE ATT&CK techniques in 9 tactics, and separately test extended encoding strategies for normalization survival.
+2. **Adversarial evaluation framework and benchmark.** We construct a benchmark of 12,147 rule-linked SIEM alerts across 27 MITRE ATT&CK techniques in 9 tactics, and define an evaluation protocol for 4 frontier open-weight models (3 MoE + 1 dense control) under 5 attack classes and a 12-vector injection taxonomy, producing over 1.4 million base adversarial alert variants. Cross-model attack success results await GPU allocation; this paper validates benchmark construction, SIEM normalization survival, and preliminary defense mechanisms.
 
 3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 6 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, temporal downplay patterns, and confidence-severity alignment violations. By operating on the model's *output* rather than input, invariants shift detection to the problem's constraint space rather than the attacker's action space — a hypothesis we formalize but have not yet validated against adaptive attackers. Preliminary evaluation on 50 simulated triage outputs shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives. Whether this advantage holds against real model outputs and adaptive attackers (E8) remains open.
 
 4. **Multi-agent correlation pipeline.** Our pipeline demonstrates that single-alert triage is insufficient — a correlator agent using IP clustering, technique chain matching, and temporal burst detection identifies multi-stage campaigns that individual alert classification misses, demonstrated on a simulated DarkSide ransomware scenario using hand-crafted triage decisions. A playbook agent generates NIST SP 800-61 response guidance with chain-aware severity escalation. Full model-driven evaluation pending GPU experiments.
 
-5. **Defense evaluation with adaptive attackers.** We implement 3 defense mechanisms — input sanitization, structured prompt architecture, and canary token detection — and design a fourth (dual-LLM verification). Adaptive attacker evaluation follows Nasr et al. [2025] methodology.
+5. **Defense evaluation protocol.** We implement 3 defense mechanisms — input sanitization, structured prompt architecture, and canary token detection — and design a fourth (dual-LLM verification). Our adaptive attacker evaluation follows Nasr et al. [2025] methodology; defense effectiveness results await GPU experiments.
 
 6. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
 
-7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a reproducibility harness (see scripts/reproduce_all.py) and SOC-Bench [Cai2026] ring-scoring alignment.
+7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a reproducibility harness (see scripts/reproduce_all.py) and a partial SOC-Bench [Cai2026] Fox-task scoring adapter.
 
 ## 1.4 Paper Organization
 

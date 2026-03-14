@@ -174,7 +174,7 @@ Severity is dynamically escalated when attack chains are detected: a medium-seve
 
 ### 4.5.4 Behavioral Invariant Defense
 
-The invariant layer (`behavioral_invariants.py`) functions as a **runtime assurance monitor** — analogous to runtime verification in safety-critical systems — that checks model outputs against externally verifiable safety properties. Crucially, it operates on triage **outputs**, not **inputs**. Because input-level defenses like sanitization and structured prompts are consistently bypassed by adaptive attackers (Nasr et al., 2025), output-level checking is potentially more robust in principle — though this comparative advantage remains to be validated against real model outputs in E8.
+The invariant layer (`behavioral_invariants.py`) functions as a **runtime assurance monitor** — analogous to runtime verification in safety-critical systems — that checks model outputs against externally verifiable safety properties. We use "invariant" informally: these are heuristic post-hoc consistency checks on output fields, not formally verified properties. Crucially, it operates on triage **outputs**, not **inputs**. Because input-level defenses like sanitization and structured prompts are consistently bypassed by adaptive attackers (Nasr et al., 2025), output-level checking is potentially more robust in principle — though this comparative advantage remains to be validated against real model outputs in E8.
 
 Six invariants are checked against every triage decision:
 - **INV-1:** Severity downgrade without supporting evidence (critical/high)
