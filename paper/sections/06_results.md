@@ -128,9 +128,9 @@ The Suricata parser successfully extracted HTTP C2 traffic with preserved User-A
 | Dataset | Technique | Parsed Events | Relevant Fields |
 |---|---|---:|---|
 | suricata_c2.log | T1071.001 | 94 | `http_user_agent`, headers, URL, src/dst IP |
-| suricata_malware.log | T1071.001 | available for extension | malware HTTP flows |
+| suricata_malware.log | T1071.001 | 10 | malware HTTP flows |
 
-We identified **3 unique User-Agent strings** in the C2 dataset, providing clean baselines for controlled User-Agent injection experiments.
+The final benchmark includes 104 T1071.001 alerts: 94 from `suricata_c2.log` and 10 from `suricata_malware.log`. We identified **3 unique User-Agent strings** in the C2 dataset, providing clean baselines for controlled User-Agent injection experiments.
 
 ## 6.4 Prompt Budget Results
 
@@ -352,9 +352,9 @@ O1 and O2 suffer the largest absolute drops because they aggregate across multip
 
 The O1 campaign assessment achieves perfect scores in the clean scenario because the adapter extracts host identifiers from metadata (not just IPs), uses technique diversity for scope inference, and weights critical decisions for activity classification. The O2 kill chain phase receives inner-ring (8.7/13) when the multi-stage scenario spans exploitation and actions phases.
 
-## 6.10 Current Interpretation
+## 6.10 Pre-GPU Validated Claims
 
-Even before full model inference, several claims are already empirically established:
+Even before full model inference, several claims are already established:
 
 1. **Dataset adequacy requirements are satisfied for v1 per the criteria of Liu [2026].** We now have a benchmark-of-record with rule associations, MITRE mappings, provenance chains, and enforced contract validation.
 2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,457,640 realistic adversarial samples today.

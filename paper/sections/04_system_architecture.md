@@ -108,7 +108,7 @@ The payload library (`payloads.py`) contains 15 templates across 5 attack classe
 
 - **Extended encodings (E3 normalization tests):**
   - **URL-encoded:** Percent-encoding for HTTP fields
-  - **Base64 fragment:** Partial base64 wrapping
+  - **Base64 wrapped:** Partial base64 wrapping
   - **Markdown comment:** Injection wrapped in HTML comment syntax
   - **Synonym substitution:** Rephrasing to evade keyword detection
   - **Homoglyph (Cyrillic):** Visually similar Unicode characters
@@ -116,6 +116,7 @@ The payload library (`payloads.py`) contains 15 templates across 5 attack classe
   - **Leetspeak:** Character substitution (e.g., "3" for "E")
   - **DNS constrained:** 253-byte payload limit
   - **TLS CN constrained:** 64-character payload limit
+  - **SMB constrained:** 15-character payload limit
 
 ### 4.4.3 Injector
 

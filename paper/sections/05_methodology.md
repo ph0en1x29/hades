@@ -93,7 +93,7 @@ For each clean benchmark alert, we generate adversarial variants by injecting pa
 - **2 base encodings** for end-to-end E2/E4-E8 sweeps (plaintext, underscore)
 - **9 extended encoding/constraint strategies** for E3 normalization-survival tests (6 evasion encodings, 3 protocol-constrained variants)
 
-Plus 3 protocol-specific constraints (DNS 253-byte, SMB 14-char, TLS CN 64-char) that enforce realistic field length limits.
+Plus 3 protocol-specific constraints (DNS 253-byte, SMB 15-char, TLS CN 64-char) that enforce realistic field length limits.
 
 The base end-to-end matrix produces **120 variants per alert** and **1,457,640 total adversarial samples** for the full benchmark. Extended E3 encoding tests are reported separately because they measure normalization survival rather than full triage runs. Payloads are truncated to respect field length constraints per vector.
 
