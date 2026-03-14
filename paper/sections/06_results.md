@@ -356,7 +356,7 @@ The O1 campaign assessment achieves perfect scores in the clean scenario because
 
 Even before full model inference, several claims are already established:
 
-1. **Dataset adequacy requirements are satisfied for v1 per the criteria of Liu [2026].** We now have a benchmark-of-record with rule associations, MITRE mappings, provenance chains, and enforced contract validation.
+1. **Dataset adequacy requirements are satisfied for v1 per the four criteria of Liu [2026].** Our benchmark provides rule associations, MITRE mappings, provenance chains, and enforced contract validation. It remains an all-positive dataset with imbalanced technique counts (§5.3.2), limiting deployment-representative claims.
 2. **The adversarial experiment space is concrete, not speculative.** We can generate 1,457,640 realistic adversarial samples today.
 3. **The highest-value injection vectors are operationally grounded.** HTTP User-Agent, Windows Event authentication fields, and SSH usernames are all both realistic and externally validated.
 4. **The infrastructure risk is measurable.** We are no longer arguing only from thought experiments; we have a runnable benchmark, runnable injector, and runnable experiment harness.
