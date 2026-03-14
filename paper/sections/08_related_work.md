@@ -14,7 +14,7 @@ Commercial LLM-based SOC tools are rapidly being adopted: Microsoft Security Cop
 
 **Real-world validation.** Neaves [2025] at LevelBlue (AT&T Cybersecurity) demonstrates three successful indirect prompt injections through SOC/SIEM log files: HTTP User-Agent, SSH username, and Windows Event 4625 authentication records. In all cases, the LLM triage agent followed injected instructions, falsifying source IPs and hiding attack indicators. Unit 42 [2026] reports 22 distinct IDPI techniques observed in production telemetry, including the first documented case of AI-based ad review evasion.
 
-**The hackerbot-claw campaign** [Datadog2026] provides compelling real-world validation of IPI in automated triage. In February–March 2026, an AI agent systematically targeted GitHub repositories with prompt injection payloads embedded in issue bodies and PR descriptions. When Datadog's Claude-powered issue triage workflow processed issue #47021, it encountered injection attempts but successfully blocked them — the Claude action logged: "The issue body contains an attempted prompt injection attack (which I ignored per instructions)." This demonstrates both the threat (attackers actively deploying IPI against LLM triage) and the potential for workflow-level defenses, validating our behavioral invariant approach.
+**The hackerbot-claw campaign** [Datadog2026] provides compelling real-world validation of IPI in automated triage. In February–March 2026, an AI agent systematically targeted GitHub repositories with prompt injection payloads embedded in issue bodies and PR descriptions. When Datadog's Claude-powered issue triage workflow processed issue #47021, it encountered injection attempts but successfully blocked them — the Claude action logged: "The issue body contains an attempted prompt injection attack (which I ignored per instructions)." This demonstrates both the threat (attackers actively deploying IPI against LLM triage) and the potential for workflow-level defenses. Datadog's defense relied on Claude's instruction-following (an input-level mechanism); our behavioral invariants operate on outputs and would provide a complementary detection layer.
 
 **AgentLAB** [Jiang2026] introduces the first benchmark for long-horizon attacks on LLM agents, defining five attack types: intent hijacking, tool chaining, task injection, objective drifting, and memory poisoning across 644 security test cases. Their finding that "defenses designed for single-turn interactions fail to reliably mitigate long-horizon threats" reinforces our argument for workflow-level behavioral invariants that operate on triage outputs rather than individual prompt inputs.
 
@@ -48,7 +48,7 @@ These findings suggest that different MoE architectures may exhibit different ad
 
 ## 8.5 SIEM Data and Normalization
 
-**SIEVE** [2025] generates synthetic SIEM logs using text augmentation techniques. While synthetic data addresses volume concerns, it lacks the provenance and rule associations required for benchmark-quality evaluation [Liu2026].
+**SIEVE** [Artioli2025] generates synthetic SIEM logs using text augmentation techniques. While synthetic data addresses volume concerns, it lacks the provenance and rule associations required for benchmark-quality evaluation [Liu2026].
 
 **CIC-IDS2017/2018** [Sharafaldin2018] provide labeled network flow data widely used in intrusion detection research. However, as Liu [2026] notes, these datasets lack SIEM rule associations, making them inadequate for research claiming to evaluate SOC triage systems. We use CIC-IDS2018 only as an engineering scaffold.
 
@@ -71,7 +71,7 @@ Table 2 summarizes how our work fills gaps in the existing literature.
 | SIEM log field injection | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
 | Adaptive attacker eval | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (designed) |
 | Rule-linked benchmark | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
-| Cross-model MoE comparison | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Cross-model MoE comparison | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (designed) |
 | Defense evaluation | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ (designed) |
 | Behavioral invariant detection | ✗ | ✗ | partial | ✗ | ✗ | ✓ (preliminary) |
 | Open-source framework | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |

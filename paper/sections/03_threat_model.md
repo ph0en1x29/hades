@@ -107,7 +107,7 @@ Table 1 maps each defense mechanism to the attack classes it is designed to addr
 |---|---|---|---|---|---|
 | D1 Sanitization | ✓ (keyword match) | ✓ (keyword match) | ✗ (natural language) | ✗ (natural language) | ✗ (natural language) |
 | D2 Structured Prompt | partial | partial | partial | partial | ✗ |
-| D3 Dual-LLM (planned) | ✓ (disagreement) | ✓ (score divergence) | ✓ (reasoning divergence) | partial | partial |
+| D3 Dual-LLM (designed, not implemented) | ✓ expected | ✓ expected | ✓ expected | partial expected | partial expected |
 | D4 Canary Tokens | partial | ✗ | partial | ✗ | ✗ |
 | Behavioral Invariants | ✓ (INV-1) | partial (INV-3/6) | ✓ (INV-2/4) | ✓ (INV-1/5) | ✗ (campaign-level) |
 

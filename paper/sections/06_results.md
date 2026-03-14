@@ -14,7 +14,7 @@ We constructed **Hades Benchmark v1** from Splunk Attack Data and validated ever
 | MITRE techniques | **27** |
 | ATT&CK tactics | **9** |
 | Contract failures | **0** |
-| Parser types | Sysmon XML, Suricata JSON, Windows Security XML, PowerShell Logging |
+| Parser types | Sysmon XML, Suricata JSON, Windows Security XML, PowerShell Logging (+ CIC-IDS scaffold, not in benchmark) |
 | Provenance coverage | **100%** |
 | Rule association coverage | **100%** |
 | MITRE mapping coverage | **100%** |

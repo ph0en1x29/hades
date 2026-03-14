@@ -51,3 +51,5 @@
 [Jiang2026] Tanqiu Jiang et al. *AgentLAB: Benchmarking LLM Agents against Long-Horizon Attacks.* arXiv:2602.16901, February 2026. First benchmark for long-horizon attacks including intent hijacking and memory poisoning.
 
 [Lee2025] Hwiwon Lee et al. *SEC-bench: Automated Benchmarking of LLM Agents on Real-World Software Security Tasks.* arXiv:2506.11791, June 2025. Multi-agent scaffold for security engineering evaluation.
+
+[Artioli2025] Pierpaolo Artioli, Vincenzo Dentamaro, Stefano Galantucci, Alessio Magrì, Gianluca Pellegrini, Gianfranco Semeraro. *SIEVE: Generating a Cybersecurity Log Dataset Collection for SIEM Event Classification.* Computer Networks, Vol. 266, July 2025. DOI:10.1016/j.comnet.2025.111330.
