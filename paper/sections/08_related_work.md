@@ -20,7 +20,7 @@ Commercial LLM-based SOC tools are rapidly being adopted: Microsoft Security Cop
 
 **Indirect Prompt Injection in the Wild** [Chang2026] decomposes IPI into trigger and attack fragments, achieving near-100% retrieval across 11 benchmarks at $0.21/query. A single poisoned email coerced GPT-4o into exfiltrating SSH keys with >80% success. This establishes that IPI retrieval is a "critical open vulnerability" — Hades operates as a post-retrieval detection layer.
 
-**AgentSentry** [Zhang2026] introduces temporal causal diagnostics — counterfactual re-executions at tool-return boundaries to detect multi-turn IPI. It achieves 74.55% Utility Under Attack, +20.8–33.6pp over prior baselines. However, AgentSentry's counterfactual re-execution requires replaying tool calls — infeasible in live SOC environments where SIEM queries are non-deterministic. Hades uses behavioral invariant checking as a lightweight alternative.
+**AgentSentry** [Zhang2026a] introduces temporal causal diagnostics — counterfactual re-executions at tool-return boundaries to detect multi-turn IPI. It achieves 74.55% Utility Under Attack, +20.8–33.6pp over prior baselines. However, AgentSentry's counterfactual re-execution requires replaying tool calls — infeasible in live SOC environments where SIEM queries are non-deterministic. Hades uses behavioral invariant checking as a lightweight alternative.
 
 **Adaptive IPI attacks** [Zhan2025, NAACL Findings] systematically bypass all 8 evaluated IPI defenses with >50% ASR using adaptive attacks, confirming that static defenses are insufficient in agent contexts.
 
@@ -69,15 +69,15 @@ Table 1 summarizes how our work fills gaps in the existing literature.
 | SOC-specific evaluation | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ |
 | Adversarial robustness | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ |
 | SIEM log field injection | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
-| Adaptive attacker eval | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Adaptive attacker eval | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ (designed) |
 | Rule-linked benchmark | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
 | Cross-model MoE comparison | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
-| Defense evaluation | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ |
-| Behavioral invariant detection | ✗ | ✗ | partial | ✗ | ✗ | ✓ |
+| Defense evaluation | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ (designed) |
+| Behavioral invariant detection | ✗ | ✗ | partial | ✗ | ✗ | ✓ (preliminary) |
 | Open-source framework | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
 | Human study | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ (L6) |
 | Live deployment | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ (L1) |
 
-**Our unique contributions:** (1) the first systematic adversarial evaluation of LLM triage systems through SIEM log field injection, (2) cross-architecture vulnerability comparison of 4 frontier MoE models, (3) defense evaluation following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements, and (5) SOC-Bench-compatible output schemas enabling direct comparison with future SOC AI systems.
+**Our unique contributions:** (1) the first systematic adversarial evaluation of LLM triage systems through SIEM log field injection, (2) cross-architecture vulnerability comparison of 4 frontier MoE models, (3) defense evaluation following the adaptive attacker methodology of [Nasr2025] and addressing the NAACL findings of [Zhan2025], (4) a benchmark-quality dataset with full provenance chain satisfying [Liu2026]'s dataset adequacy requirements, and (5) SOC-Bench-compatible output schemas enabling direct comparison with future SOC AI systems. Items marked '(designed)' indicate implemented experimental infrastructure with evaluation pending GPU allocation.
 
 No prior work occupies the intersection of SOC-specific evaluation, SIEM-channel adversarial attack, and adaptive defense evaluation. AgentSentry [Zhang2026a] addresses adversarial robustness but not SOC workflows; CORTEX [Wei2025] addresses SOC triage but not adversarial robustness; SOC-Bench [Liu2026] defines evaluation structure but assumes benign inputs. Hades fills the gap where all three concerns converge.

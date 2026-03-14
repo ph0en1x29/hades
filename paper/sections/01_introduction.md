@@ -32,13 +32,13 @@ This paper makes the following contributions:
 
 3. **Behavioral invariant defense.** We introduce an output-level defense that checks triage decisions against 6 behavioral invariants — detecting phantom IPs, severity downgrades, confidence anomalies, fabricated references, temporal downplay patterns, and confidence-severity alignment violations. Unlike input-level defenses that adaptive attackers consistently bypass [Nasr2025], behavioral invariants operate on the model's *output*, making them significantly more robust against prompt-level obfuscation than input-level defenses. Our evaluation shows 100% detection on direct misclassification (C1) and reasoning corruption (C3), 98% on attention hijacking (C4), with 0% false positives (validated on simulated outputs; full validation pending GPU experiments).
 
-4. **Multi-agent correlation pipeline.** We demonstrate that single-alert triage is insufficient — a correlator agent using IP clustering, technique chain matching, and temporal burst detection identifies multi-stage campaigns (DarkSide ransomware scenario: 100% campaign confidence) that individual alert classification misses, while a playbook agent generates NIST SP 800-61 response guidance with chain-aware severity escalation.
+4. **Multi-agent correlation pipeline.** Our pipeline architecture shows that single-alert triage is insufficient — a correlator agent using IP clustering, technique chain matching, and temporal burst detection identifies multi-stage campaigns (DarkSide ransomware scenario: 100% campaign confidence) that individual alert classification misses, while a playbook agent generates NIST SP 800-61 response guidance with chain-aware severity escalation (validated on simulated multi-stage scenario; full model-driven evaluation pending GPU experiments).
 
 5. **Defense evaluation with adaptive attackers.** We implement 4 defense mechanisms — input sanitization, structured prompt architecture, dual-LLM verification, and canary token detection — and design adaptive attacker evaluation following Nasr et al. [2025] methodology. Full evaluation pending GPU experiments.
 
 6. **Benchmark-quality dataset with provenance.** We construct a benchmark from Splunk Attack Data with full MITRE ATT&CK technique mappings, detection rule associations, and provenance chains, addressing the dataset adequacy gap identified for LLM-based security research [Liu2026].
 
-7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a 29-section reproducibility harness and SOC-Bench [Cai2026] ring-scoring alignment.
+7. **Open-source evaluation framework.** We release Hades, a modular multi-agent pipeline for adversarial evaluation of LLM triage systems, with a reproducibility harness (see scripts/reproduce_all.py) and SOC-Bench [Cai2026] ring-scoring alignment.
 
 ## 1.4 Paper Organization
 

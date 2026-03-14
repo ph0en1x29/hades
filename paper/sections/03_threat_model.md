@@ -111,5 +111,5 @@ We define five attack classes based on the attacker's objective:
 - Compromise of the SIEM platform itself
 - Model weight poisoning or training data attacks
 - Live network deployment (we use file-replay of captured data)
-- Multi-agent coordination attacks (deferred to future work)
+- Multi-agent coordination attacks (deferred to future work) — though our architecture includes multiple agents (triage, correlator, playbook), we evaluate adversarial impact on individual triage decisions rather than inter-agent propagation effects
 - Social engineering of SOC analysts independent of the LLM

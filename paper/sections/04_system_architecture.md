@@ -1,10 +1,10 @@
 # 4. Hades System Architecture
 
-Hades is a modular evaluation framework for measuring the adversarial robustness of LLM-based SOC triage systems. It implements a deterministic, file-replay pipeline that processes benchmark alerts through configurable triage agents and defense mechanisms.
+Hades is a modular evaluation framework for measuring the adversarial robustness of LLM-based SOC triage systems. It implements a near-deterministic, file-replay pipeline that processes benchmark alerts through configurable triage agents and defense mechanisms.
 
 ## 4.1 Design Principles
 
-**P1: Reproducibility over realism.** We sacrifice the complexity of live SIEM integration for deterministic, reproducible experiments. All data enters through file replay; all model calls use temperature=0; all results are hash-verified.
+**P1: Reproducibility over realism.** We sacrifice the complexity of live SIEM integration for near-deterministic, reproducible experiments. All data enters through file replay; all model calls use temperature=0; all results are hash-verified.
 
 **P2: Dataset gate enforcement.** Every alert that enters the evaluation pipeline must pass a programmatic benchmark contract check. Alerts missing rule associations, MITRE mappings, provenance chains, or scenario identifiers are rejected before reaching the model.
 
@@ -133,9 +133,9 @@ The injector is format-aware: it handles Sysmon XML EventData fields differently
 Three defense mechanisms are currently implemented:
 - **SanitizationDefense:** Regex-based removal of instruction-like patterns
 - **StructuredPromptDefense:** Recursive field wrapping with `[FIELD:path]` markers
-- **CanaryDefense:** Injects known canary strings into alert metadata
+- **CanaryDefense:** Injects known canary strings into alert content fields presented to the model (distinct from evaluation-only benchmark metadata)
 
-A fourth defense (**Dual-LLM Verification**, described in §5.5 as D3) is planned for future implementation. The dual-model verification defense will use a second LLM to independently triage alerts, flagging disagreements for human review.
+A fourth defense (**Dual-LLM Verification**, D3) is designed but not yet implemented. E6 results are therefore deferred beyond the initial GPU campaign. The dual-model verification defense will use a second LLM to independently triage alerts, flagging disagreements for human review.
 
 ## 4.5 Multi-Agent Pipeline
 
@@ -157,6 +157,8 @@ The correlator (`correlator.py`) detects multi-stage attack campaigns by running
 2. **Technique chain detection** — maps observed MITRE techniques to tactics, then matches against 5 known attack patterns (ransomware, data exfiltration, credential theft, lateral movement, persistence establishment). A pattern is flagged when ≥40% of its expected tactic sequence is observed.
 3. **Session reconstruction** — groups alerts by `src_ip→dst_ip` pairs to identify persistent attacker sessions
 4. **Temporal burst detection** — detects spikes of ≥5 alerts from a single source within the time window
+
+**Technique source.** In the evaluation pipeline, the correlator receives MITRE technique labels from the triage model's structured output (the `TriageDecision.mitre_techniques` field), not from benchmark ground-truth metadata. This means correlator accuracy depends on triage model accuracy — if adversarial injection causes the triage model to misidentify techniques, campaign detection degrades accordingly. The benchmark metadata is used only for scoring the correlator's output against ground truth.
 
 Campaign assessment combines all strategies: a campaign is declared when any attack chain is detected, any temporal burst occurs, or ≥10 correlated events are found.
 
@@ -201,6 +203,19 @@ Current benchmark: 12,147 alerts across 27 canonical ATT&CK techniques, 9 tactic
 ## 4.6 Model Serving
 
 Models are served via vLLM with the following configuration:
+- INT4 quantization for all models (native for Kimi K2.5, GPTQ for others)
+- Tensor parallelism scaled to available GPUs
+- Temperature=0 for near-deterministic inference (see §5.7 for MoE caveats)
+- Max output tokens=1024 per triage decision
+
+## 4.7 Deployment
+
+The system is containerized via Docker Compose:
+- `vllm-server`: Model serving with configurable model path
+- `qdrant`: Vector database for RAG retrieval
+- `hades`: Pipeline orchestration and evaluation
+- `evaluator`: Metrics computation and statistical analysis
+guration:
 - INT4 quantization for all models (native for Kimi K2.5, GPTQ for others)
 - Tensor parallelism scaled to available GPUs
 - Temperature=0 for deterministic inference

@@ -11,7 +11,7 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 | E3 | SIEM Survival | Test payload survival through normalization | — | 12 vectors × 11 rules × 9 enc |
 | E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 1,457,640 |
 | E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 1,457,640 |
-| E6 | Defense: Dual-LLM Verify | Evaluate dual-model verification | 4 | 1,457,640 |
+| E6 | Defense: Dual-LLM Verify (planned) | Evaluate dual-model verification | 4 | 1,457,640 |
 | E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 1,457,640 |
 | E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 1,457,640 |
 
@@ -29,6 +29,8 @@ We evaluate four frontier open-weight LLMs, all Mixture-of-Experts (MoE) archite
 We selected open-weight models to enable fully reproducible local evaluation without API rate limits, terms-of-service restrictions, or non-deterministic API-side changes; commercial API-based models (GPT-4o, Claude) are excluded because they cannot be served locally for controlled experimentation. Different MoE routing strategies may exhibit different adversarial vulnerability profiles. By comparing four architectures, we can identify whether routing decisions (which experts are activated) correlate with injection susceptibility.
 
 All models are served via vLLM with tensor parallelism appropriate to the available hardware. Each model receives identical prompts to enable fair comparison.
+
+We note that all four selected models originate from Chinese AI labs. This reflects the current landscape of open-weight frontier MoE models available for local deployment; at time of writing, no comparable open-weight MoE models from Western labs were available at the >100B parameter scale. Results may not generalize to closed-source or non-MoE architectures deployed in production SOC environments.
 
 ## 5.3 Benchmark Dataset
 
