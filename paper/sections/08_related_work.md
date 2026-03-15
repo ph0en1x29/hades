@@ -38,7 +38,7 @@ These findings suggest that different MoE architectures may exhibit different ad
 
 ## 8.4 Security Benchmarks
 
-**CyBench** [Zhang2025] evaluates LLM offensive cybersecurity capabilities across 40 CTF-style tasks (ICLR 2025 Oral). Funded by a $2.9M Open Philanthropy grant, it benchmarks whether LLMs can *attack* systems. We benchmark whether LLMs deployed *defensively* can be attacked through their data pipelines — the complementary question.
+**CyBench** [Zhang2025] evaluates LLM offensive cybersecurity capabilities across 40 CTF-style tasks (ICLR 2025 Oral). It benchmarks whether LLMs can *attack* systems. We benchmark whether LLMs deployed *defensively* can be attacked through their data pipelines — the complementary question.
 
 **SOC-Bench** [Cai2026] defines design principles for evaluating multi-agent AI in SOC contexts, grounded in the Colonial Pipeline/DarkSide ransomware incident. Its five tasks (Fox: campaign detection, Tiger: attribution, Panda: containment, Goat: forensics, Mouse: exfiltration detection) provide a structured evaluation framework. Our adapter currently produces Fox-format outputs with simulated scoring (§6.9); Tiger schema support exists but is not evaluated; Panda, Goat, and Mouse are not addressed.
 

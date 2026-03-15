@@ -48,7 +48,7 @@ Unlike web-based indirect prompt injection [PaloAlto2026], where attackers embed
 - Alert rules may extract only specific fields from the full log
 - Prompt construction may further filter or template the data
 
-These constraints make SOC triage injection *harder* than general-purpose prompt injection, but we demonstrate that sufficient payload capacity exists in multiple vectors to achieve reliable injection.
+These constraints make SOC triage injection *harder* than general-purpose prompt injection, but we demonstrate that sufficient payload capacity exists in multiple vectors to support plausible injection.
 
 ## 3.4 Injection Vector Taxonomy
 
@@ -103,7 +103,7 @@ We define five top-level attack classes (C1–C5) based on the attacker's object
 
 ## 3.6 Defense Coverage Matrix
 
-Table 1 maps each defense mechanism to the attack classes it is designed to address. No single defense covers all five classes, motivating the layered approach evaluated in E4–E8.
+Table 1 maps each defense mechanism to the attack classes it is designed to address. No single defense covers all five classes, motivating the layered approach planned for evaluation in E4–E8.
 
 | Defense | C1 Misclassification | C2 Confidence | C3 Reasoning | C4 Attention | C5 Escalation |
 |---|---|---|---|---|---|

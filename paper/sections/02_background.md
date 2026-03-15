@@ -28,7 +28,7 @@ IDPI is fundamentally harder to defend against because the boundary between "dat
 
 ## 2.4 The SOC-Specific Threat
 
-The SOC triage scenario represents a particularly high-risk IDPI environment. The interaction naturally models as a **Stackelberg game**: the defender (SOC) commits to a triage pipeline and defense configuration first; the attacker observes this configuration (through reconnaissance, documentation, or the adaptive methodology of Nasr et al. [2025]) and then crafts optimal payloads. This framing formalizes the title insight of "The Attacker Moves Second" — the defender cannot assume a static threat once deployed. Our E8 experiment directly evaluates this Stackelberg equilibrium by giving the attacker full knowledge of each defense mechanism.
+The SOC triage scenario represents a particularly high-risk IDPI environment. The interaction naturally models as a **Stackelberg game**: the defender (SOC) commits to a triage pipeline and defense configuration first; the attacker observes this configuration (through reconnaissance, documentation, or the adaptive methodology of Nasr et al. [2025]) and then crafts optimal payloads. This framing formalizes the title insight of "The Attacker Moves Second" — the defender cannot assume a static threat once deployed. Our E8 experiment is designed to evaluate this Stackelberg equilibrium by giving the attacker full knowledge of each defense mechanism.
 
 Three properties make this environment particularly high-risk:
 
@@ -46,7 +46,7 @@ MITRE ATT&CK provides a structured taxonomy of adversary tactics, techniques, an
 
 Recent work establishes benchmarking standards for LLM security applications:
 
-- **CyBench** [Zhang2025] evaluates offensive cybersecurity capabilities of LLMs across 40 CTF-style tasks, funded by a $2.9M grant from Open Philanthropy.
+- **CyBench** [Zhang2025] evaluates offensive cybersecurity capabilities of LLMs across 40 CTF-style tasks.
 - **AgentDojo** [Debenedetti2024] provides a dynamic benchmark for prompt injection on LLM agents with 97 tasks and 629 security test cases.
 - **SOC-Bench** [Cai2026] defines design principles for evaluating multi-agent AI systems in SOC contexts, grounded in the Colonial Pipeline/DarkSide ransomware incident.
 - **SecBench** [Jing2024] benchmarks LLM cybersecurity knowledge through MCQ-style assessments.

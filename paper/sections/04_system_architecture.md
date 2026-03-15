@@ -96,7 +96,7 @@ Alerts with any issues are rejected before entering the evaluation pipeline.
 
 ### 4.4.1 Injection Vectors
 
-The vector catalog (`vectors.py`) defines 12 SIEM log fields exploitable for injection, each with validated payload length constraints, SIEM normalization survival estimates, and realism ratings. Four vectors are validated against production SIEM systems [Neaves2025].
+The vector catalog (`vectors.py`) defines 12 SIEM log fields exploitable for injection, each with validated payload length constraints, SIEM normalization survival estimates, and realism ratings. Four vectors have been demonstrated in practitioner SIEM testing [Neaves2025].
 
 ### 4.4.2 Payload Templates
 
@@ -164,7 +164,7 @@ Campaign assessment combines all strategies: a campaign is declared when any att
 
 ### 4.5.3 Playbook Agent
 
-The playbook generator (`playbook.py`) produces NIST SP 800-61 incident response playbooks using a technique-specific knowledge base covering 7 MITRE techniques plus a generic fallback. Each KB entry defines:
+The playbook generator (`playbook.py`) produces NIST SP 800-61 incident response playbooks using a technique-specific knowledge base covering 7 MITRE techniques plus a generic fallback (the remaining 20 benchmark techniques use this fallback). Each KB entry defines:
 - **Containment** actions with priority and automation flags
 - **Eradication** steps with evidence collection guidance
 - **Recovery** procedures including credential rotation and re-imaging
@@ -174,7 +174,7 @@ Severity is dynamically escalated when attack chains are detected: a medium-seve
 
 ### 4.5.4 Behavioral Invariant Defense
 
-The invariant layer (`behavioral_invariants.py`) functions as a **runtime assurance monitor** — analogous to runtime verification in safety-critical systems — that checks model outputs against externally verifiable safety properties. We use "invariant" informally: these are heuristic post-hoc consistency checks on output fields, not formally verified properties. Crucially, it operates on triage **outputs**, not **inputs**. Because input-level defenses like sanitization and structured prompts are consistently bypassed by adaptive attackers (Nasr et al., 2025), output-level checking is potentially more robust in principle — though this comparative advantage remains to be validated against real model outputs in E8.
+The invariant layer (`behavioral_invariants.py`) functions as a heuristic post-hoc monitor that checks model outputs against externally verifiable safety properties. We use "invariant" informally: these are heuristic post-hoc consistency checks on output fields, not formally verified properties. Crucially, it operates on triage **outputs**, not **inputs**. Because input-level defenses like sanitization and structured prompts are consistently bypassed by adaptive attackers (Nasr et al., 2025), output-level checking is potentially more robust in principle — though this comparative advantage remains to be validated against real model outputs in E8.
 
 Six invariants are checked against every triage decision:
 - **INV-1:** Severity downgrade without supporting evidence (critical/high)
@@ -184,7 +184,7 @@ Six invariants are checked against every triage decision:
 - **INV-5:** Temporal downplay patterns ("all services nominal") (medium)
 - **INV-6:** Confidence-severity alignment (HIGH alert + low confidence = manipulation) (high)
 
-When injection is suspected (weighted score ≥3), the pipeline auto-escalates the classification from the model's output to `ESCALATE` and records an `OverrideRecord` in the audit trail with the previous classification, the intervening actor (`system:behavioral_invariants`), and the triggering violations.
+When injection is suspected (weighted score ≥3), the pipeline conservatively auto-escalates the classification from the model's output to `ESCALATE` and records an `OverrideRecord` in the audit trail with the previous classification, the intervening actor (`system:behavioral_invariants`), and the triggering violations.
 
 **Completeness bound.** The six invariants are not exhaustive — they target observable symptoms of the five defined attack classes. An attacker who achieves their objective without violating any invariant (e.g., a C2 attack that adjusts confidence by exactly the amount that stays below INV-3/INV-6 thresholds) would evade detection. This honest limitation motivates the layered defense strategy: invariants catch the majority of attacks, while dual-LLM verification (D3) and human review provide backstops for subtle evasion.
 
@@ -192,7 +192,7 @@ When injection is suspected (weighted score ≥3), the pipeline auto-escalates t
 
 ### 4.5.5 SOC-Bench Adapter
 
-The SOC-Bench adapter (`socbench_adapter.py`) produces Fox-format outputs (O1 campaign assessment, O2 activity classification, O3 triage bundle) with ring scoring per Cai et al. (2026). Tiger and Panda output schemas are drafted but not validated; only Fox scoring is evaluated in this paper (§6.9, using simulated triage decisions).
+The SOC-Bench adapter (`socbench_adapter.py`) produces Fox-format outputs (O1 campaign assessment, O2 activity classification, O3 triage bundle) with a Hades-defined ring scoring rubric inspired by Cai et al. (2026). Tiger and Panda output schemas are drafted but not validated; only Fox scoring is evaluated in this paper (§6.9, using simulated triage decisions).
 
 ### 4.5.6 Benchmark Builder
 
