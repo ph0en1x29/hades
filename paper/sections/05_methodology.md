@@ -9,11 +9,11 @@ We design eight experiments (E1–E8) to systematically evaluate the adversarial
 | E1 | Clean Baseline | Measure triage accuracy without adversarial input | 4 | 12,147 |
 | E2 | Injection Vulnerability | Measure attack success rate per vector × class | 4 | ≤1,457,640 |
 | E3 | SIEM Survival | Test payload survival through normalization | — | 9 enc × 11 rules × 15 templates |
-| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | 1,457,640 |
-| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | 1,457,640 |
-| E6 | Defense: Dual-LLM Verify (planned) | Evaluate dual-model verification | 4 | 1,457,640 |
-| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | 1,457,640 |
-| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | 1,457,640 |
+| E4 | Defense: Sanitization | Evaluate 3 sanitization levels | 4 | ≤1,457,640 |
+| E5 | Defense: Structured Prompt | Evaluate structured prompt architecture | 4 | ≤1,457,640 |
+| E6 | Defense: Dual-LLM Verify (planned) | Evaluate dual-model verification | 4 | ≤1,457,640 |
+| E7 | Defense: Canary Tokens | Evaluate canary-based injection detection | 4 | ≤1,457,640 |
+| E8 | Adaptive Attacker | Evaluate defenses against defense-aware attackers | 4 | ≤1,457,640 |
 
 ## 5.2 Models Under Evaluation
 
