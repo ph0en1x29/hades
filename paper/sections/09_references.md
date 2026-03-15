@@ -4,8 +4,6 @@
 
 [Debenedetti2024] Edoardo Debenedetti, Jie Zhang, Mislav Balunović, Luca Beurer-Kellner, Marc Fischer, Florian Tramèr. *AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses in LLM Agents.* NeurIPS 2024. arXiv:2406.13352.
 
-
-
 [Jing2024] Jing et al. *SecBench: A Comprehensive Multi-Dimensional Benchmarking Dataset for Evaluating LLMs in Cybersecurity.* arXiv:2412.20787, 2024.
 
 [Lekssays2025] Ahmed Lekssays et al. *TechniqueRAG: Retrieval-Augmented Generation for MITRE ATT&CK Technique Identification.* ACL Findings 2025. arXiv:2505.11988.
