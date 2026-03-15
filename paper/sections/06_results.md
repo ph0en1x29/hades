@@ -265,13 +265,15 @@ We validated the feasibility of our behavioral invariant detection system on syn
 | C2a: Confidence Inflation | 0–100%† | 0.0% | INV-3 (high) when >0.95; threshold-dependent |
 | C2b: Confidence Suppression | 0–100%† | 0.0% | INV-6 (high) when <0.4 on HIGH alert |
 | C3: Reasoning Corruption | **100.0%** | 0.0% | INV-2 (critical) + INV-4 (medium) |
-| C4: Attention Hijacking | **98.0%** | 0.0% | INV-1 (high) + INV-5 (medium) |
+| C4: Attention Hijacking | **98.0%** (49/50) | 0.0% | INV-1 (high) + INV-5 (medium) |
 
 ### Interpretation
 
 **Scope caveat.** These detection rates are validated against *template-based* simulated triage outputs designed to represent each attack class, not against real LLM model outputs. Actual model responses under adversarial injection may exhibit different patterns — more varied phrasing, partial compliance with injections, or novel failure modes not captured by our templates. Phase 2 GPU experiments (E2, E4–E8) will validate these detection rates against real model behavior.
 
 The behavioral invariant system detects 3 of the 4 attack classes evaluated in this pre-GPU study with near-perfect accuracy and zero false positives (0/50 clean alerts triggered violations). C5 (Escalation Suppression) targets the correlation stage rather than individual triage decisions and is not evaluated here; its detection requires campaign-level invariants planned for Phase 2. The key insight is that these checks operate on the triage **output**, not the prompt **input** — they are resistant to prompt-level obfuscation techniques that defeat input-level defenses.
+
+**C4 single miss.** The 1/50 undetected C4 case featured a subtle attention hijack that shifted focus to a legitimate system health narrative without triggering severity downgrade (INV-1 not fired because severity remained unchanged) or temporal downplay markers (INV-5 not fired because the language described ongoing monitoring rather than blanket dismissal). This suggests C4 attacks that avoid severity changes while subtly redirecting analytical focus represent a blind spot for per-field invariants — campaign-level correlation may be needed for coverage.
 
 †C2 detection is conditional: when confidence manipulation co-occurs with reasoning anomalies (INV-5 temporal downplay), the combined weighted score crosses the detection threshold (100%). Pure confidence-only manipulation without any reasoning artifacts produces a single high-severity violation below threshold (0%). We report the range to reflect this gap.
 
@@ -345,6 +347,8 @@ The behavioral invariant system detects 3 of the 4 attack classes evaluated in t
 ## 6.9 Counterfactual Impact Analysis: Fox Scoring (Pre-GPU)
 
 We evaluated the pipeline's campaign-detection capability using a Fox-inspired scoring rubric. Our adapter decomposes Fox output into O1 campaign assessment (39pts), O2 activity classification (39pts), and O3 triage bundle (22pts) = 100pts max. This point allocation and O2 three-part decomposition (activity type, MITRE technique accuracy, kill chain phase at 13pts each) are Hades's implementation of the Fox concept, not a direct specification from SOC-Bench [Cai2026]. Scores are not directly comparable to SOC-Bench Fox evaluations due to differences in staging and decomposition.
+
+The O1/O2/O3 point allocation reflects operational weight: campaign assessment and activity classification (39pts each) carry more weight than individual alert triage (22pts) because campaign-level situational awareness is the primary value of automated triage. Penalties follow SOC-Bench's model: wrong assertions (−1), no evidence (−1), contradictions (−2), and stage leakage (−2).
 
 | Scenario | O1 Campaign | O2 Activity | O3 Triage | Total | Penalties |
 |---|---:|---:|---:|---:|---:|

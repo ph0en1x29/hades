@@ -4,7 +4,7 @@
 
 A Security Operations Center processes alerts through a layered pipeline: detection, triage, investigation, and response. The detection layer — comprising SIEM rules, intrusion detection systems (IDS), and endpoint detection and response (EDR) agents — generates structured alerts from raw telemetry. Each alert contains metadata (timestamp, severity, rule match), network context (source/destination IPs, ports, protocol), and event-specific data (process names, command lines, file hashes, HTTP headers).
 
-**The triage bottleneck.** Enterprise SOCs receive 2,000–10,000+ alerts per day, yet a human analyst can effectively triage 50–100 alerts per shift. This order-of-magnitude gap drives "alert fatigue" — analysts develop heuristic shortcuts, ignore low-priority queues, and miss genuine attacks buried in false positives. Industry surveys report that a substantial fraction of SOC alerts go uninvestigated [MDPI2025].
+**The triage bottleneck.** Enterprise SOCs receive 2,000–10,000+ alerts per day, yet a human analyst can effectively triage 50–100 alerts per shift. This order-of-magnitude gap drives "alert fatigue" — analysts develop heuristic shortcuts, ignore low-priority queues, and miss genuine attacks buried in false positives. Industry surveys report that many SOC alerts go uninvestigated, with organizations routinely deprioritizing entire alert queues [MDPI2025].
 
 ## 2.2 LLM-Based Alert Triage
 

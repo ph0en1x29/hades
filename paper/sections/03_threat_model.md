@@ -54,7 +54,7 @@ These constraints make SOC triage injection *harder* than general-purpose prompt
 
 We identify 12 injection vectors — SIEM log fields that (a) originate from network traffic, (b) allow attacker-controlled content, and (c) survive SIEM normalization to reach the LLM triage prompt.
 
-| # | Vector | Log Field | Max Length | SIEM Survival | Realism | Validated |
+| # | Vector | Log Field | Max Length | SIEM Survival | Realism† | Validated |
 |---|---|---|---|---|---|---|
 | V1 | HTTP User-Agent | `http.user_agent` | ~8KB | HIGH | HIGH | ✅ [Neaves2025] |
 | V2 | HTTP Referer | `http.referer` | ~8KB | HIGH | HIGH | |
@@ -62,12 +62,14 @@ We identify 12 injection vectors — SIEM log fields that (a) originate from net
 | V4 | Win Event Username | `winlog.TargetUserName` | 120+ chars | HIGH | HIGH | ✅ [Neaves2025] |
 | V5 | Win Event Domain | `winlog.TargetDomainName` | 120+ chars | HIGH | HIGH | ✅ [Neaves2025] |
 | V6 | SSH Username | `source.user` | ~256 chars | HIGH | HIGH | ✅ [Neaves2025] |
-| V7 | SMB Hostname | `source.hostname` | 15 chars | HIGH | HIGH | |
+| V7 | SMB Hostname | `source.hostname` | 15 chars | HIGH | HIGH‡ | |
 | V8 | SNMP Community | `snmp.community` | 255 chars | MEDIUM | MEDIUM | |
 | V9 | Email Subject | `email.subject` | ~998 chars | HIGH | HIGH | |
 | V10 | TLS Cert CN | `tls.server.cn` | ~64 chars | HIGH | MEDIUM | |
 | V11 | TLS Cert SAN | `tls.server.san` | ~2KB | HIGH | MEDIUM | |
 | V12 | SSH Banner | `ssh.banner` | ~255 chars | MEDIUM | MEDIUM | |
+
+†**Realism** rates how likely an attacker can populate the field without raising non-LLM alerts: HIGH = normal protocol traffic (e.g., User-Agent strings are always logged), MEDIUM = unusual but valid values (e.g., abnormal SNMP community strings may trigger separate rules). Realism is independent of payload capacity — V7 (SMB) has HIGH realism because hostname fields are always present in SMB traffic, but only 15-char capacity limits its payload viability (‡).
 
 **Validation.** Vectors V1, V4, V5, and V6 have been demonstrated in real SIEM environments [Neaves2025]. Notably, Windows Event Log username and domain fields accept 120+ characters each despite a documented 20-character limit — Microsoft MSRC declined to service this as a security issue.
 
@@ -75,7 +77,7 @@ We identify 12 injection vectors — SIEM log fields that (a) originate from net
 
 ## 3.5 Attack Classes
 
-We define five top-level attack classes (C1–C5) based on the attacker's objective, with C2 containing two subtypes (C2a and C2b):
+We define five top-level attack classes (C1–C5) based on the attacker's objective. C2 contains two subtypes (C2a: inflation, C2b: suppression) that share the same objective (confidence manipulation) but differ in direction; all metrics and tables report C2 as a single class unless subtype distinction is analytically relevant:
 
 **C1 — Direct Misclassification.** The payload instructs the LLM to classify the alert as benign, low severity, or false positive. This is the most direct attack and serves as a baseline for measuring vulnerability.
 
